@@ -1,6 +1,7 @@
 import * as THREE from 'three';
+import {LABEL} from './tokens.js';
 
-export function createLabel(scene,height=.8){
+export function createLabel(parent,height=LABEL.height){
   const canvas=document.createElement('canvas');
   canvas.width=256; canvas.height=128;
   const ctx=canvas.getContext('2d');
@@ -9,17 +10,17 @@ export function createLabel(scene,height=.8){
   const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,depthTest:false,depthWrite:false}));
   sprite.scale.set(height*2,height,1);
   sprite.renderOrder=10;
-  scene.add(sprite);
+  parent.add(sprite);
   let current=null;
   sprite.userData.set=text=>{
     if(text===current)return;
     current=text;
     ctx.clearRect(0,0,256,128);
-    ctx.font='900 96px "Arial Black", Arial, sans-serif';
+    ctx.font=LABEL.font;
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.lineJoin='round'; ctx.lineWidth=18; ctx.strokeStyle='#1d1f2e';
+    ctx.lineJoin='round'; ctx.lineWidth=LABEL.strokeWidth; ctx.strokeStyle=LABEL.stroke;
     ctx.strokeText(text,128,68);
-    ctx.fillStyle='#fff';
+    ctx.fillStyle=LABEL.fill;
     ctx.fillText(text,128,68);
     texture.needsUpdate=true;
   };
