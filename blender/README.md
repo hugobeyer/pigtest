@@ -1,52 +1,84 @@
 # Blender asset workflow
 
-The saved `.blend` is the source of truth. `config.py` supplies initial defaults, not a live override of Blender. No copying Blender edits back to config is required. Arbitrary mesh edits, curve edits, constraints and individual placements cannot be faithfully represented by the original layout constants.
+The saved `.blend` is the source of truth. Open `primitive_version/source_files/scene.blend` to continue existing work. `config.py` supplies defaults for missing assets, not live overrides of authored geometry, transforms, materials or layout. Normal editing and export do not require rebuilding.
 
+## Run external scripts
+
+Use Blender with the glTF 2.0 exporter available. In the Scripting workspace, use **Text Editor → Open** to load the actual file from `primitive_version/blender/`, then **Run Script** in Object Mode. Open each entry script separately when needed; do not paste it into an internal text block. Its external filepath locates sibling modules and the output directory, even when the `.blend` lives in `source_files/`. The entry scripts reload their imported workflow modules.
+
+Scripts do not save the `.blend` automatically. Save explicitly in Blender after authoring or preparation. Export does not persist preparation on your behalf.
+
+## Prepare existing authored assets
+
+Run **`prepare_export.py` once**, then save the `.blend`. It does not run generators.
+
+- Migrate legacy roots `Pig_0_0` … `Pig_2_3` to `Pig_00` … `Pig_11`, in row-major order.
+- Preserve the root objects, transforms, child names, geometry, modifiers and existing metadata.
+- Add missing pig `is_light` metadata using the original checker defaults; keep authored values.
+- If absent, create `PigRunner` as a linked object-subtree copy of `Pig_00`.
+- Keep every copied part's mesh link, local transform, material overrides and modifiers.
+- Remap modifier/constraint Object pointers within the copied subtree to their copied targets.
+- Detach the runner root from any source parent and place its origin at world `(0, 0, 0)`.
+- Retain the source root's world orientation/scale, without its world placement.
+- Never replace an existing runner, merge distinct authored meshes, or relink existing objects.
+
+Name collisions and ambiguous legacy duplicates fail explicitly. An animated/constrained first pig root requires an explicitly authored neutral `PigRunner`; preparation will not discard those controls to infer a template. Copied child drivers and external dependencies remain authored references; inspect those for a complex rig. Existing `PigRunner` placement is never reset.
+
+Preparation validates the result and reports missing or invalid assets rather than creating rail/grid/anchor geometry. If validation fails after migration, those explicit preparation edits remain in memory; correct the reported assets before saving/exporting. Rerunning preparation does not duplicate migrated roots or an existing runner.
+
+## Exact asset contract
+
+`asset_contract.py` is shared by preparation, building and export:
+
+| Assets | Required names |
+| --- | --- |
+| Pigs | `Pig_00` through `Pig_11`, plus `PigRunner` |
+| Rail | `Rail_Start`, `Rail_Main`, `Rail_End` |
+| Grid | `Grid_r00_c00` through `Grid_r25_c25` (676 objects) |
+| Anchors | `RailStart`, `RailEnd`, `GridCenter`, `CameraTarget` (Empties) |
+
+Pigs, runner, rail and grid must have an exportable mesh/curve on the object or in its descendants. Multipart pigs are supported; one mesh per pig is not required. Pig roots cannot be nested inside one another. Required names with Blender suffixes such as `.001`, legacy roots, and out-of-range pig/grid names are reported, not silently accepted.
+
+Grid metadata must include matching `row`, `column`, `checker_row`, `checker_column` and boolean `is_light`; pigs and runner need boolean `is_light`. Existing colors and light/dark choices are not reset. `validate_assets(root)` returns missing names, duplicates, errors, per-asset renderable hierarchy counts and total export-object count. `require_assets(root)` raises on failures.
 
 ## Create or complete a scene
 
-Open `build_scene.py` from disk and run it in Object Mode. The entry script resolves sibling modules and reloads generator code on each run. With an internal text block, save the `.blend` alongside these scripts.
+Run **`build_scene.py`** only to generate missing assets. It creates the exact names above, with linked pig bodies and a linked runner template. Legacy pig roots cause a preflight error before any building: prepare them first.
 
-The builder creates missing named objects only. Existing geometry, transforms, materials, camera settings, anchors and lighting are not reset. Unrelated scene objects are untouched.
-
-Keep generated names stable. Renaming or deleting an expected object causes the builder to create the missing name again. Changing config defaults does not reposition existing objects or replace their meshes. Normal editing and export do not require running the builder.
+Existing pig roots are preserved as whole authored hierarchies; the builder does not add replacement bodies to them. Other existing geometry, transforms, materials, camera settings, anchors and lighting are not reset. Unrelated scene objects remain untouched. Keep required names stable: deleting or renaming assets can cause a later build to create missing names again. Config layout changes affect only newly created assets; the integration contract remains 12 pigs and a 26×26 grid.
 
 ## Edit in Blender
 
-- Edit any pig body in **Edit Mode** to change the shared pig shape, including a mouth you model yourself.
-- Edit any grid box in **Edit Mode** to change the shared block mesh.
-- Move, rotate or scale an object in **Object Mode** for an individual placement change.
-- Grid boxes remain separate, addressable objects with their own checker metadata and material slots.
-- White/black materials are object-linked, so differently colored instances can share a mesh.
-- `Rail_Main` remains an editable open Curve; `Rail_Profile` controls its cross-section.
-- Rail start/end, anchors, camera and lighting are individually editable assets, not linked copies.
-- Save the `.blend` to retain changes. Do not rebuild to save your edits.
+- Edit a linked pig body in **Edit Mode** to change its shared shape, including the runner.
+- Distinct authored meshes stay distinct; preparation/export do not force sharing.
+- Move, rotate or scale objects in **Object Mode** for independent placements.
+- Grid boxes remain independently addressable, with checker metadata and material slots.
+- Object-linked materials allow differently colored objects to share mesh data.
+- `Rail_Main` remains an editable Curve; `Rail_Profile` controls its cross-section.
+- Rail terminals, anchors, camera and lighting remain individually editable.
+- Save the `.blend` to retain edits; do not rebuild to save them.
 
 ## Export
 
-Run the updated `export_glb.py` in Object Mode. It exports the current `PrimitiveScene` to `primitive_scene.glb` at the project root without running any builders or saving over the `.blend`.
+Run **`export_glb.py`** after preparation and any authoring changes. The default destination is **`primitive_version/assets/primitive_scene.glb`**; its parent directory is created if needed. An existing GLB at that destination is replaced. The path is relative to the scripts, not the `.blend` location or working directory.
 
-Only the asset collection is exported. Unrelated objects and the bevel-profile helper are excluded. A temporary scene holds export copies. Curves and modified meshes are evaluated to meshes there; source geometry remains editable. Stable object names and custom properties are exported. This is a static snapshot at the current frame, not an animation export.
+Export validates the contract, then snapshots evaluated geometry and world transforms at the current frame **before temporarily renaming any source object**. A temporary scene holds the export copies. Curves and meshes with modifiers/shape keys become evaluated meshes, preserving material overrides. Unmodified linked meshes retain shared data where possible; objects remain independent. Modified objects are evaluated separately because their results may differ.
 
-Blender authoring stays Z-up. GLB export explicitly uses Y-up. Future Three.js integration must apply `gltf.scene.rotation.x = Math.PI / 2` once at the imported root to restore the prototype's Z-up world, not rotate individual children. No Three.js code is changed here.
+Only `PrimitiveScene` assets are included. Bevel-profile helpers and objects with `export_asset=False` are excluded. Required names cannot be excluded. Collection/vertex/face instances and detected evaluated instances (including unrealized Geometry Nodes instances) fail explicitly: realize them yourself before export. Unsupported object types, library-linked objects, excluded view-layer objects and geometry without faces also fail rather than silently disappearing. Enable the asset collection in the active view layer. The object name `PrimitiveScene` is reserved for the exported root.
 
-## Modules
+Source names are restored in cleanup even when the exporter raises; temporary objects, scenes and evaluated meshes are removed. No authored objects are deleted, no source geometry is converted, and no `.blend` is saved. This is a static snapshot, not an animation or rig export. Linked-material/shader export is subject to Blender's glTF material support.
 
-- `config.py`: defaults for missing assets and the export destination.
-- `mesh_assets.py`: shared mesh creation and object-linked material slots.
-- `build_grid.py`, `build_pigs.py`, `build_rail.py`: asset generation.
-- `build_anchors.py`, `build_camera.py`, `build_lighting.py`: scene setup.
-- `materials.py`: create missing materials without resetting existing ones.
-- `build_scene.py`: non-destructive orchestration.
+Authoring stays Z-up; GLB export uses Y-up. Root extras record `authored_up_axis='Z'` and `threejs_import_rotation_x=π/2`. Future Three.js integration must apply `gltf.scene.rotation.x = Math.PI / 2` once at the imported root, not to each child. No JavaScript is changed here.
 
-- `export_glb.py`: static export from live Blender assets.
+## Manual checks in Blender (not run by the coding agent)
 
-## Smoke check in Blender
-
-1. On a new scene, build twice; the second run must not add duplicate assets.
-2. Confirm 676 named grid meshes and 12 pig roots with one mesh child each.
-3. Move the camera, edit a pig vertex and modify a rail point; build again and confirm all edits remain.
-4. Change a pig in Edit Mode; all pigs should update while retaining their colors.
-5. Move one grid object; other objects must not move.
-6. Export and inspect the GLB names, checker metadata, colors and rail surface.
-7. Confirm export did not change the original scene or include unrelated objects.
+1. Open a copy of the authored `.blend`; record pig transforms, mesh links and modifiers.
+2. Prepare twice; confirm 12 exact pig roots and one runner, without extra legacy roots.
+3. Confirm all original pig parts/edits remain and runner parts share their source mesh data.
+4. Check runner world origin is zero and each part retains its source-relative placement.
+5. On a fresh scene, build twice; confirm 676 grid objects and no duplicate asset names.
+6. Edit distinct meshes, materials, camera and rail; prepare/export without losing those edits.
+7. Export a driven modifier using a source-object name; confirm evaluation used the original name.
+8. Confirm the GLB contains all required nodes, independent pig objects and correct materials.
+9. Check a collection instance fails explicitly; check an exporter error restores source names.
+10. Confirm no temporary scene/objects remain and the saved `.blend` was not overwritten.

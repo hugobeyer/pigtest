@@ -4,9 +4,9 @@ import sys
 from pathlib import Path
 
 SCRIPT_DIR=Path(__file__).resolve().parent
-if SCRIPT_DIR.suffix=='.blend': SCRIPT_DIR=SCRIPT_DIR.parent
+if not (SCRIPT_DIR/'asset_contract.py').is_file(): raise RuntimeError('Open the external blender/build_scene.py in the Text Editor; do not paste into an internal text block.')
 if str(SCRIPT_DIR) not in sys.path: sys.path.insert(0, str(SCRIPT_DIR))
-for name in ('config','mesh_assets','materials','build_grid','build_rail','build_pigs','build_anchors','build_camera','build_lighting'):
+for name in ('config','asset_contract','mesh_assets','materials','build_grid','build_rail','build_pigs','build_anchors','build_camera','build_lighting'):
   if name in sys.modules: importlib.reload(sys.modules[name])
 
 from build_anchors import build_anchors
@@ -16,6 +16,7 @@ from build_lighting import build_lighting
 from build_pigs import build_pigs
 from build_rail import build_rail
 from materials import build_materials
+from asset_contract import preflight_pigs, require_assets
 
 
 def collection(parent, name):
@@ -29,6 +30,7 @@ def collection(parent, name):
 
 def build_scene():
   if bpy.context.mode!='OBJECT': raise RuntimeError('Switch to Object Mode before building.')
+  preflight_pigs(bpy.data.objects)
   root=collection(bpy.context.scene.collection, 'PrimitiveScene')
   groups={name:collection(root,name) for name in ('Grid','Rail','Pigs','GameplayAnchors','Camera','Lighting')}
   materials=build_materials()
@@ -38,8 +40,7 @@ def build_scene():
   points=build_anchors(groups['GameplayAnchors'])
   build_camera(groups['Camera'], points['CameraTarget'])
   build_lighting(groups['Lighting'])
-  if any(obj.name.endswith('_Mouth') for obj in groups['Pigs'].objects):
-    print('Legacy split pigs preserved. Run upgrade_assets.py once to combine and link them.')
+  require_assets(root)
   return root
 
 

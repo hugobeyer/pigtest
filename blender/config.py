@@ -55,4 +55,4 @@ KEY_LIGHT_ROTATION=(.55,-.35,.55)
 WORLD_COLOR=(.078,.082,.15)
 MATERIAL_COLORS={'Shell':(.125,.135,.27,1),'Rail':(.402,.471,.953,1),'RailWhite':(.914,.945,1,1),'Dark':(.017,.019,.033,1),'Light':(.896,.914,1,1),'Terminal':(.139,.165,.297,1)}
 IMPORT_ROOT_ROTATION_X=pi*.5
-EXPORT_PATH=Path(__file__).resolve().parent.parent/'primitive_scene.glb'
+EXPORT_PATH=Path(__file__).resolve().parent.parent/'assets'/'primitive_scene.glb'
