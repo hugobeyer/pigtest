@@ -1,0 +1,20 @@
+#include "fof.h"
+
+setup();
+float seed=chf("seed");
+int n=int(fallback(chf("blades"),5));
+float h=fallback(chf("height"),0.45);
+float w=fallback(chf("blade_width"),0.08);
+float base=rnd_range(seed,1,0,0,TAU);
+
+for(int i=0;i<n;i++){
+    int centre=i==0;
+    float a=centre ? base : base+TAU*(i-1)/max(n-1,1)+rnd_range(seed,2,i,-0.35,0.35);
+    float len=h*(centre ? rnd_range(seed,3,i,0.95,1.05) : rnd_range(seed,4,i,0.5,0.82));
+    float tilt=radians(centre ? rnd_range(seed,5,i,-5,5) : rnd_range(seed,6,i,25,58));
+    vector d=set(sin(tilt)*cos(a),cos(tilt),sin(tilt)*sin(a));
+    vector4 q=qmultiply(dihedral(set(0,1,0),d),quaternion(TAU*0.25-a,set(0,1,0)));
+    float bw=w*rnd_range(seed,7,i,0.85,1.15)*(centre ? 1.15 : 1.0);
+    vector cd=lerp(set(0.16,0.6,0.2),set(0.72,0.93,0.18),clamp(len/h*rnd_range(seed,8,i,0.8,1.05),0,1));
+    emit(d*len*0.45,set(bw,len*0.5,bw*0.42),q,cd,"sphere","blade");
+}

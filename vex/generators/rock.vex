@@ -1,0 +1,50 @@
+#include "fof.h"
+
+float rock(vector base; float s; float flat; float seed; float id){
+    vector tone=lerp(set(0.55,0.53,0.5),set(0.7,0.68,0.65),rnd(seed,id,0));
+    float yaw=rnd_range(seed,id,1,0,TAU);
+    float peak=0;
+    int boxes=int(rnd_range(seed,id,2,2,3.99));
+    for(int i=0;i<boxes;i++){
+        vector r=s*set(rnd_range(seed,id,10+i,0.6,0.85),flat*rnd_range(seed,id,20+i,0.55,0.8),rnd_range(seed,id,30+i,0.5,0.75));
+        vector axis=normalize(set(rnd_range(seed,id,40+i,-1,1),rnd_range(seed,id,50+i,-0.3,0.3),rnd_range(seed,id,60+i,-1,1)));
+        vector4 q=qmultiply(quaternion(yaw+rnd_range(seed,id,70+i,-0.6,0.6),set(0,1,0)),quaternion(rnd_range(seed,id,80+i,0.25,0.6),axis));
+        vector p=base+set(rnd_range(seed,id,90+i,-0.18,0.18)*s,r.y*0.55,rnd_range(seed,id,100+i,-0.18,0.18)*s);
+        emit(p,r,q,tone,"box","rock");
+        peak=max(peak,p.y+r.y*0.8);
+    }
+    return peak;
+}
+
+setup();
+float seed=chf("seed");
+float size=fallback(chf("size"),1.0);
+int count=int(fallback(chf("rocks"),3));
+int pebbles=int(fallback(chf("pebbles"),4));
+float flat=fallback(chf("flatness"),0.7);
+float mossChance=chf("moss");
+vector moss=set(0.55,0.85,0.18);
+
+float peak=rock(set(0,0,0),size,flat,seed,1);
+
+float spin=rnd_range(seed,2,0,0,TAU);
+for(int i=1;i<count;i++){
+    float a=spin+TAU*i/count+rnd_range(seed,3,i,-0.4,0.4);
+    rock(set(cos(a),0,sin(a))*size*rnd_range(seed,4,i,0.7,0.95),size*rnd_range(seed,5,i,0.35,0.6),flat,seed,10+i);
+}
+
+for(int i=0;i<pebbles;i++){
+    float a=rnd_range(seed,6,i,0,TAU);
+    rock(set(cos(a),0,sin(a))*size*rnd_range(seed,7,i,1.0,1.4),size*rnd_range(seed,8,i,0.08,0.16),1.0,seed,100+i);
+}
+
+if(rnd(seed,9,0)<mossChance){
+    float a0=rnd_range(seed,10,0,0,TAU);
+    emit(set(0,peak,0),set(size*0.55,size*0.12,size*0.5),aim(set(0,1,0),a0),moss,"sphere","moss");
+    int drips=int(rnd_range(seed,11,0,2,4.99));
+    for(int k=0;k<drips;k++){
+        float a=a0+TAU*k/drips+rnd_range(seed,12,k,-0.4,0.4);
+        float drop=size*rnd_range(seed,13,k,0.12,0.25);
+        emit(set(cos(a),0,sin(a))*size*0.42+set(0,peak-drop*0.8,0),set(size*0.12,drop,size*0.08),aim(set(0,1,0),a),moss,"sphere","moss");
+    }
+}

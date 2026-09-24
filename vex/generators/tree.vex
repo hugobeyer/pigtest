@@ -1,0 +1,53 @@
+#include "fof.h"
+
+vector canopy_color(float y; float lo; float hi; float wobble){
+    return lerp(set(0.06,0.48,0.27),set(0.6,0.9,0.2),clamp(fit(y,lo,hi,0,1)+wobble,0,1));
+}
+
+setup();
+float seed=chf("seed");
+float height=fallback(chf("trunk_height"),1.5);
+float rb=fallback(chf("trunk_radius"),0.3);
+float R=fallback(chf("canopy_radius"),1.3);
+int blobs=int(fallback(chf("blobs"),16));
+int skirt=int(fallback(chf("skirt"),7));
+vector lean=set(rnd_range(seed,1,1,-1,1),0,rnd_range(seed,1,2,-1,1))*fallback(chf("lean"),0.15);
+
+int segs=6;
+for(int i=0;i<segs;i++){
+    float t=i/(segs-1.0);
+    float r=rb*lerp(1.0,0.7,t)*(1+0.35*pow(1-t,3));
+    vector p=set(0,t*height,0)+lean*t*t;
+    emit(p,set(r,height/(segs-1)*0.8,r*rnd_range(seed,2,i,0.88,1.0)),aim(set(0,1,0)+lean*2*t,rnd_range(seed,3,i,0,TAU)),lerp(set(0.72,0.42,0.13),set(0.92,0.6,0.22),t),"sphere","trunk");
+}
+
+int roots=int(rnd_range(seed,4,0,3,5.99));
+for(int i=0;i<roots;i++){
+    float a=TAU*i/roots+rnd_range(seed,5,i,-0.35,0.35);
+    vector d=set(cos(a),0,sin(a));
+    float r=rb*rnd_range(seed,6,i,0.34,0.44);
+    emit(d*rb*0.8+set(0,r*0.6,0),set(r,r*1.9,r*1.05),aim(d-set(0,0.7,0),rnd_range(seed,7,i,0,TAU)),set(0.72,0.42,0.13),"sphere","root");
+}
+
+vector c=set(0,height,0)+lean+set(0,R*0.5,0);
+float lo=c.y-R*0.75, hi=c.y+R*0.85;
+emit(c,set(R*0.78,R*0.6,R*0.78),aim(set(0,1,0),0),canopy_color(c.y,lo,hi,0),"sphere","canopy");
+
+for(int i=0;i<blobs;i++){
+    float u=(i+rnd_range(seed,8,i,-0.3,0.3))/max(blobs-1,1);
+    float y=lerp(0.92,-0.3,u);
+    float a=i*2.39996+rnd_range(seed,9,i,-0.45,0.45);
+    float ring=sqrt(max(0,1-y*y));
+    vector d=set(cos(a)*ring,y,sin(a)*ring);
+    float s=R*rnd_range(seed,10,i,0.34,0.5);
+    vector p=c+set(d.x*R*0.72,d.y*R*0.52,d.z*R*0.72);
+    emit(p,set(s,s*rnd_range(seed,11,i,0.8,0.95),s),aim(d,rnd_range(seed,12,i,0,TAU)),canopy_color(p.y,lo,hi,rnd_range(seed,13,i,-0.06,0.06)),"sphere","canopy");
+}
+
+for(int i=0;i<skirt;i++){
+    float a=TAU*i/skirt+rnd_range(seed,14,i,-0.25,0.25);
+    vector d=set(cos(a),0,sin(a));
+    float s=R*rnd_range(seed,15,i,0.3,0.38);
+    vector p=c+d*R*rnd_range(seed,16,i,0.72,0.82)-set(0,R*0.32,0);
+    emit(p,set(s,s*1.08,s*0.95),aim(d*0.3+set(0,1,0),a),canopy_color(p.y,lo,hi,rnd_range(seed,17,i,-0.05,0.03)),"sphere","canopy");
+}

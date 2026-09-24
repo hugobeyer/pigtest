@@ -1,0 +1,58 @@
+#include "fof.h"
+
+void head(vector c; vector up; float L; int n; vector col; vector centre; float seed; float id){
+    vector4 face=dihedral(set(0,1,0),normalize(up));
+    float spin=rnd_range(seed,id,0,0,TAU);
+    float cup=radians(rnd_range(seed,id,1,8,20));
+    for(int i=0;i<n;i++){
+        float a=spin+TAU*i/n+rnd_range(seed,id,10+i,-0.12,0.12);
+        vector radial=qrotate(face,set(cos(a),0,sin(a)));
+        vector4 q=qmultiply(face,qmultiply(quaternion(-a,set(0,1,0)),quaternion(cup,set(0,0,1))));
+        float pl=L*rnd_range(seed,id,20+i,0.92,1.06);
+        emit(c+radial*pl*0.6+normalize(up)*pl*sin(cup)*0.3,set(pl*0.58,L*0.16,L*0.5),q,col*rnd_range(seed,id,30+i,0.96,1.03),"sphere","petal");
+    }
+    emit(c+normalize(up)*L*0.1,set(L*0.42,L*0.3,L*0.42),face,centre,"sphere","centre");
+}
+
+void stem(vector from; vector to; vector bend; float r){
+    int pieces=3;
+    for(int i=0;i<pieces;i++){
+        float t0=i/float(pieces), t1=(i+1)/float(pieces);
+        vector p0=lerp(lerp(from,bend,t0),lerp(bend,to,t0),t0);
+        vector p1=lerp(lerp(from,bend,t1),lerp(bend,to,t1),t1);
+        emit((p0+p1)*0.5,set(r,length(p1-p0)*0.62,r),aim(p1-p0,0),set(0.2,0.62,0.22),"sphere","stem");
+    }
+}
+
+setup();
+float seed=chf("seed");
+float L=fallback(chf("petal_length"),0.16);
+float stemH=fallback(chf("stem_height"),0.22);
+int n=int(fallback(chf("petals"),5));
+int leaves=int(fallback(chf("leaves"),3));
+int colour=chi("colour");
+vector palette[]={{0.95,0.93,0.86},{1,0.82,0.25},{0.98,0.55,0.7},{0.75,0.55,0.95}};
+vector col=palette[colour>0 ? min(colour-1,3) : int(rnd_range(seed,1,0,0,3.99))];
+vector centre=col==palette[1] ? set(1,0.55,0.08) : set(1,0.76,0.1);
+
+vector top=set(rnd_range(seed,2,0,-1,1)*L*0.25,stemH,rnd_range(seed,2,1,-1,1)*L*0.25);
+vector up=normalize(set(rnd_range(seed,3,0,-0.25,0.25),1,rnd_range(seed,3,1,-0.25,0.25)));
+stem(set(0,0,0),top,set(top.x*0.2+rnd_range(seed,4,0,-1,1)*L*0.2,stemH*0.5,top.z*0.2),L*0.09);
+head(top,up,L,n,col,centre,seed,5);
+
+float spin=rnd_range(seed,6,0,0,TAU);
+for(int i=0;i<leaves;i++){
+    float a=spin+TAU*i/max(leaves,1)+rnd_range(seed,7,i,-0.4,0.4);
+    float tilt=radians(rnd_range(seed,8,i,52,70));
+    float len=L*rnd_range(seed,9,i,1.1,1.45);
+    vector d=set(sin(tilt)*cos(a),cos(tilt),sin(tilt)*sin(a));
+    emit(d*len*0.5,set(L*0.36,len*0.5,L*0.1),qmultiply(dihedral(set(0,1,0),d),quaternion(TAU*0.25-a,set(0,1,0))),lerp(set(0.14,0.52,0.2),set(0.36,0.72,0.2),rnd(seed,10,i)),"sphere","leaf");
+}
+
+if(chi("buddy")){
+    float a=rnd_range(seed,11,0,0,TAU);
+    vector at=set(cos(a),0,sin(a))*L*1.4;
+    vector budTop=at+set(0,stemH*0.55,0);
+    stem(at,budTop,at+set(0,stemH*0.3,0),L*0.07);
+    head(budTop,normalize(set(cos(a)*0.4,1,sin(a)*0.4)),L*0.6,n,col,centre,seed,12);
+}
