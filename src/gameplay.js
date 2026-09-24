@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 import {ROWS, COLS} from './assets.js';
-import {AIM_TIME, ARC_STEPS, CORNER_R, END_OFFSET, ENGAGED_MOVE_SPEED, LANE_GAP, MOUTH_OFFSET, MOVE_SPEED, RUNNER_LIFT, SHOT_RADIUS, SHOT_SPEED, SHOT_TARGET_Z, SIDE_OFFSET, VERTICAL_OFFSET} from './config.js';
+import {createLabel} from './labels.js';
+import {AIM_TIME, ARC_STEPS, CORNER_R, END_OFFSET, ENGAGED_MOVE_SPEED, LANE_GAP, MOUTH_OFFSET, MOVE_SPEED, PIG_AMMO, RAIL_CAPACITY, RUNNER_LIFT, SHOT_RADIUS, SHOT_SPEED, SHOT_TARGET_Z, SIDE_OFFSET, VERTICAL_OFFSET} from './config.js';
 
-let scene, runnerTemplate, grid, pathNodes, entry;
+let scene, runnerTemplate, grid, pathNodes, entry, runnerLift, capacityLabel;
 const runs=[], shots=[];
 const mouthLocal=new THREE.Vector3(...MOUTH_OFFSET);
+const box=new THREE.Box3();
 
 function materialOf(object){
   let material=null;
@@ -61,8 +63,17 @@ export function initGameplay(targetScene,assets){
   pathNodes=createPath(assets.anchors);
   for(const pig of assets.pigs){
     if(typeof pig.userData.is_light!=='boolean')throw new Error(`${pig.name}: invalid is_light metadata`);
-    Object.assign(pig.userData,{clickable:true,used:false,isLight:pig.userData.is_light});
+    box.setFromObject(pig);
+    const label=createLabel(scene);
+    label.position.set(pig.getWorldPosition(new THREE.Vector3()).x,box.getCenter(new THREE.Vector3()).y,box.max.z+.35);
+    label.userData.set(String(PIG_AMMO));
+    Object.assign(pig.userData,{clickable:true,used:false,isLight:pig.userData.is_light,ammo:PIG_AMMO,label});
   }
+  runnerLift=box.setFromObject(runnerTemplate,true).max.z-box.min.z+.35;
+  box.setFromObject(assets.railStart);
+  capacityLabel=createLabel(scene);
+  capacityLabel.position.set(box.getCenter(new THREE.Vector3()).x,box.min.y-.55,box.max.z);
+  capacityLabel.userData.set(`${RAIL_CAPACITY}/${RAIL_CAPACITY}`);
 }
 
 function frontCell(node){
@@ -96,6 +107,7 @@ function fireReserved(run){
   bullet.position.copy(a);
   scene.add(bullet);
   shots.push({mesh:bullet,a,b,t:0,duration:Math.max(.045,a.distanceTo(b)/SHOT_SPEED),cell});
+  run.label.userData.set(String(--run.ammo));
 }
 
 function spawnRunner(material){
@@ -105,6 +117,8 @@ function spawnRunner(material){
   body.visible=true;
   body.traverse(o=>{if(o.isMesh)o.material=material;});
   runner.add(body);
+  runner.userData.label=createLabel(runner);
+  runner.userData.label.position.z=runnerLift;
   runner.position.copy(entry);
   runner.rotation.z=-Math.PI*.5;
   scene.add(runner);
@@ -112,12 +126,16 @@ function spawnRunner(material){
 }
 
 export function startRun(pig){
-  if(pig.userData.used || !pig.visible)return;
+  if(pig.userData.used || !pig.visible || runs.length>=RAIL_CAPACITY)return;
   pig.userData.used=true;
   pig.visible=false;
+  pig.userData.label.visible=false;
   const material=materialOf(pig);
+  const runner=spawnRunner(material);
+  const label=runner.userData.label;
+  label.userData.set(String(pig.userData.ammo));
   runs.push({
-    runner:spawnRunner(material),material,
+    runner,material,label,ammo:pig.userData.ammo,
     isLight:pig.userData.isLight,
     nodeIndex:0,phase:'move',
     from:entry.clone(),to:entry.clone(),
@@ -150,7 +168,7 @@ function beginStep(run){
 
 function advance(run){
   run.nodeIndex++;
-  if(run.nodeIndex>=pathNodes.length){
+  if(run.ammo<=0 || run.nodeIndex>=pathNodes.length){
     scene.remove(run.runner);
     return true;
   }
@@ -211,6 +229,7 @@ function destroyCell(cell){
 
 export function updateGameplay(dt){
   for(let i=runs.length-1;i>=0;i--)if(updateRun(runs[i],dt))runs.splice(i,1);
+  capacityLabel.userData.set(`${RAIL_CAPACITY-runs.length}/${RAIL_CAPACITY}`);
   for(let i=shots.length-1;i>=0;i--){
     const s=shots[i];
     s.t+=dt/s.duration;

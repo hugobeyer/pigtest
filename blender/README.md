@@ -81,6 +81,7 @@ Blender and the exported GLB own the runtime visuals: the grid, pigs, runner, ra
 - Each `Grid_rXX_cYY` node becomes a destructible cell, using its exported `row`, `column` and `is_light` values. Destroying a cell hides that node.
 - Clicking a `Pig_XX` hierarchy hides that imported pig.
 - The hidden `PigRunner` template is cloned for each run from its world transform, and the clone takes the clicked pig's Blender material.
+- Each pig starts with `PIG_AMMO` shots. The runner shows its remaining shots and leaves the rail when it runs out. At most `RAIL_CAPACITY` runners share the rail, and the label under `Rail_Start` shows the free slots. These labels are runtime canvas sprites.
 - Shots aim at the cell's world position. The projectile sphere is the only geometry the runtime creates.
 
 The gameplay path keeps its current node layout:

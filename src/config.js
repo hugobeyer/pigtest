@@ -12,3 +12,5 @@ export const CORNER_R=1.10;
 export const LANE_GAP=.42;
 export const END_OFFSET=.15;
 export const ARC_STEPS=12;
+export const PIG_AMMO=20;
+export const RAIL_CAPACITY=5;

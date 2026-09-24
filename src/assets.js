@@ -19,11 +19,12 @@ export async function loadAssets(url){
     if(object.isLight)lights.push(object);
   });
   lights.forEach(light=>light.parent.remove(light));
-  ['Rail_Start','Rail_Main','Rail_End','GridCenter','CameraTarget'].forEach(name=>requireObject(root,name));
+  ['Rail_Main','Rail_End','GridCenter','CameraTarget'].forEach(name=>requireObject(root,name));
   const runner=requireObject(root,'PigRunner');
   runner.visible=false;
   return {
     root,runner,
+    railStart:requireObject(root,'Rail_Start'),
     anchors:{RailStart:requireObject(root,'RailStart'),RailEnd:requireObject(root,'RailEnd')},
     grid:Array.from({length:ROWS},(_,r)=>Array.from({length:COLS},(_,c)=>requireObject(root,`Grid_r${pad(r)}_c${pad(c)}`))),
     pigs:Array.from({length:PIG_COUNT},(_,i)=>requireObject(root,`Pig_${pad(i)}`))
