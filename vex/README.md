@@ -87,26 +87,33 @@ The centre is a circular polygon. Each petal is a chunky, rounded teardrop outli
 
 ## rock.vex
 
-Group: `rock`, plus a primitive attribute `piece`, one number per cell.
+Group: `rock`, plus a primitive attribute `piece`, one number per piece.
 
-One boulder mass is fractured into Voronoi cells, and each cell becomes a rock piece:
+One boulder form is recursively fractured by oblique planes:
 
-- **Mass:** a faceted domed hull made of `hull_facets` jittered planes around a `width`×`height`×`depth` ellipsoid, sitting on the ground plane (y = 0).
-- **Sites:** `pieces` points are scattered inside the mass, kept at least `spacing` apart, so cell sizes vary naturally.
-- **Pieces:** each piece is bounded by the hull planes, the ground and the bisector planes to every other site, pulled back by `gap`. The planes are blended with a smooth minimum, so the Voronoi faces stay flat and the edges round off (`sharpness`).
-- **Asymmetry:** `asymmetry` shears the whole cluster. It's an affine change, so the seams stay clean.
+- **Form:** a faceted dome hull (`hull_facets` jittered planes around a `width`×`height`×`depth` ellipsoid) sitting on a flat ground at y = 0.
+- **Splits:** each iteration may split a cell, with probability `split_chance`, if it is still bigger than `min_piece` of the whole volume.
+  - The cut goes through the cell's centre, offset by `split_randomness`, across its longest extent.
+  - `diagonal` blends the cut normal from axis-snapped (0) to fully oblique (1).
+  - `vertical_bias` > 0 favours horizontal, layered cuts.
+- **Gap:** each cut leaves a `gap`.
+- **Pieces:** every piece is its convex plane set, meshed as a soft minimum around its centre. Fracture faces stay flat, and edges round off according to `sharpness`.
 
-Process each `piece` on its own (For-Each Named Primitive on `piece`), then merge. Don't union pieces in a smoothed VDB; that is what carves pinched creases. PolyReduce usually keeps the facets without a VDB step.
+Process each `piece` on its own (For-Each Named Primitive on `piece`), then merge. Don't union pieces in a smoothed VDB, which carves pinched creases.
 
 | Parameter | Start | Effect |
 | --- | --- | --- |
 | `seed` | 1 | variation |
-| `width`, `height`, `depth` | 1.4, 1.2, 1.0 | mass size |
-| `pieces` | 5 | Voronoi cells |
-| `spacing` | 0.35 | minimum site distance, relative to the mass size |
-| `gap` | 0.04 | seam width between pieces |
-| `hull_facets` | 14 | outer facets; fewer gives bigger faces |
+| `width`, `height`, `depth` | 1.4, 1.2, 1.0 | form size |
+| `hull_facets` | 12 | outer facets; fewer gives bigger faces |
 | `facet_jitter` | 0.3 | random tilt and distance of the outer facets |
-| `sharpness` | 16 | edge hardness: higher is crisper, lower is rounder |
-| `asymmetry` | 0.15 | shear of the whole cluster |
+| `iterations` | 3 | split rounds (up to 2^n pieces) |
+| `split_chance` | 0.8 | chance a cell splits each round |
+| `min_piece` | 0.08 | smallest piece, as a fraction of the volume |
+| `split_randomness` | 0.5 | how far off-centre cuts land |
+| `diagonal` | 0.7 | 0 axis-aligned cuts, 1 fully oblique |
+| `vertical_bias` | 0 | > 0 favours flatter, layered pieces |
+| `gap` | 0.03 | seam width |
+| `sharpness` | 18 | edge hardness: higher is crisper, lower is rounder |
+| `samples` | 600 | interior sample points, used for centres and extents |
 | `resolution` | 24 | mesh rings per piece; sides are twice this |
