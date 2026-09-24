@@ -4,16 +4,9 @@ Seeded generators for the Fish of Fortune scenery: tree, grass tuft, flower, fen
 
 The shapes are built from a few large ellipsoids and boxes with seeded jitter. There is no fractal noise, no fine detail and no exact repetition.
 
-## Setup
-
-Make the include available once, with either option:
-
-- Add the repo to your Houdini path in `houdini.env`: `HOUDINI_PATH = "/path/to/pigtest;&"`. Then `#include "fof.h"` resolves from `vex/include`.
-- Or paste the contents of `vex/include/fof.h` over the `#include` line.
-
 ## Network (per asset)
 
-1. **Attribute Wrangle**: set **Run Over** to **Detail (only once)**, paste a file from `vex/generators/`, then click **Create spare parameters**.
+1. **Attribute Wrangle**: set **Run Over** to **Detail (only once)**, paste a whole file from `vex/generators/` (each is self-contained), then click **Create spare parameters** to bind the `chf`/`chi` parameters.
 2. **Copy to Points**:
    - Source: a **Merge** of a **Sphere** (Polygon, radius 1, frequency ~6) with prim string `variant = "sphere"`, and a **Box** (size 2) with `variant = "box"`.
    - Target: the wrangle.
