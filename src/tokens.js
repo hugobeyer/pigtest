@@ -18,6 +18,7 @@ export const ANIM={
   vanish:{rise:3.2,duration:.6}
 };
 export const LABEL={height:.8,lift:.35,capacityGap:.55,backOpacity:.45,canvas:[256,128],baseline:4,font:'900 96px "Arial Black", Arial, sans-serif',fill:'#fff',stroke:'#1d1f2e',strokeWidth:18};
+export const SHADING={wrap:.5,power:2,shadowTint:0x8f86b8,rim:{color:0xffffff,strength:.25,power:3}};
 export const ENVIRONMENT={shadowOpacity:.3};
 export const RENDER={background:0x505471,maxPixelRatio:2};
 export const LIGHTS={

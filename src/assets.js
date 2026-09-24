@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {prepareEnvironment} from './environment.js';
+import {shadeGameplay} from './shading.js';
 
 export const PIG_COLUMNS=4;
 
@@ -36,6 +37,7 @@ export async function loadAssets(url){
   });
   lights.forEach(light=>light.parent.remove(light));
   prepareEnvironment(root);
+  shadeGameplay(root);
   ['Rail_Main','Rail_End','CameraTarget'].forEach(name=>requireObject(root,name));
   const camera=root.getObjectByProperty('isPerspectiveCamera',true);
   if(!camera)throw new Error('Missing Blender perspective camera');
