@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {ROWS, COLS} from './assets.js';
 import {AIM_TIME, ARC_STEPS, CORNER_R, END_OFFSET, ENGAGED_MOVE_SPEED, LANE_GAP, MOUTH_OFFSET, MOVE_SPEED, RUNNER_LIFT, SHOT_RADIUS, SHOT_SPEED, SHOT_TARGET_Z, SIDE_OFFSET, VERTICAL_OFFSET} from './config.js';
 
-let scene, runnerTemplate, grid, pathNodes, entry, remaining, onCleared;
+let scene, runnerTemplate, grid, pathNodes, entry;
 const runs=[], shots=[];
 const mouthLocal=new THREE.Vector3(...MOUTH_OFFSET);
 
@@ -54,12 +54,10 @@ function createPath(anchors){
   return nodes;
 }
 
-export function initGameplay(targetScene,assets,cleared){
+export function initGameplay(targetScene,assets){
   scene=targetScene;
   runnerTemplate=assets.runner;
-  onCleared=cleared;
   grid=createCells(assets.grid);
-  remaining=ROWS*COLS;
   pathNodes=createPath(assets.anchors);
   for(const pig of assets.pigs){
     if(typeof pig.userData.is_light!=='boolean')throw new Error(`${pig.name}: invalid is_light metadata`);
@@ -209,7 +207,6 @@ function destroyCell(cell){
   if(!cell.alive)return;
   cell.alive=false;
   cell.object.visible=false;
-  if(--remaining===0)onCleared();
 }
 
 export function updateGameplay(dt){

@@ -73,7 +73,7 @@ function frame(now){
 }
 
 loadAssets(new URL('../assets/primitive_scene.glb',import.meta.url).href).then(assets=>{
-  initGameplay(scene,assets,()=>document.querySelector('#win').style.display='block');
+  initGameplay(scene,assets);
   scene.add(assets.root);
   enableInput(assets.pigs);
   last=performance.now();

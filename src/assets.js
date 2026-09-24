@@ -19,13 +19,12 @@ export async function loadAssets(url){
     if(object.isLight)lights.push(object);
   });
   lights.forEach(light=>light.parent.remove(light));
-  const named=names=>Object.fromEntries(names.map(name=>[name,requireObject(root,name)]));
+  ['Rail_Start','Rail_Main','Rail_End','GridCenter','CameraTarget'].forEach(name=>requireObject(root,name));
   const runner=requireObject(root,'PigRunner');
   runner.visible=false;
   return {
     root,runner,
-    rails:named(['Rail_Start','Rail_Main','Rail_End']),
-    anchors:named(['RailStart','RailEnd','GridCenter','CameraTarget']),
+    anchors:{RailStart:requireObject(root,'RailStart'),RailEnd:requireObject(root,'RailEnd')},
     grid:Array.from({length:ROWS},(_,r)=>Array.from({length:COLS},(_,c)=>requireObject(root,`Grid_r${pad(r)}_c${pad(c)}`))),
     pigs:Array.from({length:PIG_COUNT},(_,i)=>requireObject(root,`Pig_${pad(i)}`))
   };

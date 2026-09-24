@@ -1,10 +1,10 @@
 # Blender asset workflow
 
-The saved `.blend` is the source of truth. Open `primitive_version/source_files/scene.blend` to continue existing work. `config.py` supplies defaults for missing assets, not live overrides of authored geometry, transforms, materials or layout. Normal editing and export do not require rebuilding.
+The saved `.blend` is the source of truth. Open `source_files/scene.blend` to continue existing work. `config.py` supplies defaults for missing assets, not live overrides of authored geometry, transforms, materials or layout. Normal editing and export do not require rebuilding.
 
 ## Sidebar controls
 
-In Blender's Scripting workspace, open `primitive_version/blender/scene_ui.py` and click **Run Script** once. Then open any **3D Viewport**, press **N** and select the **Primitive** tab. Use **Build Missing Assets** for new scenes, **Prepare Scene** for existing legacy pig names, and **Export GLB** to write `assets/primitive_scene.glb`. The panel loads the current scripts directly, so you do not have to open each one. Asset buttons require Object Mode. Export errors appear in the status area and full tracebacks in Blender's system console. **Run Vite & Play** starts the installed local Vite executable at `http://127.0.0.1:5173/`, waits for it to respond, then opens your browser. **Stop Vite** stops only the process started by this panel; no install or external service is involved. Port 5173 must be free. The GLB is not exported automatically when starting Vite; click **Export GLB** first if you have new Blender changes.
+In Blender's Scripting workspace, open `blender/scene_ui.py` and click **Run Script** once. Then open any **3D Viewport**, press **N** and select the **Primitive** tab. Use **Build Missing Assets** for new scenes, **Prepare Scene** for existing legacy pig names, and **Export GLB** to write `assets/primitive_scene.glb`. The panel loads the current scripts directly, so you do not have to open each one. Asset buttons require Object Mode. Export errors appear in the status area and full tracebacks in Blender's system console. **Run Vite & Play** starts the installed local Vite executable at `http://127.0.0.1:5173/`, waits for it to respond, then opens your browser. **Stop Vite** stops only the process started by this panel; no install or external service is involved. Port 5173 must be free. The GLB is not exported automatically when starting Vite; click **Export GLB** first if you have new Blender changes.
 
 Running the script registers the panel for the current Blender session. To keep it after restart, install `scene_ui.py` as a Blender add-on and enable **Primitive Scene Tools** in Preferences. No external packages are required. After changing the panel script, rerun it to refresh its registration.
 
@@ -62,7 +62,7 @@ Existing pig roots are preserved as whole authored hierarchies; the builder does
 
 ## Export
 
-Run **`export_glb.py`** after preparation and any authoring changes. The default destination is **`primitive_version/assets/primitive_scene.glb`**; its parent directory is created if needed. An existing GLB at that destination is replaced. The path is relative to the scripts, not the `.blend` location or working directory.
+Run **`export_glb.py`** after preparation and any authoring changes. The default destination is **`assets/primitive_scene.glb`**; its parent directory is created if needed. An existing GLB at that destination is replaced. The path is relative to the scripts, not the `.blend` location or working directory.
 
 Export validates the contract, then snapshots evaluated geometry and world transforms at the current frame **before temporarily renaming any source object**. A temporary scene holds the export copies. Curves and meshes with modifiers/shape keys become evaluated meshes, preserving material overrides. Unmodified linked meshes retain shared data where possible; objects remain independent. Modified objects are evaluated separately because their results may differ.
 
