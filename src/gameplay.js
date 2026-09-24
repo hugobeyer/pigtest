@@ -3,7 +3,8 @@ import {ROWS, COLS} from './assets.js';
 import {createLabel} from './labels.js';
 import {AIM_TIME, ARC_STEPS, CORNER_R, END_OFFSET, ENGAGED_MOVE_SPEED, LANE_GAP, MOUTH_OFFSET, MOVE_SPEED, PIG_AMMO, RAIL_CAPACITY, RUNNER_LIFT, SHOT_RADIUS, SHOT_SPEED, SHOT_TARGET_Z, SIDE_OFFSET, VERTICAL_OFFSET} from './config.js';
 
-let scene, runnerTemplate, grid, pathNodes, entry, runnerLift, capacityLabel;
+let scene, runnerTemplate, grid, pathNodes, entry, runnerLift, capacityLabel, columns;
+export const tapTargets=[];
 const runs=[], shots=[];
 const mouthLocal=new THREE.Vector3(...MOUTH_OFFSET);
 const box=new THREE.Box3();
@@ -67,13 +68,28 @@ export function initGameplay(targetScene,assets){
     const label=createLabel(scene);
     label.position.set(pig.getWorldPosition(new THREE.Vector3()).x,box.getCenter(new THREE.Vector3()).y,box.max.z+.35);
     label.userData.set(String(PIG_AMMO));
-    Object.assign(pig.userData,{clickable:true,used:false,isLight:pig.userData.is_light,ammo:PIG_AMMO,label});
+    Object.assign(pig.userData,{used:false,front:false,isLight:pig.userData.is_light,ammo:PIG_AMMO,label});
   }
+  const byColumn={};
+  for(const pig of assets.pigs)(byColumn[Math.round(pig.getWorldPosition(new THREE.Vector3()).x*10)]??=[]).push(pig);
+  columns=Object.values(byColumn).map(column=>column.sort((a,b)=>b.getWorldPosition(new THREE.Vector3()).y-a.getWorldPosition(new THREE.Vector3()).y));
+  tapTargets.push(...assets.pigs);
+  refreshFront();
   runnerLift=box.setFromObject(runnerTemplate,true).max.z-box.min.z+.35;
   box.setFromObject(assets.railStart);
   capacityLabel=createLabel(scene);
   capacityLabel.position.set(box.getCenter(new THREE.Vector3()).x,box.min.y-.55,box.max.z);
   capacityLabel.userData.set(`${RAIL_CAPACITY}/${RAIL_CAPACITY}`);
+}
+
+function refreshFront(){
+  for(const column of columns){
+    const front=column.find(pig=>!pig.userData.used);
+    for(const pig of column){
+      pig.userData.front=pig===front;
+      pig.userData.label.material.opacity=pig===front ? 1 : .45;
+    }
+  }
 }
 
 function frontCell(node){
@@ -125,24 +141,25 @@ function spawnRunner(material){
   return runner;
 }
 
-export function startRun(pig){
-  if(pig.userData.used || !pig.visible || runs.length>=RAIL_CAPACITY)return;
-  pig.userData.used=true;
-  pig.visible=false;
-  pig.userData.label.visible=false;
-  const material=materialOf(pig);
+export function tap(object){
+  const pig=object.userData;
+  if(pig.used || !pig.front || runs.length>=RAIL_CAPACITY)return false;
+  pig.used=true;
+  object.visible=false;
+  pig.label.visible=false;
+  refreshFront();
+  const material=materialOf(object);
   const runner=spawnRunner(material);
-  const label=runner.userData.label;
-  label.userData.set(String(pig.userData.ammo));
+  runner.userData.label.userData.set(String(pig.ammo));
   runs.push({
-    runner,material,label,ammo:pig.userData.ammo,
-    isLight:pig.userData.isLight,
+    runner,material,label:runner.userData.label,ammo:pig.ammo,isLight:pig.isLight,
     nodeIndex:0,phase:'move',
     from:entry.clone(),to:entry.clone(),
     stepT:1,stepDuration:0,
     fromRot:-Math.PI*.5,toRot:-Math.PI*.5,
     targetCell:null,activeNode:null,turnT:0,engaged:false
   });
+  return true;
 }
 
 function angleLerp(a,b,t){

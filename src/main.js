@@ -1,7 +1,7 @@
 import './style.css';
 import * as THREE from 'three';
 import {loadAssets} from './assets.js';
-import {initGameplay, startRun, updateGameplay} from './gameplay.js';
+import {initGameplay, tap, tapTargets, updateGameplay} from './gameplay.js';
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x505471);
@@ -51,15 +51,15 @@ scene.add(key,key.target);
 const ray=new THREE.Raycaster();
 const pointer=new THREE.Vector2();
 
-function enableInput(pigs){
+function enableInput(){
   renderer.domElement.addEventListener('pointerdown',e=>{
     const rect=renderer.domElement.getBoundingClientRect();
     pointer.set(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);
     ray.setFromCamera(pointer,camera);
-    for(const hit of ray.intersectObjects(pigs,true)){
+    for(const hit of ray.intersectObjects(tapTargets,true)){
       let o=hit.object;
-      while(o.parent && !o.userData.clickable)o=o.parent;
-      if(o.userData.clickable && !o.userData.used && o.visible){startRun(o); break;}
+      while(o && !tapTargets.includes(o))o=o.parent;
+      if(o && tap(o))break;
     }
   });
 }
@@ -75,7 +75,7 @@ function frame(now){
 loadAssets(new URL('../assets/primitive_scene.glb',import.meta.url).href).then(assets=>{
   initGameplay(scene,assets);
   scene.add(assets.root);
-  enableInput(assets.pigs);
+  enableInput();
   last=performance.now();
   renderer.setAnimationLoop(frame);
 },error=>console.error('Blender GLB failed to load.',error));
