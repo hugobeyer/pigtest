@@ -1,6 +1,24 @@
-import './style.css';
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Open Rail Shooter</title>
+<style>
+html,body,#app{margin:0;width:100%;height:100%;overflow:hidden;background:#171826;font-family:Arial,sans-serif}
+canvas{display:block}
+#hint{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:#0009;color:#fff;padding:7px 11px;border-radius:4px;font-size:12px;font-weight:800;letter-spacing:.07em;pointer-events:none}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js"}}
+</script>
+</head>
+<body>
+<div id="app"></div>
+<div id="hint">CLICK A BOTTOM BOX</div>
+
+<script type="module">
 import * as THREE from 'three';
-import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x505471);
@@ -126,7 +144,6 @@ const X0=-(COLS-1)*STEP*.5;
 const Y0=7.70;
 
 const grid=Array.from({length:ROWS},()=>Array(COLS).fill(null));
-let remaining=ROWS*COLS;
 
 for(let r=0;r<ROWS;r++){
   for(let c=0;c<COLS;c++){
@@ -374,40 +391,6 @@ for(let r=0;r<3;r++){
   }
 }
 
-const blenderAssets={rails:{},anchors:{},grid:Array.from({length:ROWS},()=>Array(COLS)),pigs:[],runner:null};
-
-function requireBlenderObject(root,name){
-  const object=root.getObjectByName(name);
-  if(!object)throw new Error(`Missing Blender object: ${name}`);
-  return object;
-}
-
-function resolveBlenderAssets(blenderRoot){
-  for(const name of ['Rail_Start','Rail_Main','Rail_End'])blenderAssets.rails[name]=requireBlenderObject(blenderRoot,name);
-  for(const name of ['RailStart','RailEnd','GridCenter','CameraTarget'])blenderAssets.anchors[name]=requireBlenderObject(blenderRoot,name);
-  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
-    blenderAssets.grid[r][c]=requireBlenderObject(blenderRoot,`Grid_r${String(r).padStart(2,'0')}_c${String(c).padStart(2,'0')}`);
-    grid[r][c].mesh.visible=false;
-  }
-  for(let index=0;index<pigs.length;index++)blenderAssets.pigs[index]=requireBlenderObject(blenderRoot,`Pig_${String(index).padStart(2,'0')}`);
-  blenderAssets.runner=requireBlenderObject(blenderRoot,'PigRunner');
-  blenderAssets.runner.visible=false;
-  const importedLights=[];
-  blenderRoot.traverse(object=>{
-    if(object.isMesh){object.castShadow=true; object.receiveShadow=true;}
-    if(object.isLight)importedLights.push(object);
-  });
-  importedLights.forEach(light=>light.parent.remove(light));
-}
-
-new GLTFLoader().load(new URL('../assets/primitive_scene.glb',import.meta.url).href,gltf=>{
-  const blenderRoot=gltf.scene;
-  blenderRoot.rotation.x=Math.PI*.5;
-  blenderRoot.updateMatrixWorld(true);
-  resolveBlenderAssets(blenderRoot);
-  scene.add(blenderRoot);
-},undefined,error=>console.error('Blender GLB failed to load.',error));
-
 // ------------------------------------------------------------
 // Front-only occlusion
 // ------------------------------------------------------------
@@ -616,9 +599,6 @@ function destroyCell(cell){
   if(!cell.alive)return;
   cell.alive=false;
   cell.mesh.visible=false;
-  const imported=blenderAssets.grid[cell.r][cell.c];
-  if(imported)imported.visible=false;
-  if(--remaining===0)document.querySelector('#win').style.display='block';
 }
 
 let last=performance.now();
@@ -646,3 +626,6 @@ function frame(now){
   renderer.render(scene,camera);
 }
 renderer.setAnimationLoop(frame);
+</script>
+</body>
+</html>
