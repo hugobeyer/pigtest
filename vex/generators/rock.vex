@@ -1,31 +1,45 @@
 float rnd(float seed; float i; float k){ float v=rand(set(seed+0.37,i*3.14+0.11,k*2.71+0.53)); return v; }
 
-void face(int pts[]){ setprimgroup(0,"rock",addprim(0,"poly",pts),1); }
+void face(int pts[]; int piece){
+    int pr=addprim(0,"poly",pts);
+    setprimgroup(0,"rock",pr,1);
+    setprimattrib(0,"piece",pr,piece);
+}
 
-void rock(vector c; float size; float flat; float h; float asym; float bump; int sides; int rings; float seed; float id){
-    vector lean=set(rnd(seed,id,1)-0.5,0,rnd(seed,id,2)-0.5)*asym*size;
-    int top=addpoint(0,c+set(0,h*size,0)+lean), bottom=addpoint(0,c), ring[];
-    for(int j=1;j<rings;j++)for(int i=0;i<sides;i++){
-        float u=2*PI*i/sides+(rnd(seed,id,j*40+i)-0.5)*1.2/sides;
-        float t=j/float(rings), k=1+(rnd(seed,id,1000+j*40+i)-0.5)*2*bump;
-        float radial=t>0.5 ? lerp(sin(PI*t),1,flat) : sin(PI*t);
-        vector p=set(radial*cos(u)*size*(1+asym*cos(u)*0.3),h*size*(1-t),radial*sin(u)*size*(1+asym*sin(u)*0.2));
-        append(ring,addpoint(0,c+p*k+lean*(1-t)));
+void rock(vector c; vector radii; float shear; int facets; float jitter; float sharp; float cut; int res; float seed; int piece){
+    vector n[]; float d[];
+    for(int i=0;i<facets;i++){
+        float y=1-2*(i+0.5)/facets, r=sqrt(max(0,1-y*y)), a=i*2.39996+(rnd(seed,piece,i)-0.5)*jitter*2;
+        append(n,normalize(set(cos(a)*r,y,sin(a)*r)+(set(rnd(seed,piece,50+i),rnd(seed,piece,60+i),rnd(seed,piece,70+i))-0.5)*jitter));
+        append(d,1+(rnd(seed,piece,100+i)-0.5)*jitter);
     }
+    append(n,set(0,-1,0)); append(d,cut);
+    float lift=cut*radii.y;
+    int top=-1, bottom=-1, ring[];
+    for(int j=0;j<=res;j++)for(int i=0;i<(j==0 || j==res ? 1 : res*2);i++){
+        float v=PI*j/res, u=PI*i/res, sum=0;
+        vector dir=set(sin(v)*cos(u),cos(v),sin(v)*sin(u));
+        for(int k=0;k<len(n);k++){ float dn=dot(dir,n[k]); if(dn>1e-3)sum+=exp(-sharp*d[k]/dn); }
+        vector p=dir*(-log(max(sum,1e-12))/sharp);
+        p=set(p.x*radii.x+shear*p.y*radii.y,p.y*radii.y+lift,p.z*radii.z);
+        int pt=addpoint(0,c+p);
+        if(j==0)top=pt; else if(j==res)bottom=pt; else append(ring,pt);
+    }
+    int sides=res*2, last=(res-2)*sides;
     for(int i=0;i<sides;i++){
-        int n=(i+1)%sides, last=(rings-2)*sides;
-        face(array(top,ring[n],ring[i]));
-        face(array(bottom,ring[last+i],ring[last+n]));
-        for(int j=0;j<rings-2;j++)face(array(ring[j*sides+i],ring[j*sides+n],ring[(j+1)*sides+n],ring[(j+1)*sides+i]));
+        int nx=(i+1)%sides;
+        face(array(top,ring[nx],ring[i]),piece);
+        face(array(bottom,ring[last+i],ring[last+nx]),piece);
+        for(int j=0;j<res-2;j++)face(array(ring[j*sides+i],ring[j*sides+nx],ring[(j+1)*sides+nx],ring[(j+1)*sides+i]),piece);
     }
 }
 
-float seed=chi("seed");
-int sides=max(chi("sides"),3), rings=max(chi("rings"),3), extra=chi("small_rocks");
-float size=chf("size"), flat=chf("flatten"), h=chf("height"), asym=chf("asymmetry"), bump=chf("bumpiness"), smallSize=chf("small_size");
+int seed=chi("seed"), facets=max(chi("facets"),4), res=max(chi("resolution"),3), extra=chi("small_rocks");
+float size=chf("size"), height=chf("height"), depth=chf("depth"), asym=chf("asymmetry"), jitter=chf("facet_jitter");
+float sharp=chf("sharpness"), cut=chf("base_cut"), smallSize=chf("small_size"), spread=chf("small_spread");
 
-rock(set(0,0,0),size,flat,h,asym,bump,sides,rings,seed,1);
+rock(set(0,0,0),set(size,size*height,size*depth),asym,facets,jitter,sharp,cut,res,seed,0);
 for(int i=0;i<extra;i++){
-    float a=rnd(seed,2,i)*2*PI, s=size*smallSize*(0.6+rnd(seed,3,i)*0.6);
-    rock(set(cos(a),0,sin(a))*size*(0.7+rnd(seed,4,i)*0.4),s,flat,h,asym,bump,sides,rings,seed,10+i);
+    float a=(i+rnd(seed,1,i)*0.6)*2*PI/max(extra,1), s=size*smallSize*(0.7+rnd(seed,2,i)*0.6);
+    rock(set(cos(a),0,sin(a))*size*spread,set(s,s*height*(0.8+rnd(seed,3,i)*0.4),s*depth),asym*(rnd(seed,4,i)-0.5)*2,facets,jitter,sharp,cut,res,seed,i+1);
 }

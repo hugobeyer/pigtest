@@ -87,19 +87,30 @@ The centre is a circular polygon. Each petal is a chunky, rounded teardrop outli
 
 ## rock.vex
 
-Group: `rock`.
+Group: `rock`, plus a primitive attribute `piece`, with 0 for the main rock.
 
-Each rock is a closed, low-poly lathe with jittered vertices. `asymmetry` pushes it off-centre and leans the top. Optional smaller rocks overlap around the main one.
+Each rock is a **soft convex polyhedron**:
+- `facets` large planes are spread around the centre, and each plane's distance is jittered.
+- The surface is the smooth minimum of those planes: flat faces, rounded edges. `sharpness` sets how hard the edges are.
+- A flat base is cut by a ground plane.
+- The mesh is a closed lat-long surface, dense enough to hold the facets.
+
+Smaller rocks lean against the main one as separate closed pieces.
+
+**Keep rocks separate, don't union them.** Run each `piece` on its own through remesh or PolyReduce (For-Each Named Primitive on `piece`), then merge. A smoothed VDB union across rocks is what carves the pinched creases between them. This mesh usually needs no VDB at all; PolyReduce keeps the flat facets.
 
 | Parameter | Start | Effect |
 | --- | --- | --- |
 | `seed` | 1 | variation |
 | `size` | 1 | radius |
-| `height` | 0.8 | height, as a fraction of `size` |
-| `flatten` | 0.6 | how wide and flat the lower half stays |
-| `sides` | 7 | sides around |
-| `rings` | 4 | rings from top to bottom |
-| `asymmetry` | 0.3 | off-centre lean and bulge |
-| `bumpiness` | 0.12 | vertex jitter |
+| `height` | 0.85 | height relative to `size` |
+| `depth` | 0.8 | front-to-back relative to `size` |
+| `asymmetry` | 0.25 | leans the top sideways |
+| `facets` | 12 | number of planes; fewer gives bigger facets |
+| `facet_jitter` | 0.25 | random tilt and distance per plane |
+| `sharpness` | 14 | edge hardness: higher is crisper facets, lower is rounder |
+| `base_cut` | 0.55 | height of the flat base cut (0 = middle, 1 = no cut) |
+| `resolution` | 24 | mesh rings; sides are twice this |
 | `small_rocks` | 2 | extra rocks |
-| `small_size` | 0.45 | extra rock size, as a fraction of `size` |
+| `small_size` | 0.5 | extra rock size relative to `size` |
+| `small_spread` | 0.95 | how far out the extra rocks sit |
