@@ -26,7 +26,7 @@ export const LIGHTS={
 export const FX={
   particles:{max:160,gravity:-22,spin:9},
   trail:{length:1.8,headWidth:.4,tailWidth:0,opacity:.85},
-  tap:{count:8,speed:3.5,up:7,life:.5,size:.55},
+  tapRing:{size:1.6,from:.6,to:1.4,duration:.35,lift:.05},
   death:{count:10,speed:4.5,up:8,life:.6,size:.6},
   confetti:{count:50,speed:10,up:16,life:1.4,size:.7},
   blockPop:{amount:.22,peak:.22,duration:.2,rise:.9},

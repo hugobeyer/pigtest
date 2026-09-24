@@ -2,10 +2,10 @@ import * as THREE from 'three';
 import {instantiate} from './assets.js';
 import {createLabel} from './labels.js';
 import {bump, grow, slide, tween} from './tweens.js';
-import {emit} from './fx/particles.js';
+import {tapRing} from './fx/ring.js';
 import {ANIM, FX, LABEL, PIGS} from './tokens.js';
 
-let scene, columns, templates, labelLift;
+let scene, columns, templates, pigHeight, labelLift;
 export const tapTargets=[];
 
 function spawn(pig,position){
@@ -34,7 +34,8 @@ export function createPigs(targetScene,columnObjects,pigTemplates){
   scene=targetScene;
   templates=pigTemplates;
   const box=new THREE.Box3().setFromObject(templates.dark,true);
-  labelLift=box.max.z-box.min.z+LABEL.lift;
+  pigHeight=box.max.z-box.min.z;
+  labelLift=pigHeight+LABEL.lift;
   columns=columnObjects.map(columnObject=>{
     const {queue,row_step:rowStep}=columnObject.userData;
     if(!/^[DL]+$/.test(queue) || !(rowStep>0))throw new Error(`${columnObject.name}: requires queue (D/L) and positive row_step`);
@@ -62,7 +63,7 @@ export function takePig(object){
   if(!column || column.busy)return null;
   column.busy=true;
   bump(object,ANIM.tapBump);
-  emit(object.position,object.userData.pig.isLight,FX.tap);
+  tapRing(scene,object.position,pigHeight);
   object.children[0].position.z=0;
   tween(ANIM.tapBump.duration,null,()=>advance(column));
   return object.userData.pig;

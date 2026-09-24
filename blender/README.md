@@ -78,7 +78,8 @@ The runtime builds its state from the imported nodes (`src/grid.js`, `src/pigs.j
 - Each `PigColumn` shows `PIGS.visibleRows` pigs, cloned from `Pig_Light` or `Pig_Dark` by queue colour, spaced by `row_step` behind the Empty. Only the front pig can be tapped. The column slides forward and the next `queue` entry appears at the back.
 - Runners are clones of the tapped pig's model; their shots are clones of `Bullet_Light` or `Bullet_Dark`, each followed by a flat fading ribbon (`src/fx/trail.js`) in the bullet's colour, sized by `FX.trail`.
 - When every cell is destroyed, a flat win panel appears after `WIN.delay`; tapping it restarts.
-- Effects live in `src/fx/` and are tuned by `FX` in `src/tokens.js`: pooled particles (instanced copies of the grid block meshes) for pig taps, runner deaths and win confetti; blocks bump, then shrink and rise away; shot-count and rail-counter punches; front-pig idle bob; screen shake when a row or column clears; a random combo word (never the same twice in a row) every `FX.combo.every` hits.
+- Tapping a pig shows a flat ring quad above it that scales up and fades (`src/fx/ring.js`, `FX.tapRing`), textured with `assets/fx/tap_ring.png`; replace that PNG to restyle it.
+- Effects live in `src/fx/` and are tuned by `FX` in `src/tokens.js`: pooled particles (instanced copies of the grid block meshes) for runner deaths and win confetti; blocks bump, then shrink and rise away; shot-count and rail-counter punches; front-pig idle bob; screen shake when a row or column clears; a random combo word (never the same twice in a row) every `FX.combo.every` hits.
 - Each pig starts with `PIGS.ammo` shots. The runner shows its remaining shots and leaves the rail when it runs out. At most `PIGS.railCapacity` runners share the rail, and the label under `Rail_Start` shows the free slots. These labels are runtime canvas sprites.
 
 The gameplay path keeps its current node layout:
