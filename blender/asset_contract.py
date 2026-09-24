@@ -4,8 +4,9 @@ from collections import Counter
 PIG_NAMES=tuple(f'Pig_{index:02}' for index in range(12))
 GRID_NAMES=tuple(f'Grid_r{row:02}_c{col:02}' for row in range(26) for col in range(26))
 RAIL_NAMES=('Rail_Start','Rail_Main','Rail_End')
+SLOT_NAMES=tuple(f'Slot_{index}' for index in range(5))
 ANCHOR_NAMES=('RailStart','RailEnd','GridCenter','CameraTarget')
-REQUIRED_NAMES=(*PIG_NAMES,'PigRunner',*RAIL_NAMES,*GRID_NAMES,*ANCHOR_NAMES)
+REQUIRED_NAMES=(*PIG_NAMES,'PigRunner',*RAIL_NAMES,*GRID_NAMES,*SLOT_NAMES,*ANCHOR_NAMES)
 LEGACY_PIG=re.compile(r'^Pig_(\d+)_(\d+)$')
 RENDERABLE_TYPES={'MESH','CURVE'}
 
@@ -36,7 +37,7 @@ def validate_assets(root):
   legacy=[obj.name for obj in root.all_objects if LEGACY_PIG.fullmatch(re.sub(r'\.\d+$','',obj.name))]
   if legacy: errors.append('Legacy pig roots require prepare_export.py: '+', '.join(legacy))
   renderable_counts={}
-  for name in (*PIG_NAMES,'PigRunner',*RAIL_NAMES,*GRID_NAMES):
+  for name in (*PIG_NAMES,'PigRunner',*RAIL_NAMES,*GRID_NAMES,*SLOT_NAMES):
     obj=by_name.get(name)
     if obj is None: continue
     parts=[part for part in (obj,*obj.children_recursive) if part in object_set and part.type in RENDERABLE_TYPES]
@@ -57,6 +58,9 @@ def validate_assets(root):
       for key,value in expected.items():
         if key not in obj or obj[key]!=value: errors.append(f'{name}: expected {key}={value}')
       if 'is_light' not in obj or obj['is_light'] not in (True,False): errors.append(f'{name} requires boolean is_light metadata')
+  for index,name in enumerate(SLOT_NAMES):
+    obj=by_name.get(name)
+    if obj is not None and obj.get('slot')!=index: errors.append(f'{name}: expected slot={index}')
   for name in ANCHOR_NAMES:
     if name in by_name and by_name[name].type!='EMPTY': errors.append(f'{name} must be an Empty')
   return {'missing':missing,'duplicates':duplicates,'errors':errors,'renderable_counts':renderable_counts,'object_count':len(objects)}

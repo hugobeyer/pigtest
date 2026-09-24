@@ -37,11 +37,12 @@ Preparation validates the result and reports missing or invalid assets rather th
 | Pigs | `Pig_00` through `Pig_11`, plus `PigRunner` |
 | Rail | `Rail_Start`, `Rail_Main`, `Rail_End` |
 | Grid | `Grid_r00_c00` through `Grid_r25_c25` (676 objects) |
+| Slots | `Slot_0` through `Slot_4` |
 | Anchors | `RailStart`, `RailEnd`, `GridCenter`, `CameraTarget` (Empties) |
 
-Pigs, runner, rail and grid must have an exportable mesh/curve on the object or in its descendants. Multipart pigs are supported; one mesh per pig is not required. Pig roots cannot be nested inside one another. Required names with Blender suffixes such as `.001`, legacy roots, and out-of-range pig/grid names are reported, not silently accepted.
+Pigs, runner, rail, grid and slots must have an exportable mesh/curve on the object or in its descendants. Multipart pigs are supported; one mesh per pig is not required. Pig roots cannot be nested inside one another. Required names with Blender suffixes such as `.001`, legacy roots, and out-of-range pig/grid names are reported, not silently accepted.
 
-Grid metadata must include matching `row`, `column`, `checker_row`, `checker_column` and boolean `is_light`; pigs and runner need boolean `is_light`. Existing colors and light/dark choices are not reset. `validate_assets(root)` returns missing names, duplicates, errors, per-asset renderable hierarchy counts and total export-object count. `require_assets(root)` raises on failures.
+Grid metadata must include matching `row`, `column`, `checker_row`, `checker_column` and boolean `is_light`; pigs and runner need boolean `is_light`. Slots need an integer `slot` matching their index. Existing colors and light/dark choices are not reset. `validate_assets(root)` returns missing names, duplicates, errors, per-asset renderable hierarchy counts and total export-object count. `require_assets(root)` raises on failures.
 
 ## Create or complete a scene
 
