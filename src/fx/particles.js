@@ -10,13 +10,12 @@ export function initParticles(scene,blocks){
     blocks[key].traverse(o=>{if(!template && o.isMesh)template=o;});
     const mesh=new THREE.InstancedMesh(template.geometry,template.material,FX.particles.max);
     mesh.frustumCulled=false;
-    mesh.castShadow=true;
     const items=Array.from({length:FX.particles.max},(_,i)=>{
       mesh.setMatrixAt(i,new THREE.Matrix4().makeScale(0,0,0));
       return {age:0,life:0,size:0,position:new THREE.Vector3(),velocity:new THREE.Vector3(),spin:new THREE.Vector3()};
     });
     scene.add(mesh);
-    pools[key]={mesh,items,next:0};
+    pools[key]={mesh,items,next:0,active:0};
   }
 }
 
@@ -33,12 +32,17 @@ export function emit(position,isLight,{count,speed,up,life,size}){
     p.life=life*(.7+Math.random()*.3);
     p.size=size;
   }
+  pool.active=pool.items.length;
 }
 
 export function updateParticles(dt){
-  for(const {mesh,items} of Object.values(pools)){
+  for(const pool of Object.values(pools)){
+    if(!pool.active)continue;
+    const {mesh,items}=pool;
+    let active=0;
     items.forEach((p,i)=>{
       if(p.life<=0)return;
+      active++;
       p.age+=dt;
       const k=Math.min(p.age/p.life,1);
       p.velocity.z+=FX.particles.gravity*dt;
@@ -51,5 +55,6 @@ export function updateParticles(dt){
       if(k>=1)p.life=0;
     });
     mesh.instanceMatrix.needsUpdate=true;
+    pool.active=active;
   }
 }

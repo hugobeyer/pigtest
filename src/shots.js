@@ -20,7 +20,8 @@ export function updateShots(dt){
     s.t+=dt/s.duration;
     const k=Math.min(s.t,1);
     s.mesh.position.lerpVectors(s.from,s.to,k);
-    emit(s.mesh.position,s.cell.isLight,FX.trail);
+    s.trail=(s.trail??0)+dt;
+    if(s.trail>=FX.trail.interval){s.trail=0; emit(s.mesh.position,s.cell.isLight,FX.trail);}
     if(k>=1){
       destroyCell(s.cell);
       s.scene.remove(s.mesh);

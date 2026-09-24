@@ -20,12 +20,12 @@ export const LIGHTS={
   key:{color:0xffffff,intensity:2.65,position:[10,-14,18],target:[0,1.5,0],shadowMapSize:2048,shadowCamera:{left:-18,right:18,top:22,bottom:-22,near:.5,far:70},bias:-.00035,normalBias:.025,radius:2.0}
 };
 export const FX={
-  particles:{max:600,gravity:-22,spin:9},
-  hit:{count:6,speed:3.5,up:6,life:.45,size:.45},
-  trail:{count:1,speed:.3,up:.4,life:.16,size:.35},
-  tap:{count:12,speed:3.5,up:7,life:.5,size:.55},
-  death:{count:16,speed:4.5,up:8,life:.6,size:.6},
-  confetti:{count:90,speed:10,up:16,life:1.4,size:.7},
+  particles:{max:160,gravity:-22,spin:9},
+  hit:{count:3,speed:3.5,up:6,life:.45,size:.45},
+  trail:{count:1,interval:.05,speed:.3,up:.4,life:.16,size:.35},
+  tap:{count:8,speed:3.5,up:7,life:.5,size:.55},
+  death:{count:10,speed:4.5,up:8,life:.6,size:.6},
+  confetti:{count:50,speed:10,up:16,life:1.4,size:.7},
   blockPop:{amount:.3,peak:.3,duration:.14},
   numberPunch:{amount:.4,duration:.12},
   counterPunch:{amount:.35,duration:.16},
