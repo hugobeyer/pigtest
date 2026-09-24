@@ -37,7 +37,7 @@ export async function loadAssets(url){
   ['Rail_Main','Rail_End','CameraTarget'].forEach(name=>requireObject(root,name));
   const camera=root.getObjectByProperty('isOrthographicCamera',true);
   if(!camera)throw new Error('Missing Blender orthographic camera');
-  const [pigLight,pigDark,bulletLight,bulletDark,trailLight,trailDark,light,dark]=['Pig_Light','Pig_Dark','Bullet_Light','Bullet_Dark','Trail_Light','Trail_Dark','Grid_Block_Light','Grid_Block_Dark'].map(name=>{
+  const [pigLight,pigDark,bulletLight,bulletDark,light,dark]=['Pig_Light','Pig_Dark','Bullet_Light','Bullet_Dark','Grid_Block_Light','Grid_Block_Dark'].map(name=>{
     const object=requireObject(root,name);
     object.visible=false;
     return object;
@@ -46,7 +46,6 @@ export async function loadAssets(url){
     root,camera,
     pigs:{light:pigLight,dark:pigDark},
     bullets:{light:bulletLight,dark:bulletDark},
-    trails:{light:trailLight,dark:trailDark},
     blocks:{light,dark},
     gridCenter:requireObject(root,'GridCenter'),
     railStart:requireObject(root,'Rail_Start'),

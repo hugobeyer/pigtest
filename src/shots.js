@@ -1,19 +1,16 @@
-import * as THREE from 'three';
 import {instantiate} from './assets.js';
 import {destroyCell} from './grid.js';
+import {createTrail} from './fx/trail.js';
 import {FX, SHOT} from './tokens.js';
 
 const shots=[];
-const axis=new THREE.Vector3(0,1,0);
 
-export function fireShot(scene,from,cell,bulletTemplate,trailTemplate){
-  const mesh=instantiate(bulletTemplate), trail=instantiate(trailTemplate);
+export function fireShot(scene,from,cell,bulletTemplate){
+  const mesh=instantiate(bulletTemplate);
   const to=cell.position.clone();
   to.z=SHOT.targetZ;
   mesh.position.copy(from);
-  trail.position.copy(from);
-  trail.quaternion.setFromUnitVectors(axis,to.clone().sub(from).normalize());
-  trail.scale.y=0;
+  const trail=createTrail(bulletTemplate,from,to);
   scene.add(mesh,trail);
   const distance=from.distanceTo(to);
   shots.push({scene,mesh,trail,from,to,distance,t:0,duration:Math.max(SHOT.minDuration,distance/SHOT.speed),cell});

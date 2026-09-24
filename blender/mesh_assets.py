@@ -46,18 +46,3 @@ def sphere_mesh(name, radius, material):
   mesh.materials.append(material)
   return mesh
 
-
-def trail_mesh(name, radius, material):
-  mesh=bpy.data.meshes.get(name)
-  if mesh: return mesh
-  import bmesh
-  from math import pi
-  from mathutils import Matrix
-  bm=bmesh.new()
-  bmesh.ops.create_cone(bm, cap_ends=True, segments=8, radius1=0, radius2=radius, depth=1)
-  bmesh.ops.transform(bm, matrix=Matrix.Translation((0,.5,0))@Matrix.Rotation(-pi*.5,4,'X'), verts=bm.verts)
-  mesh=bpy.data.meshes.new(name)
-  bm.to_mesh(mesh)
-  bm.free()
-  mesh.materials.append(material)
-  return mesh

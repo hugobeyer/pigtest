@@ -21,7 +21,7 @@ export function initGameplay(scene,assets){
   initShake(assets.camera);
   const grid=createGrid(scene,assets.gridCenter,assets.blocks);
   totalBlocks=remainingCells();
-  initRunners(scene,pigTemplates,assets.bullets,assets.trails,createPath(grid,assets.anchors));
+  initRunners(scene,pigTemplates,assets.bullets,createPath(grid,assets.anchors));
   createPigs(scene,assets.columns,pigTemplates);
   const box=new THREE.Box3().setFromObject(assets.railStart);
   capacityLabel=createLabel(scene);

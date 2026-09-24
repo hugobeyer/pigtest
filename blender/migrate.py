@@ -83,6 +83,8 @@ def migrate_runner(root):
 
 
 def migrate(root):
+  for name in ('Trail_Light','Trail_Dark'):
+    if root.all_objects.get(name): remove_tree(root.all_objects[name])
   migrate_runner(root)
   migrate_pigs(root)
   migrate_grid(root)
