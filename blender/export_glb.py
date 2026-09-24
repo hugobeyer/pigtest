@@ -22,7 +22,8 @@ def export_glb(path=EXPORT_PATH):
   source_scene=bpy.context.scene
   sources=export_objects(root)
   environment=bpy.data.collections.get('Environment')
-  if environment: sources+=[obj for obj in export_objects(environment) if obj not in sources]
+  scenery=[obj for obj in export_objects(environment) if obj not in sources] if environment else []
+  sources+=scenery
   sources.sort(key=lambda obj:sum(1 for _ in ancestors(obj)))
   for obj in sources:
     if obj.library: raise ValueError(f'{obj.name}: library-linked objects require explicit localization before export.')
@@ -85,6 +86,7 @@ def export_glb(path=EXPORT_PATH):
       copies[obj]=copy
       if mesh is not None: copy.data=mesh
       for key,value in obj.items(): copy[key]=value
+      if obj in scenery: copy['environment']=True
       temporary.collection.objects.link(copy)
       copy.hide_viewport=False
       copy.hide_render=False
