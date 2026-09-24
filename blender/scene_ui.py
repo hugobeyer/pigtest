@@ -61,7 +61,7 @@ class PRIMITIVE_OT_pull(bpy.types.Operator):
 class PRIMITIVE_OT_build(bpy.types.Operator):
   bl_idname='primitive.build_scene'
   bl_label='Build Missing Assets'
-  bl_description='Create missing scene assets; keep existing Blender edits'
+  bl_description='Convert old pig/grid objects, then create missing scene assets; keep existing Blender edits'
 
   @classmethod
   def poll(cls, context): return context.mode=='OBJECT'
@@ -74,26 +74,6 @@ class PRIMITIVE_OT_build(bpy.types.Operator):
       self.report({'ERROR'},str(error))
       return {'CANCELLED'}
     self.report({'INFO'},'Missing assets built; existing objects preserved')
-    return {'FINISHED'}
-
-
-class PRIMITIVE_OT_prepare(bpy.types.Operator):
-  bl_idname='primitive.prepare_export'
-  bl_label='Prepare Scene'
-  bl_description='Convert old Pig_XX and Grid_rXX_cYY objects into pig columns and grid blocks; save the blend afterwards'
-  bl_options={'REGISTER','UNDO'}
-
-  @classmethod
-  def poll(cls, context): return context.mode=='OBJECT'
-
-  def execute(self, context):
-    try:
-      run_module('prepare_export','prepare_export')
-    except Exception as error:
-      traceback.print_exc()
-      self.report({'ERROR'},str(error))
-      return {'CANCELLED'}
-    self.report({'INFO'},'Prepared for export; save the .blend to retain changes')
     return {'FINISHED'}
 
 
@@ -182,7 +162,6 @@ class PRIMITIVE_PT_assets(bpy.types.Panel):
     layout.operator('primitive.pull',icon='FILE_REFRESH')
     layout.separator()
     layout.operator('primitive.build_scene',icon='MESH_CUBE')
-    layout.operator('primitive.prepare_export',icon='OUTLINER_OB_EMPTY')
     layout.separator()
     layout.operator('primitive.export_glb',icon='EXPORT')
     layout.separator()
@@ -191,7 +170,7 @@ class PRIMITIVE_PT_assets(bpy.types.Panel):
     layout.label(text='Save the .blend after editing or preparing')
 
 
-classes=(PRIMITIVE_OT_pull,PRIMITIVE_OT_build,PRIMITIVE_OT_prepare,PRIMITIVE_OT_export,PRIMITIVE_OT_play,PRIMITIVE_OT_stop,PRIMITIVE_PT_assets)
+classes=(PRIMITIVE_OT_pull,PRIMITIVE_OT_build,PRIMITIVE_OT_export,PRIMITIVE_OT_play,PRIMITIVE_OT_stop,PRIMITIVE_PT_assets)
 
 
 def register():

@@ -37,7 +37,7 @@ def validate_assets(root):
   duplicates.extend(obj.name for obj in root.all_objects if re.sub(r'\.\d+$','',obj.name) in REQUIRED_NAMES and obj.name not in REQUIRED_NAMES)
   errors=[]
   obsolete=[obj.name for obj in root.all_objects if OBSOLETE.fullmatch(re.sub(r'\.\d+$','',obj.name))]
-  if obsolete: errors.append(f'Obsolete pig/grid objects require prepare_export.py: {len(obsolete)} found, e.g. '+', '.join(obsolete[:4]))
+  if obsolete: errors.append(f'Obsolete pig/grid objects require Build Missing Assets: {len(obsolete)} found, e.g. '+', '.join(obsolete[:4]))
   renderable_counts={}
   for name in RENDERABLE_NAMES:
     obj=by_name.get(name)
@@ -73,7 +73,3 @@ def require_assets(root):
   if problems: raise ValueError('Asset contract failed:\n'+'\n'.join(problems))
   return report
 
-
-def preflight(objects):
-  obsolete=[obj.name for obj in objects if OBSOLETE.fullmatch(re.sub(r'\.\d+$','',obj.name))]
-  if obsolete: raise ValueError('Obsolete pig/grid objects found; run prepare_export.py before building.')

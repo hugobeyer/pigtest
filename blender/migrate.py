@@ -1,17 +1,7 @@
 import bpy
-import importlib
 import re
-import sys
-from pathlib import Path
-
-SCRIPT_DIR=Path(__file__).resolve().parent
-if SCRIPT_DIR.suffix=='.blend': SCRIPT_DIR=SCRIPT_DIR.parent.parent/'blender'
-if str(SCRIPT_DIR) not in sys.path: sys.path.insert(0,str(SCRIPT_DIR))
-for name in ('config','asset_contract'):
-  if name in sys.modules: importlib.reload(sys.modules[name])
-
 from config import PIG_QUEUE_LENGTH, PIG_ROW_STEP
-from asset_contract import PIG_COLUMN_NAMES, require_assets
+from asset_contract import PIG_COLUMN_NAMES
 
 
 def remove_tree(obj):
@@ -67,15 +57,6 @@ def migrate_grid(root):
     obj.name=name
 
 
-def prepare_export():
-  if bpy.context.mode!='OBJECT': raise RuntimeError('Switch to Object Mode before preparing.')
-  root=bpy.data.collections.get('PrimitiveScene')
-  if not root: raise RuntimeError('PrimitiveScene is missing; open the authored .blend first.')
+def migrate(root):
   migrate_pigs(root)
   migrate_grid(root)
-  report=require_assets(root)
-  print(f"Prepared {report['object_count']} export objects. Save the .blend to retain preparation.")
-  return report
-
-
-if __name__=='__main__': prepare_export()

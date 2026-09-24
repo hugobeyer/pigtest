@@ -4,25 +4,25 @@ The saved `.blend` is the source of truth. Open `source_files/scene.blend` to co
 
 ## Sidebar controls
 
-In Blender's Scripting workspace, open `blender/scene_ui.py` and click **Run Script** once. Then open any **3D Viewport**, press **N** and select the **Primitive** tab. **Pull Latest** runs `git pull --ff-only` in the project folder and reloads the panel; if the pull brings a newer `.blend`, it tells you to use **File > Revert**. Use **Build Missing Assets** for new scenes, **Prepare Scene** to convert an older scene with 12 pig objects and 676 grid objects, and **Export GLB** to write `assets/primitive_scene.glb`. The panel loads the current scripts directly, so you do not have to open each one. Asset buttons require Object Mode. Export errors appear in the status area and full tracebacks in Blender's system console. **Run Vite & Play** starts the installed local Vite executable at `http://127.0.0.1:5173/`, waits for it to respond, then opens your browser. **Stop Vite** stops only the process started by this panel; no install or external service is involved. Port 5173 must be free. The GLB is not exported automatically when starting Vite; click **Export GLB** first if you have new Blender changes.
+In Blender's Scripting workspace, open `blender/scene_ui.py` and click **Run Script** once. Then open any **3D Viewport**, press **N** and select the **Primitive** tab. **Pull Latest** runs `git pull --ff-only` in the project folder and reloads the panel; if the pull brings a newer `.blend`, it tells you to use **File > Revert**. Use **Build Missing Assets** to convert an older scene and create anything missing, and **Export GLB** to write `assets/primitive_scene.glb`. The panel loads the current scripts directly, so you do not have to open each one. Asset buttons require Object Mode. Export errors appear in the status area and full tracebacks in Blender's system console. **Run Vite & Play** starts the installed local Vite executable at `http://127.0.0.1:5173/`, waits for it to respond, then opens your browser. **Stop Vite** stops only the process started by this panel; no install or external service is involved. Port 5173 must be free. The GLB is not exported automatically when starting Vite; click **Export GLB** first if you have new Blender changes.
 
 Running the script registers the panel for the current Blender session. To keep it after restart, install `scene_ui.py` as a Blender add-on and enable **Primitive Scene Tools** in Preferences. No external packages are required. After changing the panel script, rerun it to refresh its registration.
 
 Scripts do not save the `.blend` automatically. Save explicitly in Blender after authoring or preparation. Export does not persist preparation on your behalf.
 
-## Prepare an older scene
+## Converting an older scene
 
-Run **`prepare_export.py` once**, then save the `.blend`. It converts the old layout:
+**Build Missing Assets** first runs `migrate.py`, which converts the old layout automatically; save the `.blend` afterwards:
 
 - `Pig_00` … `Pig_11` become `PigColumn_0` … `PigColumn_3`, one Empty per column at its front pig. `queue` keeps the three authored colors and continues alternating to `PIG_QUEUE_LENGTH`. `row_step` is the authored spacing between rows. The old pig objects and their bodies are deleted.
 - `Grid_rXX_cYY` become `Grid_Block_Light` and `Grid_Block_Dark` (one light and one dark cell are kept and renamed). `GridCenter` gets `rows`, `columns`, `step` and `checker` from the old cells and is centred on them. The other cells are deleted.
 - `PigRunner` is kept and becomes the single pig model.
 
-It fails explicitly if the new names already exist, and validates the result.
+It fails explicitly if the new names already exist alongside old objects.
 
 ## Exact asset contract
 
-`asset_contract.py` is shared by preparation, building and export:
+`asset_contract.py` is shared by building and export:
 
 | Assets | Required names |
 | --- | --- |
@@ -38,7 +38,7 @@ Each `PigColumn` needs `queue` (text of `D`/`L`, front first) and a positive `ro
 
 ## Create or complete a scene
 
-Run **`build_scene.py`** only to generate missing assets. It creates the exact names above. Leftover `Pig_XX`/`Grid_rXX_cYY` objects cause a preflight error before any building: prepare them first.
+Run **`build_scene.py`** only to generate missing assets. It creates the exact names above. Old `Pig_XX`/`Grid_rXX_cYY` objects are converted first.
 
 Existing geometry, transforms, materials, camera settings, anchors and lighting are not reset. Unrelated scene objects remain untouched. Keep required names stable: deleting or renaming assets can cause a later build to create missing names again. Config layout changes affect only newly created assets; grid size and pig queues live on `GridCenter` and the `PigColumn` Empties.
 
@@ -92,7 +92,7 @@ The runtime uses the exported Blender scene camera: its transform, orthographic 
 
 ## Manual checks in Blender (not run by the coding agent)
 
-1. Run **Prepare Scene** on the authored `.blend`; confirm 4 `PigColumn` Empties, two `Grid_Block` objects and no `Pig_XX`/`Grid_rXX_cYY` left.
+1. Run **Build Missing Assets** on the authored `.blend`; confirm 4 `PigColumn` Empties, two `Grid_Block` objects and no `Pig_XX`/`Grid_rXX_cYY` left.
 2. Check each column's `queue` and `row_step`, and `GridCenter`'s grid properties.
 3. Build twice; confirm nothing is duplicated.
 4. Export and confirm the game shows the full grid and three pigs per column.
