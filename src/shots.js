@@ -1,17 +1,22 @@
+import * as THREE from 'three';
 import {instantiate} from './assets.js';
 import {destroyCell} from './grid.js';
-import {emit} from './fx/particles.js';
 import {FX, SHOT} from './tokens.js';
 
 const shots=[];
+const axis=new THREE.Vector3(0,1,0);
 
-export function fireShot(scene,from,cell,template){
-  const mesh=instantiate(template);
+export function fireShot(scene,from,cell,bulletTemplate,trailTemplate){
+  const mesh=instantiate(bulletTemplate), trail=instantiate(trailTemplate);
   const to=cell.position.clone();
   to.z=SHOT.targetZ;
   mesh.position.copy(from);
-  scene.add(mesh);
-  shots.push({scene,mesh,from,to,t:0,duration:Math.max(SHOT.minDuration,from.distanceTo(to)/SHOT.speed),cell});
+  trail.position.copy(from);
+  trail.quaternion.setFromUnitVectors(axis,to.clone().sub(from).normalize());
+  trail.scale.y=0;
+  scene.add(mesh,trail);
+  const distance=from.distanceTo(to);
+  shots.push({scene,mesh,trail,from,to,distance,t:0,duration:Math.max(SHOT.minDuration,distance/SHOT.speed),cell});
 }
 
 export function updateShots(dt){
@@ -20,11 +25,12 @@ export function updateShots(dt){
     s.t+=dt/s.duration;
     const k=Math.min(s.t,1);
     s.mesh.position.lerpVectors(s.from,s.to,k);
-    s.trail=(s.trail??0)+dt;
-    if(s.trail>=FX.trail.interval){s.trail=0; emit(s.mesh.position,s.cell.isLight,FX.trail);}
+    const length=Math.min(s.distance*k,FX.trail.length);
+    s.trail.position.lerpVectors(s.from,s.to,k-length/s.distance);
+    s.trail.scale.y=length;
     if(k>=1){
       destroyCell(s.cell);
-      s.scene.remove(s.mesh);
+      s.scene.remove(s.mesh,s.trail);
       shots.splice(i,1);
     }
   }

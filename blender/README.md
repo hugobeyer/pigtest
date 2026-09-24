@@ -28,7 +28,7 @@ It fails explicitly if the new names already exist alongside old objects.
 | --- | --- |
 | Pigs | `PigColumn_0` through `PigColumn_3` (Empties), plus `Pig_Light` and `Pig_Dark` |
 | Rail | `Rail_Start`, `Rail_Main`, `Rail_End` |
-| Bullets | `Bullet_Light`, `Bullet_Dark` |
+| Bullets | `Bullet_Light`, `Bullet_Dark`, `Trail_Light`, `Trail_Dark` |
 | Grid | `Grid_Block_Light`, `Grid_Block_Dark` |
 | Slots | `Slot_0` through `Slot_4` |
 | Anchors | `RailStart`, `RailEnd`, `GridCenter`, `CameraTarget` (Empties) |
@@ -76,9 +76,9 @@ The runtime builds its state from the imported nodes (`src/grid.js`, `src/pigs.j
 
 - The grid is laid out from `GridCenter`'s `rows`, `columns`, `step` and `checker`, drawn as two instanced meshes of `Grid_Block_Light` and `Grid_Block_Dark`. Destroying a cell hides its instance.
 - Each `PigColumn` shows `PIGS.visibleRows` pigs, cloned from `Pig_Light` or `Pig_Dark` by queue colour, spaced by `row_step` behind the Empty. Only the front pig can be tapped. The column slides forward and the next `queue` entry appears at the back.
-- Runners are clones of the tapped pig's model; their shots are clones of `Bullet_Light` or `Bullet_Dark`.
+- Runners are clones of the tapped pig's model; their shots are clones of `Bullet_Light` or `Bullet_Dark`, each followed by a `Trail` cone stretched along the shot (the trail mesh runs from its tip at Y=0 to its wide end at Y=1).
 - When every cell is destroyed, a flat win panel appears after `WIN.delay`; tapping it restarts.
-- Effects live in `src/fx/` and are tuned by `FX` in `src/tokens.js`: pooled particles (instanced copies of the grid block meshes) for bullet trails, pig taps, runner deaths and win confetti; blocks bump, then shrink and rise away; shot-count and rail-counter punches; front-pig idle bob; screen shake when a row or column clears; a random combo word (never the same twice in a row) every `FX.combo.every` hits.
+- Effects live in `src/fx/` and are tuned by `FX` in `src/tokens.js`: pooled particles (instanced copies of the grid block meshes) for pig taps, runner deaths and win confetti; blocks bump, then shrink and rise away; shot-count and rail-counter punches; front-pig idle bob; screen shake when a row or column clears; a random combo word (never the same twice in a row) every `FX.combo.every` hits.
 - Each pig starts with `PIGS.ammo` shots. The runner shows its remaining shots and leaves the rail when it runs out. At most `PIGS.railCapacity` runners share the rail, and the label under `Rail_Start` shows the free slots. These labels are runtime canvas sprites.
 
 The gameplay path keeps its current node layout:
