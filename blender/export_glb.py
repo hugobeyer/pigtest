@@ -60,9 +60,13 @@ def export_glb(path=EXPORT_PATH):
       matrix=evaluated.matrix_world.copy()
       mesh=None
       materials=[(slot.link,slot.material) for slot in evaluated.material_slots]
-      if obj.type=='CURVE' or (obj.type=='MESH' and (obj.modifiers or obj.data.shape_keys)):
+      if obj.type=='CURVE' or (obj.type=='MESH' and (obj.modifiers or obj.data.shape_keys or any(slot.link=='OBJECT' for slot in obj.material_slots))):
         mesh=bpy.data.meshes.new_from_object(evaluated,preserve_all_data_layers=True,depsgraph=graph)
         if mesh is None: raise ValueError(f'{obj.name}: mesh evaluation failed')
+        if any(slot.link=='OBJECT' for slot in obj.material_slots):
+          mesh.materials.clear()
+          for link,material in materials:
+            if material: mesh.materials.append(material)
         meshes.append(mesh)
       if obj.type in {'MESH','CURVE'} and obj not in instancers and not (mesh if mesh is not None else obj.data).polygons:
         raise ValueError(f'{obj.name}: evaluated geometry has no faces; nothing renderable would be exported')

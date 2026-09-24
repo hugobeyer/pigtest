@@ -1,5 +1,6 @@
 import './style.css';
 import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x505471);
@@ -371,6 +372,34 @@ for(let r=0;r<3;r++){
     pigs.push(makePig((r+c)%2===1,-3.25+c*2.15,-10.20-r*1.62));
   }
 }
+
+const blenderAssets={rails:{},anchors:{},grid:Array.from({length:ROWS},()=>Array(COLS)),pigs:[],runner:null};
+
+function requireBlenderObject(root,name){
+  const object=root.getObjectByName(name);
+  if(!object)throw new Error(`Missing Blender object: ${name}`);
+  return object;
+}
+
+function resolveBlenderAssets(blenderRoot){
+  for(const name of ['Rail_Start','Rail_Main','Rail_End'])blenderAssets.rails[name]=requireBlenderObject(blenderRoot,name);
+  for(const name of ['RailStart','RailEnd','GridCenter','CameraTarget'])blenderAssets.anchors[name]=requireBlenderObject(blenderRoot,name);
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)blenderAssets.grid[r][c]=requireBlenderObject(blenderRoot,`Grid_r${String(r).padStart(2,'0')}_c${String(c).padStart(2,'0')}`);
+  for(let index=0;index<pigs.length;index++)blenderAssets.pigs[index]=requireBlenderObject(blenderRoot,`Pig_${String(index).padStart(2,'0')}`);
+  blenderAssets.runner=requireBlenderObject(blenderRoot,'PigRunner');
+  blenderAssets.runner.visible=false;
+  blenderRoot.traverse(object=>{
+    if(object.isMesh){object.castShadow=true; object.receiveShadow=true;}
+  });
+}
+
+new GLTFLoader().load(new URL('../assets/primitive_scene.glb',import.meta.url).href,gltf=>{
+  const blenderRoot=gltf.scene;
+  blenderRoot.rotation.x=Math.PI*.5;
+  blenderRoot.updateMatrixWorld(true);
+  resolveBlenderAssets(blenderRoot);
+  scene.add(blenderRoot);
+},undefined,error=>console.error('Blender GLB failed to load.',error));
 
 // ------------------------------------------------------------
 // Front-only occlusion

@@ -2,9 +2,11 @@
 
 The saved `.blend` is the source of truth. Open `primitive_version/source_files/scene.blend` to continue existing work. `config.py` supplies defaults for missing assets, not live overrides of authored geometry, transforms, materials or layout. Normal editing and export do not require rebuilding.
 
-## Run external scripts
+## Sidebar controls
 
-Use Blender with the glTF 2.0 exporter available. In the Scripting workspace, use **Text Editor → Open** to load the actual file from `primitive_version/blender/`, then **Run Script** in Object Mode. Open each entry script separately when needed; do not paste it into an internal text block. Its external filepath locates sibling modules and the output directory, even when the `.blend` lives in `source_files/`. The entry scripts reload their imported workflow modules.
+In Blender's Scripting workspace, open `primitive_version/blender/scene_ui.py` and click **Run Script** once. Then open any **3D Viewport**, press **N** and select the **Primitive** tab. Use **Build Missing Assets** for new scenes, **Prepare Scene** for existing legacy pig names, and **Export GLB** to write `assets/primitive_scene.glb`. The panel loads the current scripts directly, so you do not have to open each one. Asset buttons require Object Mode. Export errors appear in the status area and full tracebacks in Blender's system console. **Run Vite & Play** starts the installed local Vite executable at `http://127.0.0.1:5173/`, waits for it to respond, then opens your browser. **Stop Vite** stops only the process started by this panel; no install or external service is involved. Port 5173 must be free. The GLB is not exported automatically when starting Vite; click **Export GLB** first if you have new Blender changes.
+
+Running the script registers the panel for the current Blender session. To keep it after restart, install `scene_ui.py` as a Blender add-on and enable **Primitive Scene Tools** in Preferences. No external packages are required. After changing the panel script, rerun it to refresh its registration.
 
 Scripts do not save the `.blend` automatically. Save explicitly in Blender after authoring or preparation. Export does not persist preparation on your behalf.
 
@@ -64,11 +66,19 @@ Run **`export_glb.py`** after preparation and any authoring changes. The default
 
 Export validates the contract, then snapshots evaluated geometry and world transforms at the current frame **before temporarily renaming any source object**. A temporary scene holds the export copies. Curves and meshes with modifiers/shape keys become evaluated meshes, preserving material overrides. Unmodified linked meshes retain shared data where possible; objects remain independent. Modified objects are evaluated separately because their results may differ.
 
-Only `PrimitiveScene` assets are included. Bevel-profile helpers and objects with `export_asset=False` are excluded. Required names cannot be excluded. Collection/vertex/face instances and detected evaluated instances (including unrealized Geometry Nodes instances) fail explicitly: realize them yourself before export. Unsupported object types, library-linked objects, excluded view-layer objects and geometry without faces also fail rather than silently disappearing. Enable the asset collection in the active view layer. The object name `PrimitiveScene` is reserved for the exported root.
+Only `PrimitiveScene` assets are included. Bevel-profile helpers and objects with `export_asset=False` are excluded. Required names cannot be excluded. The exporter snapshots evaluated mesh/curve instances into temporary export geometry without altering the authored instances. Collection/vertex/face instances that cannot be represented by the current snapshot path fail explicitly. Unsupported object types, library-linked objects, excluded view-layer objects and geometry without faces also fail rather than silently disappearing. Enable the asset collection in the active view layer. The object name `PrimitiveScene` is reserved for the exported root.
 
 Source names are restored in cleanup even when the exporter raises; temporary objects, scenes and evaluated meshes are removed. No authored objects are deleted, no source geometry is converted, and no `.blend` is saved. This is a static snapshot, not an animation or rig export. Linked-material/shader export is subject to Blender's glTF material support.
 
-Authoring stays Z-up; GLB export uses Y-up. Root extras record `authored_up_axis='Z'` and `threejs_import_rotation_x=π/2`. Future Three.js integration must apply `gltf.scene.rotation.x = Math.PI / 2` once at the imported root, not to each child. No JavaScript is changed here.
+Authoring stays Z-up; GLB export uses Y-up. Root extras record `authored_up_axis='Z'` and `threejs_import_rotation_x=π/2`. `src/main.js` applies `gltf.scene.rotation.x = Math.PI / 2` once at the imported root, not to individual children.
+
+## Positioning contract and current integration
+
+`docs/primitive_playable_xz_bbox_skeleton.svg` is an XZ silhouette guide, not a live constraint. Blender is the source for exported visual transforms, but `src/main.js` currently *only overlays* the GLB and resolves named assets. The original checker, rail, pig, runner and camera are still generated in Three.js; movement, shooting, clicks and destruction use their procedural positions. Therefore Blender positioning does **not** yet drive gameplay, and any changed Blender placements may diverge. Do not hide the old visuals or claim alignment until checked in the browser.
+
+Initial Blender defaults reproduce the prototype's 26×26 grid centers (X −4.025…4.025, Z base 0.012, height 0.84), 2×2 checker colors, open rail centerline (X −5.405…5.405), and 3×4 pig placement. Note the SVG describes grid *center* X bounds, not box outer bounds (−4.175…4.175). Its start-piece X label (−5.005…−3.825) disagrees with the actual prototype's start-piece center −5.005 and width 1.18 (outer X −5.595…−4.415). Its terminal Z top 0.352 matches procedural terminals (height 0.34), but Blender's generated terminal defaults use rail height 0.38 (Z top 0.392). Existing authored `.blend` geometry is never reset to defaults; exported positions and bounds have not been measured here. The SVG's runner floor Z 0.407 matches the current procedural entry (`0.012 + 0.38 + 0.015`), not a Blender anchor in gameplay.
+
+Next integration stage: compare the imported visual placement, then explicitly bind each grid state/pig/rail/runner and gameplay anchors to the authored GLB while preserving gameplay rules. The Blender camera is exported but the runtime camera currently remains procedural.
 
 ## Manual checks in Blender (not run by the coding agent)
 
