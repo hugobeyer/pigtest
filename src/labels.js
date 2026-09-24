@@ -3,7 +3,8 @@ import {LABEL} from './tokens.js';
 
 export function createLabel(parent,height=LABEL.height){
   const canvas=document.createElement('canvas');
-  canvas.width=256; canvas.height=128;
+  const [w,h]=LABEL.canvas;
+  canvas.width=w; canvas.height=h;
   const ctx=canvas.getContext('2d');
   const texture=new THREE.CanvasTexture(canvas);
   texture.colorSpace=THREE.SRGBColorSpace;
@@ -15,13 +16,13 @@ export function createLabel(parent,height=LABEL.height){
   sprite.userData.set=text=>{
     if(text===current)return;
     current=text;
-    ctx.clearRect(0,0,256,128);
+    ctx.clearRect(0,0,w,h);
     ctx.font=LABEL.font;
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.lineJoin='round'; ctx.lineWidth=LABEL.strokeWidth; ctx.strokeStyle=LABEL.stroke;
-    ctx.strokeText(text,128,68);
+    ctx.strokeText(text,w*.5,h*.5+LABEL.baseline);
     ctx.fillStyle=LABEL.fill;
-    ctx.fillText(text,128,68);
+    ctx.fillText(text,w*.5,h*.5+LABEL.baseline);
     texture.needsUpdate=true;
   };
   return sprite;

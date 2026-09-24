@@ -18,7 +18,7 @@ function refreshFront(){
     const front=column.find(pig=>!pig.userData.used);
     for(const pig of column){
       pig.userData.front=pig===front;
-      pig.userData.label.material.opacity=pig===front ? 1 : PIGS.backLabelOpacity;
+      pig.userData.label.material.opacity=pig===front ? 1 : LABEL.backOpacity;
     }
   }
 }
@@ -32,7 +32,7 @@ export function createPigs(scene,pigs){
     label.position.set(world(pig).x,box.getCenter(new THREE.Vector3()).y,box.max.z+LABEL.lift);
     label.userData.set(String(PIGS.ammo));
     Object.assign(pig.userData,{used:false,front:false,isLight:pig.userData.is_light,ammo:PIGS.ammo,label});
-    (byColumn[Math.round(world(pig).x*10)]??=[]).push(pig);
+    (byColumn[Math.round(world(pig).x/PIGS.columnSnap)]??=[]).push(pig);
   }
   columns=Object.values(byColumn).map(column=>column.sort((a,b)=>world(b).y-world(a).y));
   refreshFront();

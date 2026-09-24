@@ -5,7 +5,7 @@ import {SHOT} from './tokens.js';
 const shots=[];
 
 export function fireShot(scene,from,cell,material){
-  const mesh=new THREE.Mesh(new THREE.SphereGeometry(SHOT.radius,16,12),material);
+  const mesh=new THREE.Mesh(new THREE.SphereGeometry(SHOT.radius,...SHOT.segments),material);
   mesh.castShadow=true;
   const to=cell.object.getWorldPosition(new THREE.Vector3());
   to.z=SHOT.targetZ;

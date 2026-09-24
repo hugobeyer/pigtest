@@ -27,7 +27,7 @@ function spawn(material){
   const label=createLabel(runner);
   label.position.z=labelLift;
   runner.position.copy(path.entry);
-  runner.rotation.z=-Math.PI*.5;
+  runner.rotation.z=path.nodes[0].travelFace;
   scene.add(runner);
   bump(pop,ANIM.enterBump);
   return {runner,pop,label};
@@ -41,7 +41,7 @@ export function launchRunner({material,ammo,isLight}){
     nodeIndex:0,phase:'move',
     from:path.entry.clone(),to:path.entry.clone(),
     stepT:1,stepDuration:0,
-    fromRot:-Math.PI*.5,toRot:-Math.PI*.5,
+    fromRot:path.nodes[0].travelFace,toRot:path.nodes[0].travelFace,
     targetCell:null,activeNode:null,turnT:0,engaged:false
   });
 }
@@ -70,7 +70,7 @@ function beginStep(run){
   run.from=run.runner.position.clone();
   run.to=new THREE.Vector3(n.x,n.y,path.entry.z);
   run.stepT=0;
-  run.stepDuration=run.from.distanceTo(run.to)/(run.engaged?MOTION.engagedMoveSpeed:MOTION.moveSpeed);
+  run.stepDuration=run.from.distanceTo(run.to)/MOTION.speed;
   run.fromRot=run.runner.rotation.z;
   run.toRot=run.engaged ? n.travelFace+Math.PI*.5 : n.travelFace;
   return true;
