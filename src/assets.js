@@ -35,8 +35,8 @@ export async function loadAssets(url){
   });
   lights.forEach(light=>light.parent.remove(light));
   ['Rail_Main','Rail_End','CameraTarget'].forEach(name=>requireObject(root,name));
-  const camera=root.getObjectByProperty('isOrthographicCamera',true);
-  if(!camera)throw new Error('Missing Blender orthographic camera');
+  const camera=root.getObjectByProperty('isPerspectiveCamera',true);
+  if(!camera)throw new Error('Missing Blender perspective camera');
   const [pigLight,pigDark,bulletLight,bulletDark,light,dark]=['Pig_Light','Pig_Dark','Bullet_Light','Bullet_Dark','Grid_Block_Light','Grid_Block_Dark'].map(name=>{
     const object=requireObject(root,name);
     object.visible=false;
