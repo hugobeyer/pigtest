@@ -4,7 +4,9 @@ import {createLabel} from './labels.js';
 import {validTarget} from './grid.js';
 import {fireShot} from './shots.js';
 import {bump, vanish} from './tweens.js';
-import {ANIM, LABEL, MOTION, SHOT} from './tokens.js';
+import {emit} from './fx/particles.js';
+import {popup} from './fx/popups.js';
+import {ANIM, FX, LABEL, MOTION, SHOT} from './tokens.js';
 
 let scene, path, bullets, labelLift;
 export const runs=[];
@@ -50,6 +52,12 @@ function fire(run){
   fireShot(scene,run.runner.localToWorld(mouthLocal.clone()),cell,run.bullet);
   run.label.userData.set(String(--run.ammo));
   bump(run.pop,ANIM.shotBump);
+  bump(run.label,FX.numberPunch);
+  run.hits=(run.hits??0)+1;
+  if(run.hits%FX.combo.every===0){
+    const {words}=FX.combo;
+    popup(scene,words[Math.min(run.hits/FX.combo.every-1,words.length-1)],run.runner.position);
+  }
 }
 
 function angleLerp(a,b,t){
@@ -76,6 +84,7 @@ function beginStep(run){
 function advance(run){
   run.nodeIndex++;
   if(run.ammo<=0 || run.nodeIndex>=path.nodes.length){
+    emit(run.runner.position,run.isLight,FX.death);
     vanish(run.runner,ANIM.vanish,()=>scene.remove(run.runner));
     return true;
   }

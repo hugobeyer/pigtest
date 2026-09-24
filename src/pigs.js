@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import {instantiate} from './assets.js';
 import {createLabel} from './labels.js';
 import {bump, grow, slide, tween} from './tweens.js';
-import {ANIM, LABEL, PIGS} from './tokens.js';
+import {emit} from './fx/particles.js';
+import {ANIM, FX, LABEL, PIGS} from './tokens.js';
 
 let scene, columns, templates, labelLift;
 export const tapTargets=[];
@@ -61,6 +62,15 @@ export function takePig(object){
   if(!column || column.busy)return null;
   column.busy=true;
   bump(object,ANIM.tapBump);
+  emit(object.position,object.userData.pig.isLight,FX.tap);
+  object.children[0].position.z=0;
   tween(ANIM.tapBump.duration,null,()=>advance(column));
   return object.userData.pig;
+}
+
+export function updatePigs(time){
+  for(const column of columns){
+    const front=column.objects[0];
+    if(front && !column.busy)front.children[0].position.z=FX.idleBob.height*Math.abs(Math.sin(time*FX.idleBob.speed));
+  }
 }

@@ -1,6 +1,7 @@
 import {instantiate} from './assets.js';
 import {destroyCell} from './grid.js';
-import {SHOT} from './tokens.js';
+import {emit} from './fx/particles.js';
+import {FX, SHOT} from './tokens.js';
 
 const shots=[];
 
@@ -19,6 +20,7 @@ export function updateShots(dt){
     s.t+=dt/s.duration;
     const k=Math.min(s.t,1);
     s.mesh.position.lerpVectors(s.from,s.to,k);
+    emit(s.mesh.position,s.cell.isLight,FX.trail);
     if(k>=1){
       destroyCell(s.cell);
       s.scene.remove(s.mesh);

@@ -1,6 +1,11 @@
 import * as THREE from 'three';
+import {emit} from './fx/particles.js';
+import {shake} from './fx/shake.js';
+import {FX} from './tokens.js';
 
 let grid, remaining;
+const popping=[];
+const popScale=new THREE.Vector3(), popMatrix=new THREE.Matrix4();
 const hidden=new THREE.Matrix4().makeScale(0,0,0);
 
 export function createGrid(scene,center,blocks){
@@ -22,7 +27,7 @@ export function createGrid(scene,center,blocks){
     const matrix=template.matrixWorld.clone();
     members.forEach((cell,index)=>{
       mesh.setMatrixAt(index,matrix.setPosition(cell.position));
-      Object.assign(cell,{mesh,index});
+      Object.assign(cell,{mesh,index,matrix:matrix.clone()});
     });
     mesh.computeBoundingSphere();
     scene.add(mesh);
@@ -55,9 +60,23 @@ export function destroyCell(cell){
   cell.reserved=false;
   if(!cell.alive)return;
   cell.alive=false;
-  cell.mesh.setMatrixAt(cell.index,hidden);
-  cell.mesh.instanceMatrix.needsUpdate=true;
+  popping.push({cell,t:0});
+  emit(cell.position,cell.isLight,FX.hit);
   remaining--;
+  if(grid[cell.r].every(c=>!c.alive) || grid.every(row=>!row[cell.c].alive))shake();
+}
+
+export function updateGrid(dt){
+  const {amount,peak,duration}=FX.blockPop;
+  for(let i=popping.length-1;i>=0;i--){
+    const pop=popping[i], {cell}=pop;
+    pop.t+=dt;
+    const k=Math.min(pop.t/duration,1);
+    const scale=k<peak ? 1+amount*k/peak : (1+amount)*(1-(k-peak)/(1-peak));
+    cell.mesh.setMatrixAt(cell.index,k>=1 ? hidden : popMatrix.copy(cell.matrix).scale(popScale.setScalar(scale)));
+    cell.mesh.instanceMatrix.needsUpdate=true;
+    if(k>=1)popping.splice(i,1);
+  }
 }
 
 export const remainingCells=()=>remaining;

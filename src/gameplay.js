@@ -1,19 +1,24 @@
 import * as THREE from 'three';
-import {createGrid, remainingCells} from './grid.js';
+import {createGrid, remainingCells, updateGrid} from './grid.js';
 import {createPath} from './path.js';
-import {createPigs, takePig, tapTargets} from './pigs.js';
+import {createPigs, takePig, tapTargets, updatePigs} from './pigs.js';
 import {initRunners, launchRunner, runs, updateRunners} from './runners.js';
 import {updateShots} from './shots.js';
-import {tween, updateTweens} from './tweens.js';
+import {bump, tween, updateTweens} from './tweens.js';
+import {emit, initParticles, updateParticles} from './fx/particles.js';
+import {initShake, shake, updateShake} from './fx/shake.js';
 import {showWin} from './win.js';
 import {createLabel} from './labels.js';
-import {LABEL, PIGS, WIN} from './tokens.js';
+import {FX, LABEL, PIGS, WIN} from './tokens.js';
 
-let capacityLabel, pigTemplates, won=false;
+let capacityLabel, capacityText, pigTemplates, center, won=false, time=0;
 export {tapTargets};
 
 export function initGameplay(scene,assets){
   pigTemplates=assets.pigs;
+  center=assets.gridCenter.getWorldPosition(new THREE.Vector3());
+  initParticles(scene,assets.blocks);
+  initShake(assets.camera);
   const grid=createGrid(scene,assets.gridCenter,assets.blocks);
   initRunners(scene,pigTemplates,assets.bullets,createPath(grid,assets.anchors));
   createPigs(scene,assets.columns,pigTemplates);
@@ -30,13 +35,30 @@ export function tap(object){
   return true;
 }
 
+function celebrate(){
+  emit(center,true,FX.confetti);
+  emit(center,false,FX.confetti);
+  shake();
+  tween(WIN.delay,null,showWin);
+}
+
 export function updateGameplay(dt){
+  time+=dt;
   updateRunners(dt);
   updateShots(dt);
+  updateGrid(dt);
   updateTweens(dt);
+  updateParticles(dt);
+  updateShake(dt);
+  updatePigs(time);
   if(!won && remainingCells()===0){
     won=true;
-    tween(WIN.delay,null,showWin);
+    celebrate();
   }
-  capacityLabel.userData.set(`${PIGS.railCapacity-runs.length}/${PIGS.railCapacity}`);
+  const text=`${PIGS.railCapacity-runs.length}/${PIGS.railCapacity}`;
+  if(text!==capacityText){
+    if(capacityText)bump(capacityLabel,FX.counterPunch);
+    capacityText=text;
+    capacityLabel.userData.set(text);
+  }
 }
