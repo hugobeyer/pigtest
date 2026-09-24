@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {createGrid} from './grid.js';
 import {createPath} from './path.js';
-import {createPigs, materialOf, takePig} from './pigs.js';
+import {createPigs, materialOf, takePig, updatePigs} from './pigs.js';
 import {initRunners, launchRunner, runs, updateRunners} from './runners.js';
 import {updateShots} from './shots.js';
 import {updateTweens} from './tweens.js';
@@ -33,5 +33,6 @@ export function updateGameplay(dt){
   updateRunners(dt);
   updateShots(dt);
   updateTweens(dt);
+  updatePigs();
   capacityLabel.userData.set(`${PIGS.railCapacity-runs.length}/${PIGS.railCapacity}`);
 }

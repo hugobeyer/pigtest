@@ -9,6 +9,18 @@ export function bump(object,{amount,duration}){
   bumps.set(object,{base:bumps.get(object)?.base??object.scale.clone(),amount,duration,t:0});
 }
 
+const easeOut=k=>k*(2-k);
+
+export function slide(object,to,{duration}){
+  const from=object.position.clone();
+  tween(duration,k=>object.position.lerpVectors(from,to,easeOut(k)));
+}
+
+export function grow(object,{duration}){
+  const scale=object.scale.clone();
+  tween(duration,k=>object.scale.copy(scale).multiplyScalar(easeOut(k)));
+}
+
 export function vanish(object,{rise,duration},done){
   const z=object.position.z, scale=object.scale.clone();
   tween(duration,k=>{
