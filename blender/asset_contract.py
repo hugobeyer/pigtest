@@ -14,6 +14,13 @@ OBSOLETE=re.compile(r'^(Pig_\d+|Pig_\d+_\d+|PigRunner|Grid_r\d+_c\d+|Trail_Light
 RENDERABLE_TYPES={'MESH','CURVE'}
 
 
+def gameplay_collection():
+  import bpy
+  legacy=bpy.data.collections.get('PrimitiveScene')
+  if legacy and not bpy.data.collections.get('Gameplay'): legacy.name='Gameplay'
+  return bpy.data.collections.get('Gameplay')
+
+
 def ancestors(obj):
   while obj.parent:
     obj=obj.parent

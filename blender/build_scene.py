@@ -18,7 +18,7 @@ from build_bullets import build_bullets
 from build_rail import build_rail
 from build_slots import build_slots
 from materials import build_materials
-from asset_contract import require_assets
+from asset_contract import gameplay_collection, require_assets
 from migrate import migrate
 
 
@@ -33,7 +33,8 @@ def collection(parent, name):
 
 def build_scene():
   if bpy.context.mode!='OBJECT': raise RuntimeError('Switch to Object Mode before building.')
-  root=collection(bpy.context.scene.collection, 'PrimitiveScene')
+  gameplay_collection()
+  root=collection(bpy.context.scene.collection, 'Gameplay')
   migrate(root)
   groups={name:collection(root,name) for name in ('Grid','Rail','Pigs','Slots','GameplayAnchors','Camera','Lighting')}
   materials=build_materials()

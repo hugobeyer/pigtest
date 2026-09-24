@@ -11,23 +11,25 @@ for name in ('config','asset_contract'):
   if name in sys.modules: importlib.reload(sys.modules[name])
 
 from config import EXPORT_PATH, IMPORT_ROOT_ROTATION_X
-from asset_contract import ancestors, export_objects, require_assets
+from asset_contract import ancestors, export_objects, gameplay_collection, require_assets
 
 
 def export_glb(path=EXPORT_PATH):
   if bpy.context.mode!='OBJECT': raise RuntimeError('Switch to Object Mode before exporting.')
-  root=bpy.data.collections.get('PrimitiveScene')
-  if not root: raise RuntimeError('Open the authored PrimitiveScene before exporting.')
+  root=gameplay_collection()
+  if not root: raise RuntimeError('Open the authored Gameplay collection before exporting.')
   require_assets(root)
   source_scene=bpy.context.scene
   sources=export_objects(root)
+  environment=bpy.data.collections.get('Environment')
+  if environment: sources+=[obj for obj in export_objects(environment) if obj not in sources]
   sources.sort(key=lambda obj:sum(1 for _ in ancestors(obj)))
   for obj in sources:
     if obj.library: raise ValueError(f'{obj.name}: library-linked objects require explicit localization before export.')
     if obj.name not in bpy.context.view_layer.objects: raise ValueError(f'{obj.name} is excluded from the active view layer; enable it before export.')
     if obj.type not in {'EMPTY','MESH','CURVE','CAMERA','LIGHT'}: raise ValueError(f'{obj.name}: unsupported export type {obj.type}; convert explicitly first.')
     if obj.instance_type!='NONE': raise ValueError(f'{obj.name}: collection/vertex/face instances are not supported; realize them explicitly before export.')
-  if bpy.data.objects.get('PrimitiveScene'): raise ValueError('Object name PrimitiveScene is reserved for the GLB root; rename that object explicitly.')
+  if bpy.data.objects.get('SceneRoot'): raise ValueError('Object name SceneRoot is reserved for the GLB root; rename that object explicitly.')
   graph=bpy.context.evaluated_depsgraph_get()
   source_set=set(sources)
 
@@ -73,7 +75,7 @@ def export_glb(path=EXPORT_PATH):
       snapshots[obj]=(matrix,mesh,materials)
     temporary=bpy.data.scenes.new('PrimitiveExport')
     for key in ('resolution_x','resolution_y','pixel_aspect_x','pixel_aspect_y'): setattr(temporary.render,key,getattr(source_scene.render,key))
-    export_root=bpy.data.objects.new('PrimitiveScene',None)
+    export_root=bpy.data.objects.new('SceneRoot',None)
     temporary.collection.objects.link(export_root)
     export_root['authored_up_axis']='Z'
     export_root['threejs_import_rotation_x']=IMPORT_ROOT_ROTATION_X

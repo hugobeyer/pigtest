@@ -80,10 +80,10 @@ class PRIMITIVE_OT_build(bpy.types.Operator):
 class PRIMITIVE_OT_export(bpy.types.Operator):
   bl_idname='primitive.export_glb'
   bl_label='Export GLB'
-  bl_description='Export the live PrimitiveScene to assets/primitive_scene.glb without changing the blend'
+  bl_description='Export the Gameplay and Environment collections to assets/primitive_scene.glb without changing the blend'
 
   @classmethod
-  def poll(cls, context): return context.mode=='OBJECT' and bpy.data.collections.get('PrimitiveScene') is not None
+  def poll(cls, context): return context.mode=='OBJECT' and (bpy.data.collections.get('Gameplay') or bpy.data.collections.get('PrimitiveScene')) is not None
 
   def execute(self, context):
     try:
