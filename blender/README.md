@@ -70,15 +70,29 @@ Only `PrimitiveScene` assets are included. Bevel-profile helpers and objects wit
 
 Source names are restored in cleanup even when the exporter raises; temporary objects, scenes and evaluated meshes are removed. No authored objects are deleted, no source geometry is converted, and no `.blend` is saved. This is a static snapshot, not an animation or rig export. Linked-material/shader export is subject to Blender's glTF material support.
 
-Authoring stays Z-up; GLB export uses Y-up. Root extras record `authored_up_axis='Z'` and `threejs_import_rotation_x=π/2`. `src/main.js` applies `gltf.scene.rotation.x = Math.PI / 2` once at the imported root, not to individual children.
+Authoring stays Z-up; GLB export uses Y-up. Root extras record `authored_up_axis='Z'` and `threejs_import_rotation_x=π/2`. `src/assets.js` applies `gltf.scene.rotation.x = Math.PI / 2` once at the imported root, not to individual children.
 
-## Positioning contract and current integration
+## Runtime integration
 
-`docs/primitive_playable_xz_bbox_skeleton.svg` is an XZ silhouette guide, not a live constraint. Blender is the source for exported visual transforms, but `src/main.js` currently *only overlays* the GLB and resolves named assets. The original checker, rail, pig, runner and camera are still generated in Three.js; movement, shooting, clicks and destruction use their procedural positions. Therefore Blender positioning does **not** yet drive gameplay, and any changed Blender placements may diverge. Do not hide the old visuals or claim alignment until checked in the browser.
+Blender and the exported GLB own the runtime visuals: the grid, pigs, runner, rail pieces, ground and materials. Three.js generates no replacement geometry for them. `src/assets.js` loads the GLB, rotates its root once, and resolves the exact contract names. A missing name stops initialization with an error, and no interaction starts.
 
-Initial Blender defaults reproduce the prototype's 26×26 grid centers (X −4.025…4.025, Z base 0.012, height 0.84), 2×2 checker colors, open rail centerline (X −5.405…5.405), and 3×4 pig placement. Note the SVG describes grid *center* X bounds, not box outer bounds (−4.175…4.175). Its start-piece X label (−5.005…−3.825) disagrees with the actual prototype's start-piece center −5.005 and width 1.18 (outer X −5.595…−4.415). Its terminal Z top 0.352 matches procedural terminals (height 0.34), but Blender's generated terminal defaults use rail height 0.38 (Z top 0.392). Existing authored `.blend` geometry is never reset to defaults; exported positions and bounds have not been measured here. The SVG's runner floor Z 0.407 matches the current procedural entry (`0.012 + 0.38 + 0.015`), not a Blender anchor in gameplay.
+`src/gameplay.js` builds state directly on the imported nodes:
 
-Next integration stage: compare the imported visual placement, then explicitly bind each grid state/pig/rail/runner and gameplay anchors to the authored GLB while preserving gameplay rules. The Blender camera is exported but the runtime camera currently remains procedural.
+- Each `Grid_rXX_cYY` node becomes a destructible cell, using its exported `row`, `column` and `is_light` values. Destroying a cell hides that node.
+- Clicking a `Pig_XX` hierarchy hides that imported pig.
+- The hidden `PigRunner` template is cloned for each run from its world transform, and the clone takes the clicked pig's Blender material.
+- Shots aim at the cell's world position. The projectile sphere is the only geometry the runtime creates.
+
+The gameplay path keeps its current node layout:
+
+- Lane positions come from the imported grid.
+- The start point and the bottom rail line come from `RailStart`.
+- The left rail line and the end point come from `RailEnd`.
+- Rail offsets, the corner radius and the speeds stay in `src/config.js`. The path is not derived from `Rail_Main` triangles, so moving the rail mesh in Blender without moving its anchors can make visuals and the path diverge.
+
+The runtime camera and lights are still defined in `src/main.js`. Exported Blender lights are removed on import, and the Blender camera is exported but unused.
+
+`docs/primitive_playable_xz_bbox_skeleton.svg` is an XZ silhouette guide, not a live constraint.
 
 ## Manual checks in Blender (not run by the coding agent)
 
