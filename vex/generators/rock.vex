@@ -6,40 +6,52 @@ void face(int pts[]; int piece){
     setprimattrib(0,"piece",pr,piece);
 }
 
-void rock(vector c; vector radii; float shear; int facets; float jitter; float sharp; float cut; int res; float seed; int piece){
-    vector n[]; float d[];
-    for(int i=0;i<facets;i++){
-        float y=1-2*(i+0.5)/facets, r=sqrt(max(0,1-y*y)), a=i*2.39996+(rnd(seed,piece,i)-0.5)*jitter*2;
-        append(n,normalize(set(cos(a)*r,y,sin(a)*r)+(set(rnd(seed,piece,50+i),rnd(seed,piece,60+i),rnd(seed,piece,70+i))-0.5)*jitter));
-        append(d,1+(rnd(seed,piece,100+i)-0.5)*jitter);
+int seed=chi("seed"), pieces=max(chi("pieces"),1), hullN=max(chi("hull_facets"),4), res=max(chi("resolution"),3);
+float W=chf("width"), H=chf("height"), D=chf("depth"), spacing=chf("spacing"), gap=chf("gap"), sharp=chf("sharpness"), jitter=chf("facet_jitter"), asym=chf("asymmetry");
+vector R=set(W,H,D);
+
+vector hn[]; float hd[];
+for(int i=0;i<hullN;i++){
+    float y=1-2*(i+0.5)/hullN, r=sqrt(max(0,1-y*y)), a=i*2.39996;
+    vector n=normalize(set(cos(a)*r,y,sin(a)*r)+(set(rnd(seed,1,i),rnd(seed,2,i),rnd(seed,3,i))-0.5)*jitter);
+    append(hn,n);
+    append(hd,length(n*R)*(1+(rnd(seed,4,i)-0.5)*jitter*0.5));
+}
+append(hn,set(0,-1,0)); append(hd,0);
+
+vector sites[];
+for(int t=0;t<pieces*60 && len(sites)<pieces;t++){
+    vector u=set(rnd(seed,5,t),rnd(seed,6,t),rnd(seed,7,t))*2-1;
+    if(length(u)>1)continue;
+    u.y=abs(u.y)*0.85+0.1;
+    int ok=1;
+    foreach(vector s; sites)if(length((s-u*R*0.75)/R)<spacing)ok=0;
+    if(ok)append(sites,u*R*0.75);
+}
+
+for(int c=0;c<len(sites);c++){
+    vector si=sites[c], n[]=hn; float d[];
+    foreach(int k; vector m; hn)append(d,max(hd[k]-dot(m,si),0.01));
+    for(int j=0;j<len(sites);j++)if(j!=c){
+        vector e=sites[j]-si;
+        append(n,normalize(e));
+        append(d,max(length(e)*0.5-gap*0.5,0.01));
     }
-    append(n,set(0,-1,0)); append(d,cut);
-    float lift=cut*radii.y;
     int top=-1, bottom=-1, ring[];
     for(int j=0;j<=res;j++)for(int i=0;i<(j==0 || j==res ? 1 : res*2);i++){
         float v=PI*j/res, u=PI*i/res, sum=0;
         vector dir=set(sin(v)*cos(u),cos(v),sin(v)*sin(u));
-        for(int k=0;k<len(n);k++){ float dn=dot(dir,n[k]); if(dn>1e-3)sum+=exp(-sharp*d[k]/dn); }
-        vector p=dir*(-log(max(sum,1e-12))/sharp);
-        p=set(p.x*radii.x+shear*p.y*radii.y,p.y*radii.y+lift,p.z*radii.z);
-        int pt=addpoint(0,c+p);
+        for(int k=0;k<len(n);k++){ float dn=dot(dir,n[k]); if(dn>1e-3)sum+=exp(-sharp*d[k]/(dn*W)); }
+        vector p=si+dir*(-log(max(sum,1e-12))*W/sharp);
+        p.x+=asym*p.y;
+        int pt=addpoint(0,p);
         if(j==0)top=pt; else if(j==res)bottom=pt; else append(ring,pt);
     }
     int sides=res*2, last=(res-2)*sides;
     for(int i=0;i<sides;i++){
         int nx=(i+1)%sides;
-        face(array(top,ring[nx],ring[i]),piece);
-        face(array(bottom,ring[last+i],ring[last+nx]),piece);
-        for(int j=0;j<res-2;j++)face(array(ring[j*sides+i],ring[j*sides+nx],ring[(j+1)*sides+nx],ring[(j+1)*sides+i]),piece);
+        face(array(top,ring[nx],ring[i]),c);
+        face(array(bottom,ring[last+i],ring[last+nx]),c);
+        for(int j=0;j<res-2;j++)face(array(ring[j*sides+i],ring[j*sides+nx],ring[(j+1)*sides+nx],ring[(j+1)*sides+i]),c);
     }
-}
-
-int seed=chi("seed"), facets=max(chi("facets"),4), res=max(chi("resolution"),3), extra=chi("small_rocks");
-float size=chf("size"), height=chf("height"), depth=chf("depth"), asym=chf("asymmetry"), jitter=chf("facet_jitter");
-float sharp=chf("sharpness"), cut=chf("base_cut"), smallSize=chf("small_size"), spread=chf("small_spread");
-
-rock(set(0,0,0),set(size,size*height,size*depth),asym,facets,jitter,sharp,cut,res,seed,0);
-for(int i=0;i<extra;i++){
-    float a=(i+rnd(seed,1,i)*0.6)*2*PI/max(extra,1), s=size*smallSize*(0.7+rnd(seed,2,i)*0.6);
-    rock(set(cos(a),0,sin(a))*size*spread,set(s,s*height*(0.8+rnd(seed,3,i)*0.4),s*depth),asym*(rnd(seed,4,i)-0.5)*2,facets,jitter,sharp,cut,res,seed,i+1);
 }

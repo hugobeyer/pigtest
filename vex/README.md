@@ -87,30 +87,26 @@ The centre is a circular polygon. Each petal is a chunky, rounded teardrop outli
 
 ## rock.vex
 
-Group: `rock`, plus a primitive attribute `piece`, with 0 for the main rock.
+Group: `rock`, plus a primitive attribute `piece`, one number per cell.
 
-Each rock is a **soft convex polyhedron**:
-- `facets` large planes are spread around the centre, and each plane's distance is jittered.
-- The surface is the smooth minimum of those planes: flat faces, rounded edges. `sharpness` sets how hard the edges are.
-- A flat base is cut by a ground plane.
-- The mesh is a closed lat-long surface, dense enough to hold the facets.
+One boulder mass is fractured into Voronoi cells, and each cell becomes a rock piece:
 
-Smaller rocks lean against the main one as separate closed pieces.
+- **Mass:** a faceted domed hull made of `hull_facets` jittered planes around a `width`×`height`×`depth` ellipsoid, sitting on the ground plane (y = 0).
+- **Sites:** `pieces` points are scattered inside the mass, kept at least `spacing` apart, so cell sizes vary naturally.
+- **Pieces:** each piece is bounded by the hull planes, the ground and the bisector planes to every other site, pulled back by `gap`. The planes are blended with a smooth minimum, so the Voronoi faces stay flat and the edges round off (`sharpness`).
+- **Asymmetry:** `asymmetry` shears the whole cluster. It's an affine change, so the seams stay clean.
 
-**Keep rocks separate, don't union them.** Run each `piece` on its own through remesh or PolyReduce (For-Each Named Primitive on `piece`), then merge. A smoothed VDB union across rocks is what carves the pinched creases between them. This mesh usually needs no VDB at all; PolyReduce keeps the flat facets.
+Process each `piece` on its own (For-Each Named Primitive on `piece`), then merge. Don't union pieces in a smoothed VDB; that is what carves pinched creases. PolyReduce usually keeps the facets without a VDB step.
 
 | Parameter | Start | Effect |
 | --- | --- | --- |
 | `seed` | 1 | variation |
-| `size` | 1 | radius |
-| `height` | 0.85 | height relative to `size` |
-| `depth` | 0.8 | front-to-back relative to `size` |
-| `asymmetry` | 0.25 | leans the top sideways |
-| `facets` | 12 | number of planes; fewer gives bigger facets |
-| `facet_jitter` | 0.25 | random tilt and distance per plane |
-| `sharpness` | 14 | edge hardness: higher is crisper facets, lower is rounder |
-| `base_cut` | 0.55 | height of the flat base cut (0 = middle, 1 = no cut) |
-| `resolution` | 24 | mesh rings; sides are twice this |
-| `small_rocks` | 2 | extra rocks |
-| `small_size` | 0.5 | extra rock size relative to `size` |
-| `small_spread` | 0.95 | how far out the extra rocks sit |
+| `width`, `height`, `depth` | 1.4, 1.2, 1.0 | mass size |
+| `pieces` | 5 | Voronoi cells |
+| `spacing` | 0.35 | minimum site distance, relative to the mass size |
+| `gap` | 0.04 | seam width between pieces |
+| `hull_facets` | 14 | outer facets; fewer gives bigger faces |
+| `facet_jitter` | 0.3 | random tilt and distance of the outer facets |
+| `sharpness` | 16 | edge hardness: higher is crisper, lower is rounder |
+| `asymmetry` | 0.15 | shear of the whole cluster |
+| `resolution` | 24 | mesh rings per piece; sides are twice this |
