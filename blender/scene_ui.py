@@ -2,6 +2,7 @@ bl_info={'name':'Primitive Scene Tools','author':'Primitive Scene','version':(1,
 
 import bpy
 import importlib
+import os
 import shutil
 import subprocess
 import sys
@@ -22,6 +23,39 @@ PLAY_URL='http://127.0.0.1:5173/'
 def run_module(name, method):
   module=importlib.reload(sys.modules[name]) if name in sys.modules else importlib.import_module(name)
   return getattr(module,method)()
+
+
+def reload_ui():
+  path=SCRIPT_DIR/'scene_ui.py'
+  exec(compile(path.read_text(),str(path),'exec'),{'__name__':'__main__','__file__':str(path)})
+
+
+class PRIMITIVE_OT_pull(bpy.types.Operator):
+  bl_idname='primitive.pull'
+  bl_label='Pull Latest'
+  bl_description='Run git pull in the project folder and reload these tools'
+
+  @classmethod
+  def poll(cls, context): return shutil.which('git') is not None
+
+  def execute(self, context):
+    def git(*args): return subprocess.run([shutil.which('git'),*args],cwd=str(PROJECT_DIR),capture_output=True,text=True,timeout=60,env={**os.environ,'GIT_TERMINAL_PROMPT':'0'})
+    before=git('rev-parse','HEAD').stdout.strip()
+    try:
+      result=git('pull','--ff-only')
+    except subprocess.TimeoutExpired:
+      self.report({'ERROR'},'git pull timed out')
+      return {'CANCELLED'}
+    if result.returncode:
+      print(result.stdout,result.stderr)
+      self.report({'ERROR'},(result.stderr or result.stdout).strip().splitlines()[-1])
+      return {'CANCELLED'}
+    changed=git('diff','--name-only',before,'HEAD').stdout.split()
+    bpy.app.timers.register(reload_ui,first_interval=.1)
+    blend=Path(bpy.data.filepath).resolve() if bpy.data.filepath else None
+    if blend and any((PROJECT_DIR/name).resolve()==blend for name in changed): self.report({'WARNING'},'Pulled a newer .blend; use File > Revert to load it')
+    else: self.report({'INFO'},f'Pulled {len(changed)} changed files' if changed else 'Already up to date')
+    return {'FINISHED'}
 
 
 class PRIMITIVE_OT_build(bpy.types.Operator):
@@ -145,6 +179,8 @@ class PRIMITIVE_PT_assets(bpy.types.Panel):
 
   def draw(self, context):
     layout=self.layout
+    layout.operator('primitive.pull',icon='FILE_REFRESH')
+    layout.separator()
     layout.operator('primitive.build_scene',icon='MESH_CUBE')
     layout.operator('primitive.prepare_export',icon='OUTLINER_OB_EMPTY')
     layout.separator()
@@ -155,7 +191,7 @@ class PRIMITIVE_PT_assets(bpy.types.Panel):
     layout.label(text='Save the .blend after editing or preparing')
 
 
-classes=(PRIMITIVE_OT_build,PRIMITIVE_OT_prepare,PRIMITIVE_OT_export,PRIMITIVE_OT_play,PRIMITIVE_OT_stop,PRIMITIVE_PT_assets)
+classes=(PRIMITIVE_OT_pull,PRIMITIVE_OT_build,PRIMITIVE_OT_prepare,PRIMITIVE_OT_export,PRIMITIVE_OT_play,PRIMITIVE_OT_stop,PRIMITIVE_PT_assets)
 
 
 def register():
