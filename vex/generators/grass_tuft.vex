@@ -1,59 +1,18 @@
-#define TAU 6.28318530718
+float rnd(float seed; float i; float k){ float v=rand(set(seed+0.37,i*3.14+0.11,k*2.71+0.53)); return v; }
 
-float fallback(float value; float fb){
-    return value!=0 ? value : fb;
-}
+float seed=chi("seed");
+int blades=chi("blades"), segs=max(chi("segments"),2);
+float height=chf("height"), width=chf("width"), spread=radians(chf("spread")), jitter=chf("jitter"), taper=chf("taper");
 
-float rnd(float seed; float i; float k){
-    float value=rand(set(seed*1.6180339+0.371,i*3.1415926+0.113,k*2.7182818+0.529));
-    return value;
-}
-
-float rnd_range(float seed; float i; float k; float lo; float hi){
-    return fit01(rnd(seed,i,k),lo,hi);
-}
-
-vector4 aim(vector dir; float twist){
-    return qmultiply(dihedral(set(0,1,0),normalize(dir)),quaternion(twist,set(0,1,0)));
-}
-
-void setup(){
-    vector4 identity=set(0,0,0,1);
-    addpointattrib(0,"pscale",1.0);
-    addpointattrib(0,"scale",set(1,1,1));
-    addpointattrib(0,"orient",identity);
-    addpointattrib(0,"Cd",set(1,1,1));
-    addpointattrib(0,"variant","");
-    addpointattrib(0,"part","");
-    setattribtypeinfo(0,"point","Cd","color");
-    setattribtypeinfo(0,"point","orient","quaternion");
-}
-
-int emit(vector p; vector radii; vector4 q; vector cd; string variant; string part){
-    int pt=addpoint(0,p);
-    setpointattrib(0,"scale",pt,radii);
-    setpointattrib(0,"orient",pt,q);
-    setpointattrib(0,"Cd",pt,cd);
-    setpointattrib(0,"variant",pt,variant);
-    setpointattrib(0,"part",pt,part);
-    return pt;
-}
-
-setup();
-float seed=chf("seed");
-int n=int(fallback(chf("blades"),5));
-float h=fallback(chf("height"),0.45);
-float w=fallback(chf("blade_width"),0.08);
-float base=rnd_range(seed,1,0,0,TAU);
-
-for(int i=0;i<n;i++){
-    int centre=i==0;
-    float a=centre ? base : base+TAU*(i-1)/max(n-1,1)+rnd_range(seed,2,i,-0.35,0.35);
-    float len=h*(centre ? rnd_range(seed,3,i,0.95,1.05) : rnd_range(seed,4,i,0.5,0.82));
-    float tilt=radians(centre ? rnd_range(seed,5,i,-5,5) : rnd_range(seed,6,i,25,58));
-    vector d=set(sin(tilt)*cos(a),cos(tilt),sin(tilt)*sin(a));
-    vector4 q=qmultiply(dihedral(set(0,1,0),d),quaternion(TAU*0.25-a,set(0,1,0)));
-    float bw=w*rnd_range(seed,7,i,0.85,1.15)*(centre ? 1.15 : 1.0);
-    vector cd=lerp(set(0.16,0.6,0.2),set(0.72,0.93,0.18),clamp(len/h*rnd_range(seed,8,i,0.8,1.05),0,1));
-    emit(d*len*0.45,set(bw,len*0.5,bw*0.42),q,cd,"sphere","blade");
+for(int b=0;b<blades;b++){
+    float a=2*PI*b/max(blades,1)+(rnd(seed,1,b)-0.5)*jitter*2;
+    float h=height*(1-rnd(seed,2,b)*jitter)*(b==0 ? 1 : 0.8);
+    float w=width*(1+(rnd(seed,3,b)-0.5)*jitter);
+    float tilt=b==0 ? 0 : spread*(0.5+rnd(seed,4,b)*0.5);
+    vector out=set(cos(a),0,sin(a)), side=set(-sin(a),0,cos(a));
+    vector up=set(0,cos(tilt),0)+out*sin(tilt);
+    int pts[];
+    for(int s=0;s<=segs;s++){ float t=s/float(segs); append(pts,addpoint(0,up*h*t+side*w*0.5*pow(sin(PI*lerp(0.5,1,t)),taper))); }
+    for(int s=segs-1;s>=0;s--){ float t=s/float(segs); append(pts,addpoint(0,up*h*t-side*w*0.5*pow(sin(PI*lerp(0.5,1,t)),taper))); }
+    setprimgroup(0,"blade",addprim(0,"poly",pts),1);
 }

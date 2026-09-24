@@ -1,92 +1,50 @@
-#define TAU 6.28318530718
+float rnd(float seed; float i; float k){ float v=rand(set(seed+0.37,i*3.14+0.11,k*2.71+0.53)); return v; }
 
-float fallback(float value; float fb){
-    return value!=0 ? value : fb;
+void face(int pts[]; string grp){ setprimgroup(0,grp,addprim(0,"poly",pts),1); }
+
+void blob(vector c; vector r; vector4 q; int sides; int rings; string grp){
+    int top=addpoint(0,c+qrotate(q,set(0,r.y,0))), bottom=addpoint(0,c-qrotate(q,set(0,r.y,0))), ring[];
+    for(int j=1;j<rings;j++)for(int i=0;i<sides;i++){
+        float v=PI*j/rings, u=2*PI*i/sides;
+        append(ring,addpoint(0,c+qrotate(q,set(sin(v)*cos(u)*r.x,cos(v)*r.y,sin(v)*sin(u)*r.z))));
+    }
+    for(int i=0;i<sides;i++){
+        int n=(i+1)%sides, last=(rings-2)*sides;
+        face(array(top,ring[n],ring[i]),grp);
+        face(array(bottom,ring[last+i],ring[last+n]),grp);
+        for(int j=0;j<rings-2;j++)face(array(ring[j*sides+i],ring[j*sides+n],ring[(j+1)*sides+n],ring[(j+1)*sides+i]),grp);
+    }
 }
 
-float rnd(float seed; float i; float k){
-    float value=rand(set(seed*1.6180339+0.371,i*3.1415926+0.113,k*2.7182818+0.529));
-    return value;
+float seed=chi("seed");
+float height=chf("trunk_height"), rb=chf("trunk_radius"), rt=chf("trunk_top_radius"), flare=chf("flare"), lean=chf("lean");
+int tsides=max(chi("trunk_sides"),3), tsegs=max(chi("trunk_segments"),1);
+float R=chf("canopy_radius"), bmin=chf("blob_min"), bmax=chf("blob_max"), squash=chf("blob_squash");
+int blobs=chi("blobs"), csides=max(chi("canopy_sides"),3), crings=max(chi("canopy_rings"),2);
+vector bend=set(rnd(seed,1,0)-0.5,0,rnd(seed,1,1)-0.5)*2*lean;
+
+int rings[];
+for(int j=0;j<=tsegs;j++){
+    float t=j/float(tsegs), r=lerp(rb,rt,t)*(1+flare*pow(1-t,3));
+    vector c=set(0,t*height,0)+bend*t*t;
+    for(int i=0;i<tsides;i++){
+        float u=2*PI*i/tsides, k=1+(rnd(seed,2,j*50+i)-0.5)*0.12;
+        append(rings,addpoint(0,c+set(cos(u),0,sin(u))*r*k));
+    }
 }
-
-float rnd_range(float seed; float i; float k; float lo; float hi){
-    return fit01(rnd(seed,i,k),lo,hi);
+int cap[];
+for(int i=0;i<tsides;i++){
+    int n=(i+1)%tsides;
+    for(int j=0;j<tsegs;j++)face(array(rings[j*tsides+i],rings[j*tsides+n],rings[(j+1)*tsides+n],rings[(j+1)*tsides+i]),"trunk");
+    append(cap,rings[tsegs*tsides+i]);
 }
+face(cap,"trunk");
 
-vector4 aim(vector dir; float twist){
-    return qmultiply(dihedral(set(0,1,0),normalize(dir)),quaternion(twist,set(0,1,0)));
-}
-
-void setup(){
-    vector4 identity=set(0,0,0,1);
-    addpointattrib(0,"pscale",1.0);
-    addpointattrib(0,"scale",set(1,1,1));
-    addpointattrib(0,"orient",identity);
-    addpointattrib(0,"Cd",set(1,1,1));
-    addpointattrib(0,"variant","");
-    addpointattrib(0,"part","");
-    setattribtypeinfo(0,"point","Cd","color");
-    setattribtypeinfo(0,"point","orient","quaternion");
-}
-
-int emit(vector p; vector radii; vector4 q; vector cd; string variant; string part){
-    int pt=addpoint(0,p);
-    setpointattrib(0,"scale",pt,radii);
-    setpointattrib(0,"orient",pt,q);
-    setpointattrib(0,"Cd",pt,cd);
-    setpointattrib(0,"variant",pt,variant);
-    setpointattrib(0,"part",pt,part);
-    return pt;
-}
-
-vector canopy_color(float y; float lo; float hi; float wobble){
-    return lerp(set(0.06,0.48,0.27),set(0.6,0.9,0.2),clamp(fit(y,lo,hi,0,1)+wobble,0,1));
-}
-
-setup();
-float seed=chf("seed");
-float height=fallback(chf("trunk_height"),1.5);
-float rb=fallback(chf("trunk_radius"),0.3);
-float R=fallback(chf("canopy_radius"),1.3);
-int blobs=int(fallback(chf("blobs"),16));
-int skirt=int(fallback(chf("skirt"),7));
-vector lean=set(rnd_range(seed,1,1,-1,1),0,rnd_range(seed,1,2,-1,1))*fallback(chf("lean"),0.15);
-
-int segs=6;
-for(int i=0;i<segs;i++){
-    float t=i/(segs-1.0);
-    float r=rb*lerp(1.0,0.7,t)*(1+0.35*pow(1-t,3));
-    vector p=set(0,t*height,0)+lean*t*t;
-    emit(p,set(r,height/(segs-1)*0.8,r*rnd_range(seed,2,i,0.88,1.0)),aim(set(0,1,0)+lean*2*t,rnd_range(seed,3,i,0,TAU)),lerp(set(0.72,0.42,0.13),set(0.92,0.6,0.22),t),"sphere","trunk");
-}
-
-int roots=int(rnd_range(seed,4,0,3,5.99));
-for(int i=0;i<roots;i++){
-    float a=TAU*i/roots+rnd_range(seed,5,i,-0.35,0.35);
-    vector d=set(cos(a),0,sin(a));
-    float r=rb*rnd_range(seed,6,i,0.34,0.44);
-    emit(d*rb*0.8+set(0,r*0.6,0),set(r,r*1.9,r*1.05),aim(d-set(0,0.7,0),rnd_range(seed,7,i,0,TAU)),set(0.72,0.42,0.13),"sphere","root");
-}
-
-vector c=set(0,height,0)+lean+set(0,R*0.5,0);
-float lo=c.y-R*0.75, hi=c.y+R*0.85;
-emit(c,set(R*0.78,R*0.6,R*0.78),aim(set(0,1,0),0),canopy_color(c.y,lo,hi,0),"sphere","canopy");
-
+vector c=set(0,height,0)+bend+set(0,R*0.45,0);
+blob(c,set(R*0.8,R*0.6,R*0.8),quaternion(rnd(seed,3,0)*2*PI,set(0,1,0)),csides,crings,"canopy");
 for(int i=0;i<blobs;i++){
-    float u=(i+rnd_range(seed,8,i,-0.3,0.3))/max(blobs-1,1);
-    float y=lerp(0.92,-0.3,u);
-    float a=i*2.39996+rnd_range(seed,9,i,-0.45,0.45);
-    float ring=sqrt(max(0,1-y*y));
+    float y=lerp(0.9,-0.4,(i+rnd(seed,4,i)*0.6-0.3)/max(blobs-1,1)), a=i*2.39996+(rnd(seed,5,i)-0.5)*0.9, ring=sqrt(max(0,1-y*y));
+    float s=R*lerp(bmin,bmax,rnd(seed,6,i));
     vector d=set(cos(a)*ring,y,sin(a)*ring);
-    float s=R*rnd_range(seed,10,i,0.34,0.5);
-    vector p=c+set(d.x*R*0.72,d.y*R*0.52,d.z*R*0.72);
-    emit(p,set(s,s*rnd_range(seed,11,i,0.8,0.95),s),aim(d,rnd_range(seed,12,i,0,TAU)),canopy_color(p.y,lo,hi,rnd_range(seed,13,i,-0.06,0.06)),"sphere","canopy");
-}
-
-for(int i=0;i<skirt;i++){
-    float a=TAU*i/skirt+rnd_range(seed,14,i,-0.25,0.25);
-    vector d=set(cos(a),0,sin(a));
-    float s=R*rnd_range(seed,15,i,0.3,0.38);
-    vector p=c+d*R*rnd_range(seed,16,i,0.72,0.82)-set(0,R*0.32,0);
-    emit(p,set(s,s*1.08,s*0.95),aim(d*0.3+set(0,1,0),a),canopy_color(p.y,lo,hi,rnd_range(seed,17,i,-0.05,0.03)),"sphere","canopy");
+    blob(c+set(d.x*R*0.75,d.y*R*0.55,d.z*R*0.75),set(s,s*squash,s),qmultiply(dihedral(set(0,1,0),normalize(d)),quaternion(rnd(seed,7,i)*2*PI,set(0,1,0))),csides,crings,"canopy");
 }

@@ -1,107 +1,105 @@
 # Environment generators (Houdini VEX)
 
-Seeded generators for the Fish of Fortune scenery: tree, grass tuft, flower, fence and rock. Each one writes **blob points** (position, per-axis radii, rotation, colour, part). Your network turns those into one soft, merged lowpoly mesh, ready to bake.
+Each file in `generators/` is one self-contained **Attribute Wrangle** set to **Run Over: Detail (only once)**. Paste it in, then click **Create spare parameters**. Floats are `chf()` and counts are `chi()`. Parameters start at 0, and 0 is a real value, so set them yourself using the starting values below.
 
-The shapes are built from a few large ellipsoids and boxes with seeded jitter. There is no fractal noise, no fine detail and no exact repetition.
+The output is real polygons built with `addpoint`/`addprim`, in primitive groups. Pieces overlap on purpose: follow with VDB from Polygons → smooth/union → remesh → PolyReduce → bake. Houdini is Y-up, in metres.
 
-## Network (per asset)
+## tree.vex
 
-1. **Attribute Wrangle**: set **Run Over** to **Detail (only once)**, paste a whole file from `vex/generators/` (each is self-contained), then click **Create spare parameters** to bind the `chf`/`chi` parameters.
-2. **Copy to Points**:
-   - Source: a **Merge** of a **Sphere** (Polygon, radius 1, frequency ~6) with prim string `variant = "sphere"`, and a **Box** (size 2) with `variant = "box"`.
-   - Target: the wrangle.
-   - Turn on **Piece Attribute** = `variant`.
-   - Keep attribute transfer on, so `Cd` and `part` reach the copies.
-3. **VDB from Polygons**: build a distance field.
-   - Voxel size: tree 0.03, rock 0.02, fence 0.012, grass 0.008, flower 0.005.
-4. **VDB Smooth SDF**: Gaussian, 2–4 iterations. This makes the gooshy merge.
-   - For rocks use 1 iteration, so the box facets stay readable.
-5. Optional: **VDB Clip** or **VDB Combine**, subtracting a ground box at `y < 0` to flatten the base.
-6. **Convert VDB** to Polygons, adaptivity 0.1–0.3.
-7. **PolyReduce**: aim for roughly 300–1500 triangles per asset.
-8. **Point Wrangle** with `vex/post/transfer_color.vex`:
-   - Input 0: the lowpoly mesh.
-   - Input 1: the Copy to Points output.
-   - It writes `Cd`, `part` and `grad` (0 at the base, 1 at the top) for your albedo, AO and gradient bakes.
-9. UV, bake (albedo with AO and gradients, plus a tangent-space normal map), then export to Blender. Put the assets in the `Environment` collection.
+Groups: `trunk`, `canopy`.
 
-Houdini is Y-up in metres. The exporter to Blender handles the axis change. Game scale: a pig is about 1.2 wide.
+The trunk is swept rings, one per segment, with a flared base, a bend and a capped top. The canopy is a core blob plus low-sided blobs spread over a dome, all overlapping.
 
-## Point attributes
+Starting values:
 
-| Attribute | Meaning |
-| --- | --- |
-| `P` | blob centre |
-| `scale` | radii (sphere) or half-extents (box) on local X/Y/Z |
-| `orient` | rotation quaternion |
-| `pscale` | always 1 |
-| `Cd` | base colour for the part |
-| `variant` | `sphere` or `box`: which template to copy |
-| `part` | `trunk`, `root`, `canopy`, `blade`, `petal`, `centre`, `stem`, `leaf`, `post`, `rail`, `nail`, `moss`, `rock` |
-
-## Parameters
-
-Spare parameters left at 0 use the default shown, except where marked *direct*, which read 0 as off.
-
-**tree.vex**
-
-| Parameter | Default | Effect |
+| Parameter | Start | Effect |
 | --- | --- | --- |
-| `seed` | 0 | variation |
+| `seed` | 1 | variation |
 | `trunk_height` | 1.5 | trunk length |
-| `trunk_radius` | 0.3 | trunk thickness; the base flares and 3–5 root lobes are added |
+| `trunk_radius` | 0.3 | base radius |
+| `trunk_top_radius` | 0.2 | top radius |
+| `flare` | 0.4 | extra width at the base |
+| `lean` | 0.15 | bend |
+| `trunk_sides` | 6 | ring sides |
+| `trunk_segments` | 4 | ring count |
 | `canopy_radius` | 1.3 | canopy size |
-| `blobs` | 16 | canopy lobes spread over the dome |
-| `skirt` | 7 | drooping lobes around the canopy underside |
-| `lean` | 0.15 | trunk bend |
+| `blobs` | 14 | blob count |
+| `blob_min`, `blob_max` | 0.35, 0.5 | blob size range, as a fraction of `canopy_radius` |
+| `blob_squash` | 0.85 | blob height relative to width |
+| `canopy_sides` | 6 | blob sides (5–7) |
+| `canopy_rings` | 4 | blob rings |
 
-**grass_tuft.vex**
+## fence.vex
 
-| Parameter | Default | Effect |
+Groups: `post`, `rail`.
+
+Posts and rails are chunky boxes. Rails span neighbouring posts and sit in front of them.
+
+| Parameter | Start | Effect |
 | --- | --- | --- |
-| `seed` | 0 | variation |
-| `blades` | 5 | the first blade is the tall centre one |
-| `height` | 0.45 | tallest blade |
-| `blade_width` | 0.08 | blade width |
-
-**flower.vex**
-
-| Parameter | Default | Effect |
-| --- | --- | --- |
-| `seed` | 0 | variation |
-| `petals` | 5 | petal count |
-| `petal_length` | 0.16 | head size |
-| `stem_height` | 0.22 | head height |
-| `leaves` | 3 | base leaves |
-| `colour` | *direct* | 0 random, 1 white, 2 yellow, 3 pink, 4 purple |
-| `buddy` | *direct* | 1 adds a smaller side flower |
-
-**fence.vex**
-
-| Parameter | Default | Effect |
-| --- | --- | --- |
-| `seed` | 0 | variation |
-| `segments` | 1 | spans between posts |
-| `turn` | *direct* | degrees added per segment (90 gives a corner piece) |
-| `length` | 1.4 | span length |
+| `seed` | 1 | variation |
+| `posts` | 3 | post count |
+| `spacing` | 1.4 | distance between posts |
 | `post_height` | 0.9 | post height |
 | `post_width` | 0.24 | post width |
 | `rails` | 2 | rails per span |
-| `rail_height`, `rail_depth` | 0.16, 0.08 | rail size |
-| `sag` | 0.05 | rail bow and wobble |
-| `top` | *direct* | 0 flat, 1 pointed, 2 rounded |
-| `moss` | *direct* | chance (0–1) of a moss cap, drips and base tufts per post |
-| `no_nails` | *direct* | 1 removes the nails |
+| `rail_thickness` | 0.16 | rail height |
+| `rail_depth` | 0.08 | rail depth |
+| `rail_low`, `rail_high` | 0.35, 0.75 | rail heights, as a fraction of the post height |
+| `jitter` | 0.05 | random height, spacing and offset |
+| `lean` | 3 | maximum post tilt in degrees |
+| `skew` | 0.06 | random height difference between rail ends |
 
-**rock.vex**
+## grass_tuft.vex
 
-| Parameter | Default | Effect |
+Group: `blade`.
+
+Each blade is one broad, flat outline polygon. Blades fan out radially and tilt outwards; the first blade is the tall upright one. Add PolyExtrude afterwards if you want thickness.
+
+| Parameter | Start | Effect |
 | --- | --- | --- |
-| `seed` | 0 | variation |
-| `size` | 1.0 | main rock size |
-| `rocks` | 3 | rocks in the cluster, including the main one |
-| `pebbles` | 4 | small stones around the base |
-| `flatness` | 0.7 | lower is flatter |
-| `moss` | *direct* | chance (0–1) of a moss cap with drips on the main rock |
+| `seed` | 1 | variation |
+| `blades` | 5 | blade count |
+| `segments` | 5 | points per edge |
+| `height` | 0.45 | tallest blade |
+| `width` | 0.14 | blade width at the base |
+| `spread` | 45 | maximum outward tilt in degrees |
+| `jitter` | 0.3 | random angle, height and width |
+| `taper` | 0.5 | tip shape: lower is rounder, 1 is pointed |
 
-Grass tufts on rocks or at tree bases: run `grass_tuft.vex` separately and merge it before **VDB from Polygons**. It then melts into the same mesh.
+## flower.vex
+
+Groups: `center`, `petal`.
+
+The centre is a circular polygon. Each petal is a chunky, rounded teardrop outline around it, cupped upward.
+
+| Parameter | Start | Effect |
+| --- | --- | --- |
+| `seed` | 1 | variation |
+| `petals` | 5 | petal count |
+| `sides` | 8 | centre sides; also sets petal edge resolution |
+| `center_radius` | 0.07 | centre radius |
+| `petal_length` | 0.16 | petal length |
+| `petal_width` | 0.14 | petal width |
+| `cup` | 15 | upward tilt of the petals, in degrees |
+| `jitter` | 0.2 | random angle and size per petal |
+| `head_height` | 0.22 | height of the head |
+
+## rock.vex
+
+Group: `rock`.
+
+Each rock is a closed, low-poly lathe with jittered vertices. `asymmetry` pushes it off-centre and leans the top. Optional smaller rocks overlap around the main one.
+
+| Parameter | Start | Effect |
+| --- | --- | --- |
+| `seed` | 1 | variation |
+| `size` | 1 | radius |
+| `height` | 0.8 | height, as a fraction of `size` |
+| `flatten` | 0.6 | how wide and flat the lower half stays |
+| `sides` | 7 | sides around |
+| `rings` | 4 | rings from top to bottom |
+| `asymmetry` | 0.3 | off-centre lean and bulge |
+| `bumpiness` | 0.12 | vertex jitter |
+| `small_rocks` | 2 | extra rocks |
+| `small_size` | 0.45 | extra rock size, as a fraction of `size` |

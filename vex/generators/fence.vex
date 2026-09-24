@@ -1,120 +1,29 @@
-#define TAU 6.28318530718
+float rnd(float seed; float i; float k){ float v=rand(set(seed+0.37,i*3.14+0.11,k*2.71+0.53)); return v; }
 
-float fallback(float value; float fb){
-    return value!=0 ? value : fb;
+void box(vector c; vector h; vector4 q; string grp){
+    int p[];
+    for(int i=0;i<8;i++)append(p,addpoint(0,c+qrotate(q,set(i&1?h.x:-h.x,i&2?h.y:-h.y,i&4?h.z:-h.z))));
+    int f[]={0,1,3,2, 4,6,7,5, 0,4,5,1, 2,3,7,6, 0,2,6,4, 1,5,7,3};
+    for(int i=0;i<6;i++)setprimgroup(0,grp,addprim(0,"poly",array(p[f[i*4]],p[f[i*4+1]],p[f[i*4+2]],p[f[i*4+3]])),1);
 }
 
-float rnd(float seed; float i; float k){
-    float value=rand(set(seed*1.6180339+0.371,i*3.1415926+0.113,k*2.7182818+0.529));
-    return value;
+float seed=chi("seed");
+int posts=max(chi("posts"),2), rails=chi("rails");
+float spacing=chf("spacing"), ph=chf("post_height"), pw=chf("post_width"), rh=chf("rail_thickness"), rd=chf("rail_depth");
+float lo=chf("rail_low"), hi=chf("rail_high"), jitter=chf("jitter"), lean=radians(chf("lean")), skew=chf("skew");
+
+vector tops[];
+for(int i=0;i<posts;i++){
+    float h=ph*(1+(rnd(seed,1,i)-0.5)*2*jitter);
+    vector4 q=qmultiply(quaternion((rnd(seed,2,i)-0.5)*2*lean,set(0,0,1)),quaternion((rnd(seed,3,i)-0.5)*2*lean,set(1,0,0)));
+    vector base=set(i*spacing+(rnd(seed,4,i)-0.5)*jitter*spacing,0,(rnd(seed,5,i)-0.5)*jitter*pw);
+    box(base+qrotate(q,set(0,h*0.5,0)),set(pw,h,pw)*0.5,q,"post");
+    append(tops,base);
 }
-
-float rnd_range(float seed; float i; float k; float lo; float hi){
-    return fit01(rnd(seed,i,k),lo,hi);
-}
-
-vector4 aim(vector dir; float twist){
-    return qmultiply(dihedral(set(0,1,0),normalize(dir)),quaternion(twist,set(0,1,0)));
-}
-
-void setup(){
-    vector4 identity=set(0,0,0,1);
-    addpointattrib(0,"pscale",1.0);
-    addpointattrib(0,"scale",set(1,1,1));
-    addpointattrib(0,"orient",identity);
-    addpointattrib(0,"Cd",set(1,1,1));
-    addpointattrib(0,"variant","");
-    addpointattrib(0,"part","");
-    setattribtypeinfo(0,"point","Cd","color");
-    setattribtypeinfo(0,"point","orient","quaternion");
-}
-
-int emit(vector p; vector radii; vector4 q; vector cd; string variant; string part){
-    int pt=addpoint(0,p);
-    setpointattrib(0,"scale",pt,radii);
-    setpointattrib(0,"orient",pt,q);
-    setpointattrib(0,"Cd",pt,cd);
-    setpointattrib(0,"variant",pt,variant);
-    setpointattrib(0,"part",pt,part);
-    return pt;
-}
-
-setup();
-float seed=chf("seed");
-int segments=max(int(fallback(chf("segments"),1)),1);
-float turn=radians(chf("turn"));
-float span=fallback(chf("length"),1.4);
-float h=fallback(chf("post_height"),0.9);
-float w=fallback(chf("post_width"),0.24);
-int rails=int(fallback(chf("rails"),2));
-float railH=fallback(chf("rail_height"),0.16);
-float railD=fallback(chf("rail_depth"),0.08);
-float sag=fallback(chf("sag"),0.05);
-float mossChance=chf("moss");
-int top=chi("top");
-vector wood=set(0.93,0.6,0.2), moss=set(0.5,0.8,0.14), nail=set(0.42,0.4,0.33);
-
-vector posts[];
-float headings[];
-float heading=rnd_range(seed,0,0,-0.05,0.05);
-vector at=set(0,0,0);
-append(posts,at);
-append(headings,heading);
-for(int s=0;s<segments;s++){
-    at+=set(cos(heading),0,sin(heading))*span*rnd_range(seed,1,s,0.92,1.08);
-    append(posts,at);
-    append(headings,heading+turn*0.5);
-    heading+=turn;
-}
-
-for(int i=0;i<len(posts);i++){
-    float ph=h*rnd_range(seed,2,i,0.94,1.06);
-    float pw=w*rnd_range(seed,3,i,0.92,1.05);
-    vector4 q=qmultiply(quaternion(-headings[i],set(0,1,0)),qmultiply(quaternion(rnd_range(seed,4,i,-0.05,0.05),set(1,0,0)),quaternion(rnd_range(seed,5,i,-0.05,0.05),set(0,0,1))));
-    vector up=qrotate(q,set(0,1,0));
-    vector tip=posts[i]+up*ph;
-    vector tone=wood*rnd_range(seed,6,i,0.94,1.03);
-    emit(posts[i]+up*ph*0.5,set(pw*0.5,ph*0.5,pw*0.5),q,tone,"box","post");
-    if(top==1)emit(tip-up*pw*0.08,set(pw*0.42,pw*0.42,pw*0.42),qmultiply(q,qmultiply(quaternion(0.9553,set(0,0,1)),quaternion(TAU/8,set(0,1,0)))),tone,"box","post");
-    if(top==2)emit(tip,set(pw*0.5,pw*0.32,pw*0.5),q,tone,"sphere","post");
-    if(rnd(seed,7,i)<mossChance){
-        emit(tip+up*pw*0.03,set(pw*0.6,pw*0.18,pw*0.6),q,moss,"sphere","moss");
-        int drips=int(rnd_range(seed,8,i,2,4.99));
-        for(int k=0;k<drips;k++){
-            float a=rnd_range(seed,9,i*10+k,0,TAU);
-            vector side=qrotate(q,set(cos(a),0,sin(a))/max(abs(cos(a)),abs(sin(a))));
-            float drop=pw*rnd_range(seed,10,i*10+k,0.18,0.4);
-            emit(tip+side*pw*0.5-up*drop*0.6,set(pw*0.14,drop,pw*0.1),aim(up,a),moss,"sphere","moss");
-        }
-        int tufts=int(rnd_range(seed,11,i,3,5.99));
-        for(int k=0;k<tufts;k++){
-            float a=TAU*k/tufts+rnd_range(seed,12,i*10+k,-0.3,0.3);
-            vector side=qrotate(q,set(cos(a),0,sin(a))/max(abs(cos(a)),abs(sin(a))));
-            emit(posts[i]+side*pw*0.48+up*pw*0.15,set(pw*0.28,pw*rnd_range(seed,13,i*10+k,0.18,0.3),pw*0.16),aim(up,a),moss,"sphere","moss");
-        }
-    }
-}
-
-for(int s=0;s<segments;s++){
-    vector a=posts[s], b=posts[s+1];
-    vector d=normalize(b-a);
-    vector n=set(-d.z,0,d.x);
-    for(int k=0;k<rails;k++){
-        float id=s*10+k;
-        float y=h*(rails>1 ? lerp(0.35,0.75,k/(rails-1.0)) : 0.55)+rnd_range(seed,14,id,-0.03,0.03);
-        float wob=rnd_range(seed,15,id,-1,1)*sag;
-        int pieces=3;
-        for(int j=0;j<pieces;j++){
-            float t0=lerp(-0.08,1.08,j/float(pieces)), t1=lerp(-0.08,1.08,(j+1)/float(pieces));
-            vector p0=lerp(a,b,t0)+set(0,y-sag*sin(TAU*0.5*clamp(t0,0,1))+wob*sin(TAU*t0),0);
-            vector p1=lerp(a,b,t1)+set(0,y-sag*sin(TAU*0.5*clamp(t1,0,1))+wob*sin(TAU*t1),0);
-            vector4 q=qmultiply(dihedral(set(1,0,0),normalize(p1-p0)),quaternion(rnd_range(seed,16,id*10+j,-0.04,0.04),set(1,0,0)));
-            emit((p0+p1)*0.5+n*w*0.45,set(length(p1-p0)*0.56,railH*0.5,railD*0.5),q,wood*rnd_range(seed,17,id*10+j,0.95,1.04),"box","rail");
-        }
-        if(chi("no_nails")==0){
-            foreach(vector end; array(a,b)){
-                emit(end+set(0,y,0)+n*(w*0.45+railD*0.5),set(w*0.06,w*0.06,w*0.04),dihedral(set(0,1,0),n),nail,"sphere","nail");
-            }
-        }
-    }
+for(int i=0;i<posts-1;i++)for(int k=0;k<rails;k++){
+    float t=rails>1 ? k/(rails-1.0) : 0.5;
+    vector a=tops[i]+set(0,ph*lerp(lo,hi,t)+(rnd(seed,6,i*10+k)-0.5)*skew,pw*0.5+rd*0.5);
+    vector b=tops[i+1]+set(0,ph*lerp(lo,hi,t)+(rnd(seed,7,i*10+k)-0.5)*skew,pw*0.5+rd*0.5);
+    vector d=b-a;
+    box((a+b)*0.5,set(length(d)*0.5+pw*0.4,rh*0.5,rd*0.5),dihedral(set(1,0,0),normalize(d)),"rail");
 }

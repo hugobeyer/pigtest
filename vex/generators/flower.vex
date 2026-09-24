@@ -1,97 +1,27 @@
-#define TAU 6.28318530718
+float rnd(float seed; float i; float k){ float v=rand(set(seed+0.37,i*3.14+0.11,k*2.71+0.53)); return v; }
 
-float fallback(float value; float fb){
-    return value!=0 ? value : fb;
-}
+float seed=chi("seed");
+int petals=chi("petals"), sides=max(chi("sides"),3);
+float plen=chf("petal_length"), pwid=chf("petal_width"), cr=chf("center_radius"), cup=radians(chf("cup")), jitter=chf("jitter"), y=chf("head_height");
 
-float rnd(float seed; float i; float k){
-    float value=rand(set(seed*1.6180339+0.371,i*3.1415926+0.113,k*2.7182818+0.529));
-    return value;
-}
+int ring[];
+for(int i=0;i<sides;i++){ float u=-2*PI*i/sides; append(ring,addpoint(0,set(cos(u)*cr,y+plen*0.05,sin(u)*cr))); }
+setprimgroup(0,"center",addprim(0,"poly",ring),1);
 
-float rnd_range(float seed; float i; float k; float lo; float hi){
-    return fit01(rnd(seed,i,k),lo,hi);
-}
-
-vector4 aim(vector dir; float twist){
-    return qmultiply(dihedral(set(0,1,0),normalize(dir)),quaternion(twist,set(0,1,0)));
-}
-
-void setup(){
-    vector4 identity=set(0,0,0,1);
-    addpointattrib(0,"pscale",1.0);
-    addpointattrib(0,"scale",set(1,1,1));
-    addpointattrib(0,"orient",identity);
-    addpointattrib(0,"Cd",set(1,1,1));
-    addpointattrib(0,"variant","");
-    addpointattrib(0,"part","");
-    setattribtypeinfo(0,"point","Cd","color");
-    setattribtypeinfo(0,"point","orient","quaternion");
-}
-
-int emit(vector p; vector radii; vector4 q; vector cd; string variant; string part){
-    int pt=addpoint(0,p);
-    setpointattrib(0,"scale",pt,radii);
-    setpointattrib(0,"orient",pt,q);
-    setpointattrib(0,"Cd",pt,cd);
-    setpointattrib(0,"variant",pt,variant);
-    setpointattrib(0,"part",pt,part);
-    return pt;
-}
-
-void head(vector c; vector up; float L; int n; vector col; vector centre; float seed; float id){
-    vector4 face=dihedral(set(0,1,0),normalize(up));
-    float spin=rnd_range(seed,id,0,0,TAU);
-    float cup=radians(rnd_range(seed,id,1,8,20));
-    for(int i=0;i<n;i++){
-        float a=spin+TAU*i/n+rnd_range(seed,id,10+i,-0.12,0.12);
-        vector radial=qrotate(face,set(cos(a),0,sin(a)));
-        vector4 q=qmultiply(face,qmultiply(quaternion(-a,set(0,1,0)),quaternion(cup,set(0,0,1))));
-        float pl=L*rnd_range(seed,id,20+i,0.92,1.06);
-        emit(c+radial*pl*0.6+normalize(up)*pl*sin(cup)*0.3,set(pl*0.58,L*0.16,L*0.5),q,col*rnd_range(seed,id,30+i,0.96,1.03),"sphere","petal");
+for(int p=0;p<petals;p++){
+    float a=2*PI*p/max(petals,1)+(rnd(seed,1,p)-0.5)*jitter;
+    float l=plen*(1+(rnd(seed,2,p)-0.5)*jitter), w=pwid*(1+(rnd(seed,3,p)-0.5)*jitter);
+    vector out=set(cos(a),0,sin(a)), side=set(-sin(a),0,cos(a));
+    int pts[];
+    for(int i=0;i<=sides*2;i++){
+        float u=PI*i/(sides*2);
+        float along=cr*0.6+(l*0.5)*(1-cos(u)), across=w*0.5*pow(sin(u),0.55);
+        append(pts,addpoint(0,out*along+side*across*(1-0.35*cos(u))+set(0,y+sin(cup)*along,0)));
     }
-    emit(c+normalize(up)*L*0.1,set(L*0.42,L*0.3,L*0.42),face,centre,"sphere","centre");
-}
-
-void stem(vector from; vector to; vector bend; float r){
-    int pieces=3;
-    for(int i=0;i<pieces;i++){
-        float t0=i/float(pieces), t1=(i+1)/float(pieces);
-        vector p0=lerp(lerp(from,bend,t0),lerp(bend,to,t0),t0);
-        vector p1=lerp(lerp(from,bend,t1),lerp(bend,to,t1),t1);
-        emit((p0+p1)*0.5,set(r,length(p1-p0)*0.62,r),aim(p1-p0,0),set(0.2,0.62,0.22),"sphere","stem");
+    for(int i=sides*2-1;i>0;i--){
+        float u=PI*i/(sides*2);
+        float along=cr*0.6+(l*0.5)*(1-cos(u)), across=w*0.5*pow(sin(u),0.55);
+        append(pts,addpoint(0,out*along-side*across*(1-0.35*cos(u))+set(0,y+sin(cup)*along,0)));
     }
-}
-
-setup();
-float seed=chf("seed");
-float L=fallback(chf("petal_length"),0.16);
-float stemH=fallback(chf("stem_height"),0.22);
-int n=int(fallback(chf("petals"),5));
-int leaves=int(fallback(chf("leaves"),3));
-int colour=chi("colour");
-vector palette[]={{0.95,0.93,0.86},{1,0.82,0.25},{0.98,0.55,0.7},{0.75,0.55,0.95}};
-vector col=palette[colour>0 ? min(colour-1,3) : int(rnd_range(seed,1,0,0,3.99))];
-vector centre=col==palette[1] ? set(1,0.55,0.08) : set(1,0.76,0.1);
-
-vector top=set(rnd_range(seed,2,0,-1,1)*L*0.25,stemH,rnd_range(seed,2,1,-1,1)*L*0.25);
-vector up=normalize(set(rnd_range(seed,3,0,-0.25,0.25),1,rnd_range(seed,3,1,-0.25,0.25)));
-stem(set(0,0,0),top,set(top.x*0.2+rnd_range(seed,4,0,-1,1)*L*0.2,stemH*0.5,top.z*0.2),L*0.09);
-head(top,up,L,n,col,centre,seed,5);
-
-float spin=rnd_range(seed,6,0,0,TAU);
-for(int i=0;i<leaves;i++){
-    float a=spin+TAU*i/max(leaves,1)+rnd_range(seed,7,i,-0.4,0.4);
-    float tilt=radians(rnd_range(seed,8,i,52,70));
-    float len=L*rnd_range(seed,9,i,1.1,1.45);
-    vector d=set(sin(tilt)*cos(a),cos(tilt),sin(tilt)*sin(a));
-    emit(d*len*0.5,set(L*0.36,len*0.5,L*0.1),qmultiply(dihedral(set(0,1,0),d),quaternion(TAU*0.25-a,set(0,1,0))),lerp(set(0.14,0.52,0.2),set(0.36,0.72,0.2),rnd(seed,10,i)),"sphere","leaf");
-}
-
-if(chi("buddy")){
-    float a=rnd_range(seed,11,0,0,TAU);
-    vector at=set(cos(a),0,sin(a))*L*1.4;
-    vector budTop=at+set(0,stemH*0.55,0);
-    stem(at,budTop,at+set(0,stemH*0.3,0),L*0.07);
-    head(budTop,normalize(set(cos(a)*0.4,1,sin(a)*0.4)),L*0.6,n,col,centre,seed,12);
+    setprimgroup(0,"petal",addprim(0,"poly",pts),1);
 }
