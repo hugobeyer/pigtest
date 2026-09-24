@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import {emit} from './fx/particles.js';
 import {shake} from './fx/shake.js';
 import {FX} from './tokens.js';
 
@@ -61,19 +60,21 @@ export function destroyCell(cell){
   if(!cell.alive)return;
   cell.alive=false;
   popping.push({cell,t:0});
-  emit(cell.position,cell.isLight,FX.hit);
   remaining--;
   if(grid[cell.r].every(c=>!c.alive) || grid.every(row=>!row[cell.c].alive))shake();
 }
 
 export function updateGrid(dt){
-  const {amount,peak,duration}=FX.blockPop;
+  const {amount,peak,duration,rise}=FX.blockPop;
   for(let i=popping.length-1;i>=0;i--){
     const pop=popping[i], {cell}=pop;
     pop.t+=dt;
     const k=Math.min(pop.t/duration,1);
-    const scale=k<peak ? 1+amount*k/peak : (1+amount)*(1-(k-peak)/(1-peak));
-    cell.mesh.setMatrixAt(cell.index,k>=1 ? hidden : popMatrix.copy(cell.matrix).scale(popScale.setScalar(scale)));
+    const fade=k<peak ? 0 : (k-peak)/(1-peak);
+    const scale=k<peak ? 1+amount*k/peak : (1+amount)*(1-fade);
+    popMatrix.copy(cell.matrix).scale(popScale.setScalar(scale));
+    popMatrix.elements[14]+=rise*fade;
+    cell.mesh.setMatrixAt(cell.index,k>=1 ? hidden : popMatrix);
     cell.mesh.instanceMatrix.needsUpdate=true;
     if(k>=1)popping.splice(i,1);
   }

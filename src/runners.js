@@ -8,7 +8,7 @@ import {emit} from './fx/particles.js';
 import {popup} from './fx/popups.js';
 import {ANIM, FX, LABEL, MOTION, SHOT} from './tokens.js';
 
-let scene, path, bullets, labelLift;
+let scene, path, bullets, labelLift, lastWord=null;
 export const runs=[];
 const mouthLocal=new THREE.Vector3(...SHOT.mouth);
 
@@ -55,8 +55,9 @@ function fire(run){
   bump(run.label,FX.numberPunch);
   run.hits=(run.hits??0)+1;
   if(run.hits%FX.combo.every===0){
-    const {words}=FX.combo;
-    popup(scene,words[Math.min(run.hits/FX.combo.every-1,words.length-1)],run.runner.position);
+    const words=FX.combo.words.filter(word=>word!==lastWord);
+    lastWord=words[Math.floor(Math.random()*words.length)];
+    popup(scene,lastWord,run.runner.position);
   }
 }
 

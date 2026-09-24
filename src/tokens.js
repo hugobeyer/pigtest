@@ -21,15 +21,14 @@ export const LIGHTS={
 };
 export const FX={
   particles:{max:160,gravity:-22,spin:9},
-  hit:{count:3,speed:3.5,up:6,life:.45,size:.45},
   trail:{count:1,interval:.05,speed:.3,up:.4,life:.16,size:.35},
   tap:{count:8,speed:3.5,up:7,life:.5,size:.55},
   death:{count:10,speed:4.5,up:8,life:.6,size:.6},
   confetti:{count:50,speed:10,up:16,life:1.4,size:.7},
-  blockPop:{amount:.3,peak:.3,duration:.14},
+  blockPop:{amount:.22,peak:.22,duration:.2,rise:.9},
   numberPunch:{amount:.4,duration:.12},
   counterPunch:{amount:.35,duration:.16},
   idleBob:{height:.14,speed:5},
-  shake:{amplitude:.18,duration:.25},
-  combo:{every:8,words:['GREAT!','AWESOME!','AMAZING!'],height:1.1,aspect:4,lift:1.2,rise:1.6,duration:.8}
+  shake:{amplitude:.05,duration:.15},
+  combo:{every:12,words:['NICE!','SWEET!','COOL!','WOW!','YES!','COMBO!','GREAT!','AWESOME!'],height:1.1,aspect:4,lift:1.2,rise:1.6,duration:.8}
 };
