@@ -10,6 +10,7 @@ import {ANIM, FX, LABEL, MOTION, SHOT} from './tokens.js';
 
 let scene, path, bullets, trails, labelLift, lastWord=null;
 export const runs=[];
+export const runStats={shots:0,bestCombo:0};
 const mouthLocal=new THREE.Vector3(...SHOT.mouth);
 
 export function initRunners(targetScene,templates,bulletTemplates,trailTemplates,runnerPath){
@@ -55,6 +56,8 @@ function fire(run){
   bump(run.pop,ANIM.shotBump);
   bump(run.label,FX.numberPunch);
   run.hits=(run.hits??0)+1;
+  runStats.shots++;
+  runStats.bestCombo=Math.max(runStats.bestCombo,run.hits);
   if(run.hits%FX.combo.every===0){
     const words=FX.combo.words.filter(word=>word!==lastWord);
     lastWord=words[Math.floor(Math.random()*words.length)];
