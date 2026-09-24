@@ -1,6 +1,6 @@
 import bpy
 import re
-from config import PIG_QUEUE_LENGTH, PIG_ROW_STEP
+from config import PIG_QUEUE_LENGTH, PIG_ROW_STEP, PIG_TEMPLATE_GAP
 from asset_contract import PIG_COLUMN_NAMES
 
 
@@ -57,6 +57,32 @@ def migrate_grid(root):
     obj.name=name
 
 
+def migrate_runner(root):
+  runner=root.all_objects.get('PigRunner')
+  if runner is None: return
+  if any(bpy.data.objects.get(name) for name in ('Pig_Light','Pig_Dark')): raise ValueError('Pig_Light/Pig_Dark already exist; delete PigRunner explicitly.')
+  light=bpy.data.materials.get('Light')
+  if light is None: raise ValueError('Material Light is required to create Pig_Light.')
+  copies={}
+  for obj in (runner,*runner.children_recursive):
+    copies[obj]=obj.copy()
+    for collection in obj.users_collection: collection.objects.link(copies[obj])
+  for obj,copy in copies.items():
+    copy.parent=copies.get(obj.parent)
+    copy.matrix_parent_inverse=obj.matrix_parent_inverse.copy()
+    copy.matrix_basis=obj.matrix_basis.copy()
+    copy.name='Pig_Light' if obj==runner else 'Pig_Light_'+obj.name.removeprefix('PigRunner_')
+    for slot in copy.material_slots:
+      slot.link='OBJECT'
+      slot.material=light
+  copies[runner].location.x+=PIG_TEMPLATE_GAP
+  for obj in runner.children_recursive: obj.name='Pig_Dark_'+obj.name.removeprefix('PigRunner_')
+  for pig in (runner,copies[runner]):
+    if 'is_light' in pig: del pig['is_light']
+  runner.name='Pig_Dark'
+
+
 def migrate(root):
+  migrate_runner(root)
   migrate_pigs(root)
   migrate_grid(root)

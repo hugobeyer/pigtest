@@ -18,6 +18,7 @@ export function slide(object,to,{duration}){
 
 export function grow(object,{duration}){
   const scale=object.scale.clone();
+  object.scale.setScalar(0);
   tween(duration,k=>object.scale.copy(scale).multiplyScalar(easeOut(k)));
 }
 

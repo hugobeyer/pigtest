@@ -15,11 +15,11 @@ export function materialOf(object){
   return material;
 }
 
-export function instantiate(template,material){
+export function instantiate(template){
   const wrapper=new THREE.Group(), body=template.clone();
   template.matrixWorld.decompose(body.position,body.quaternion,body.scale);
+  body.position.set(0,0,0);
   body.visible=true;
-  body.traverse(o=>{if(o.isMesh)o.material=material;});
   wrapper.add(body);
   return wrapper;
 }
@@ -37,13 +37,14 @@ export async function loadAssets(url){
   ['Rail_Main','Rail_End','CameraTarget'].forEach(name=>requireObject(root,name));
   const camera=root.getObjectByProperty('isOrthographicCamera',true);
   if(!camera)throw new Error('Missing Blender orthographic camera');
-  const [runner,light,dark]=['PigRunner','Grid_Block_Light','Grid_Block_Dark'].map(name=>{
+  const [pigLight,pigDark,light,dark]=['Pig_Light','Pig_Dark','Grid_Block_Light','Grid_Block_Dark'].map(name=>{
     const object=requireObject(root,name);
     object.visible=false;
     return object;
   });
   return {
-    root,camera,runner,
+    root,camera,
+    pigs:{light:pigLight,dark:pigDark},
     blocks:{light,dark},
     gridCenter:requireObject(root,'GridCenter'),
     railStart:requireObject(root,'Rail_Start'),

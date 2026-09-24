@@ -16,7 +16,7 @@ Scripts do not save the `.blend` automatically. Save explicitly in Blender after
 
 - `Pig_00` … `Pig_11` become `PigColumn_0` … `PigColumn_3`, one Empty per column at its front pig. `queue` keeps the three authored colors and continues alternating to `PIG_QUEUE_LENGTH`. `row_step` is the authored spacing between rows. The old pig objects and their bodies are deleted.
 - `Grid_rXX_cYY` become `Grid_Block_Light` and `Grid_Block_Dark` (one light and one dark cell are kept and renamed). `GridCenter` gets `rows`, `columns`, `step` and `checker` from the old cells and is centred on them. The other cells are deleted.
-- `PigRunner` is kept and becomes the single pig model.
+- `PigRunner` becomes `Pig_Dark`, and a linked copy with the `Light` material becomes `Pig_Light`, placed `PIG_TEMPLATE_GAP` to the side.
 
 It fails explicitly if the new names already exist alongside old objects.
 
@@ -26,13 +26,13 @@ It fails explicitly if the new names already exist alongside old objects.
 
 | Assets | Required names |
 | --- | --- |
-| Pigs | `PigColumn_0` through `PigColumn_3` (Empties), plus `PigRunner` |
+| Pigs | `PigColumn_0` through `PigColumn_3` (Empties), plus `Pig_Light` and `Pig_Dark` |
 | Rail | `Rail_Start`, `Rail_Main`, `Rail_End` |
 | Grid | `Grid_Block_Light`, `Grid_Block_Dark` |
 | Slots | `Slot_0` through `Slot_4` |
 | Anchors | `RailStart`, `RailEnd`, `GridCenter`, `CameraTarget` (Empties) |
 
-The runner, rail, grid blocks and slots must have an exportable mesh/curve on the object or in its descendants. Required names with Blender suffixes such as `.001` and leftover `Pig_XX`/`Grid_rXX_cYY` objects are reported, not silently accepted.
+The pig models, rail, grid blocks and slots must have an exportable mesh/curve on the object or in its descendants. Required names with Blender suffixes such as `.001` and leftover `Pig_XX`/`PigRunner`/`Grid_rXX_cYY` objects are reported, not silently accepted.
 
 Each `PigColumn` needs `queue` (text of `D`/`L`, front first) and a positive `row_step`. `GridCenter` needs positive integers `rows`, `columns`, `checker` and a positive `step`. Slots need an integer `slot` matching their index. Existing colors and light/dark choices are not reset. `validate_assets(root)` returns missing names, duplicates, errors, per-asset renderable hierarchy counts and total export-object count. `require_assets(root)` raises on failures.
 
@@ -44,7 +44,7 @@ Existing geometry, transforms, materials, camera settings, anchors and lighting 
 
 ## Edit in Blender
 
-- Edit `PigRunner` to change every pig, in the bank and on the rail.
+- Edit `Pig_Light` or `Pig_Dark` to change that colour's pigs, in the bank and on the rail. They share `Pig_Mesh` until you give one its own mesh. Their placement in Blender is ignored at runtime.
 - Edit a `Grid_Block` mesh to change every grid block; the two blocks share one mesh.
 - Move a `PigColumn` to move its whole queue; edit `queue` and `row_step` in its custom properties.
 - Change the grid layout with `GridCenter`'s location and its `rows`, `columns`, `step` and `checker` properties.
@@ -74,8 +74,8 @@ Blender and the exported GLB own the runtime visuals: the grid, pigs, runner, ra
 The runtime builds its state from the imported nodes (`src/grid.js`, `src/pigs.js`, `src/runners.js`):
 
 - The grid is laid out from `GridCenter`'s `rows`, `columns`, `step` and `checker`, drawn as two instanced meshes of `Grid_Block_Light` and `Grid_Block_Dark`. Destroying a cell hides its instance.
-- Each `PigColumn` shows `PIGS.visibleRows` pigs, cloned from `PigRunner`, spaced by `row_step` behind the Empty. Only the front pig can be tapped. The column slides forward and the next `queue` entry appears at the back.
-- Pigs and runners use the grid blocks' light and dark materials, so their colours always match the blocks.
+- Each `PigColumn` shows `PIGS.visibleRows` pigs, cloned from `Pig_Light` or `Pig_Dark` by queue colour, spaced by `row_step` behind the Empty. Only the front pig can be tapped. The column slides forward and the next `queue` entry appears at the back.
+- Runners are clones of the tapped pig's model, and bullets use its material.
 - Each pig starts with `PIGS.ammo` shots. The runner shows its remaining shots and leaves the rail when it runs out. At most `PIGS.railCapacity` runners share the rail, and the label under `Rail_Start` shows the free slots. These labels are runtime canvas sprites.
 - The projectile sphere is the only geometry the runtime creates.
 

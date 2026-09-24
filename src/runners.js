@@ -1,25 +1,24 @@
 import * as THREE from 'three';
-import {instantiate} from './assets.js';
+import {instantiate, materialOf} from './assets.js';
 import {createLabel} from './labels.js';
 import {validTarget} from './grid.js';
 import {fireShot} from './shots.js';
 import {bump, vanish} from './tweens.js';
 import {ANIM, LABEL, MOTION, SHOT} from './tokens.js';
 
-let scene, template, path, labelLift;
+let scene, path, labelLift;
 export const runs=[];
 const mouthLocal=new THREE.Vector3(...SHOT.mouth);
 
-export function initRunners(targetScene,runnerTemplate,runnerPath){
+export function initRunners(targetScene,templates,runnerPath){
   scene=targetScene;
-  template=runnerTemplate;
   path=runnerPath;
-  const box=new THREE.Box3().setFromObject(template,true);
+  const box=new THREE.Box3().setFromObject(templates.dark,true);
   labelLift=box.max.z-box.min.z+LABEL.lift;
 }
 
-function spawn(material){
-  const runner=new THREE.Group(), pop=instantiate(template,material);
+function spawn(template){
+  const runner=new THREE.Group(), pop=instantiate(template);
   runner.add(pop);
   const label=createLabel(runner);
   label.position.z=labelLift;
@@ -30,11 +29,11 @@ function spawn(material){
   return {runner,pop,label};
 }
 
-export function launchRunner({material,ammo,isLight}){
-  const parts=spawn(material);
+export function launchRunner({template,ammo,isLight}){
+  const parts=spawn(template);
   parts.label.userData.set(String(ammo));
   runs.push({
-    ...parts,material,ammo,isLight,
+    ...parts,material:materialOf(template),ammo,isLight,
     nodeIndex:0,phase:'move',
     from:path.entry.clone(),to:path.entry.clone(),
     stepT:1,stepDuration:0,

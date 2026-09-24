@@ -2,13 +2,14 @@ import re
 from collections import Counter
 
 PIG_COLUMN_NAMES=tuple(f'PigColumn_{index}' for index in range(4))
+PIG_NAMES=('Pig_Light','Pig_Dark')
 BLOCK_NAMES=('Grid_Block_Light','Grid_Block_Dark')
 RAIL_NAMES=('Rail_Start','Rail_Main','Rail_End')
 SLOT_NAMES=tuple(f'Slot_{index}' for index in range(5))
 ANCHOR_NAMES=('RailStart','RailEnd','GridCenter','CameraTarget')
-REQUIRED_NAMES=(*PIG_COLUMN_NAMES,'PigRunner',*RAIL_NAMES,*BLOCK_NAMES,*SLOT_NAMES,*ANCHOR_NAMES)
-RENDERABLE_NAMES=('PigRunner',*RAIL_NAMES,*BLOCK_NAMES,*SLOT_NAMES)
-OBSOLETE=re.compile(r'^(Pig_\d+|Pig_\d+_\d+|Grid_r\d+_c\d+)$')
+REQUIRED_NAMES=(*PIG_COLUMN_NAMES,*PIG_NAMES,*RAIL_NAMES,*BLOCK_NAMES,*SLOT_NAMES,*ANCHOR_NAMES)
+RENDERABLE_NAMES=(*PIG_NAMES,*RAIL_NAMES,*BLOCK_NAMES,*SLOT_NAMES)
+OBSOLETE=re.compile(r'^(Pig_\d+|Pig_\d+_\d+|PigRunner|Grid_r\d+_c\d+)$')
 RENDERABLE_TYPES={'MESH','CURVE'}
 
 
@@ -37,7 +38,7 @@ def validate_assets(root):
   duplicates.extend(obj.name for obj in root.all_objects if re.sub(r'\.\d+$','',obj.name) in REQUIRED_NAMES and obj.name not in REQUIRED_NAMES)
   errors=[]
   obsolete=[obj.name for obj in root.all_objects if OBSOLETE.fullmatch(re.sub(r'\.\d+$','',obj.name))]
-  if obsolete: errors.append(f'Obsolete pig/grid objects require Build Missing Assets: {len(obsolete)} found, e.g. '+', '.join(obsolete[:4]))
+  if obsolete: errors.append(f'Obsolete pig/runner/grid objects require Build Missing Assets: {len(obsolete)} found, e.g. '+', '.join(obsolete[:4]))
   renderable_counts={}
   for name in RENDERABLE_NAMES:
     obj=by_name.get(name)
