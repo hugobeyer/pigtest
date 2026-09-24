@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+<rect x="0" y="0" width="1600" height="900" fill="#171826"/>
+<rect id="world_floor" x="80.00" y="743.45" width="1440.00" height="10.21" fill="#62678d" fill-opacity="1.0"/>
+<text x="86.00" y="765.45" font-family="Arial,sans-serif" font-size="20" fill="#f3f5ff">world_floor</text>
+<rect id="grid_bbox" x="433.40" y="308.63" width="733.21" height="428.69" fill="#7d86aa" fill-opacity="0.4"/>
+<text x="439.40" y="330.63" font-family="Arial,sans-serif" font-size="20" fill="#f3f5ff">grid_bbox</text>
+<rect id="rail_main_bbox" x="307.70" y="543.39" width="984.59" height="193.93" fill="#aab8f6" fill-opacity="0.55"/>
+<text x="313.70" y="565.39" font-family="Arial,sans-serif" font-size="20" fill="#f3f5ff">rail_main_bbox</text>
+<rect id="rail_start_bbox" x="344.14" y="563.81" width="107.48" height="173.52" fill="#f4f7ff" fill-opacity="1.0"/>
+<text x="350.14" y="585.81" font-family="Arial,sans-serif" font-size="20" fill="#f3f5ff">rail_start_bbox</text>
+<rect id="rail_end_bbox" x="261.25" y="563.81" width="92.90" height="173.52" fill="#f4f7ff" fill-opacity="1.0"/>
+<text x="267.25" y="585.81" font-family="Arial,sans-serif" font-size="20" fill="#f3f5ff">rail_end_bbox</text>
+<rect id="pig_row0_col0" x="448.43" y="369.88" width="111.12" height="367.45" fill="#242733" fill-opacity="1.0"/>
+<rect id="pig_row0_col1" x="644.25" y="369.88" width="111.12" height="367.45" fill="#f3f5ff" fill-opacity="1.0"/>
+<rect id="pig_row0_col2" x="840.08" y="369.88" width="111.12" height="367.45" fill="#242733" fill-opacity="1.0"/>
+<rect id="pig_row0_col3" x="1035.90" y="369.88" width="111.12" height="367.45" fill="#f3f5ff" fill-opacity="1.0"/>
+<rect id="pig_row1_col0" x="448.43" y="369.88" width="111.12" height="367.45" fill="#f3f5ff" fill-opacity="1.0"/>
+<rect id="pig_row1_col1" x="644.25" y="369.88" width="111.12" height="367.45" fill="#242733" fill-opacity="1.0"/>
+<rect id="pig_row1_col2" x="840.08" y="369.88" width="111.12" height="367.45" fill="#f3f5ff" fill-opacity="1.0"/>
+<rect id="pig_row1_col3" x="1035.90" y="369.88" width="111.12" height="367.45" fill="#242733" fill-opacity="1.0"/>
+<rect id="pig_row2_col0" x="448.43" y="369.88" width="111.12" height="367.45" fill="#242733" fill-opacity="1.0"/>
+<rect id="pig_row2_col1" x="644.25" y="369.88" width="111.12" height="367.45" fill="#f3f5ff" fill-opacity="1.0"/>
+<rect id="pig_row2_col2" x="840.08" y="369.88" width="111.12" height="367.45" fill="#242733" fill-opacity="1.0"/>
+<rect id="pig_row2_col3" x="1035.90" y="369.88" width="111.12" height="367.45" fill="#f3f5ff" fill-opacity="1.0"/>
+<rect id="runner_reference_bbox" x="417.00" y="168.29" width="111.12" height="367.45" fill="#242733" fill-opacity="1.0"/>
+<text x="423.00" y="190.29" font-family="Arial,sans-serif" font-size="20" fill="#f3f5ff">runner_reference_bbox</text>
+<rect id="runner_mouth_bbox" x="444.33" y="117.26" width="56.47" height="122.48" fill="#f3f5ff" fill-opacity="1.0"/>
+<text x="450.33" y="139.26" font-family="Arial,sans-serif" font-size="20" fill="#f3f5ff">runner_mouth_bbox</text>
+<text x="80.00" y="42" font-family="Arial,sans-serif" font-size="34" fill="#f3f5ff">XZ positioning skeleton — bbox only</text>
+<text x="80.00" y="68" font-family="Arial,sans-serif" font-size="18" fill="#cbd2ea">Current prototype convention: X horizontal, Z vertical/up. No rounded shapes. No borders. Named rects for agent parsing.</text>
+<text x="1520" y="737.45" font-family="Arial,sans-serif" font-size="18" fill="#cbd2ea">+X</text>
+<text x="86" y="98" font-family="Arial,sans-serif" font-size="18" fill="#cbd2ea">+Z</text>
+<text x="80.00" y="755.00" font-family="Arial,sans-serif" font-size="18" fill="#e4e8ff">grid_bbox: x=-4.025..4.025, z=0.012..0.852</text>
+<text x="80.00" y="779.00" font-family="Arial,sans-serif" font-size="18" fill="#e4e8ff">rail_main_bbox: x=-5.405..5.405, z=0.012..0.392</text>
+<text x="80.00" y="803.00" font-family="Arial,sans-serif" font-size="18" fill="#e4e8ff">rail_start_bbox: x=-5.005..-3.825, z=0.012..0.352</text>
+<text x="80.00" y="827.00" font-family="Arial,sans-serif" font-size="18" fill="#e4e8ff">rail_end_bbox: x=-5.915..-4.895, z=0.012..0.352</text>
+<text x="80.00" y="851.00" font-family="Arial,sans-serif" font-size="18" fill="#e4e8ff">pig bbox size: 1.22 × 0.72</text>
+<text x="80.00" y="875.00" font-family="Arial,sans-serif" font-size="18" fill="#e4e8ff">runner floor z: 0.407</text>
+</svg>
