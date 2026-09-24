@@ -20,10 +20,12 @@ export async function loadAssets(url){
   });
   lights.forEach(light=>light.parent.remove(light));
   ['Rail_Main','Rail_End','GridCenter','CameraTarget'].forEach(name=>requireObject(root,name));
+  const camera=root.getObjectByProperty('isOrthographicCamera',true);
+  if(!camera)throw new Error('Missing Blender orthographic camera');
   const runner=requireObject(root,'PigRunner');
   runner.visible=false;
   return {
-    root,runner,
+    root,runner,camera,
     railStart:requireObject(root,'Rail_Start'),
     anchors:{RailStart:requireObject(root,'RailStart'),RailEnd:requireObject(root,'RailEnd')},
     grid:Array.from({length:ROWS},(_,r)=>Array.from({length:COLS},(_,c)=>requireObject(root,`Grid_r${pad(r)}_c${pad(c)}`))),

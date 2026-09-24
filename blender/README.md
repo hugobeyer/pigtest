@@ -92,7 +92,7 @@ The gameplay path keeps its current node layout:
 - The left rail line and the end point come from `RailEnd`.
 - Rail offsets, the corner radius and the speeds stay in `src/config.js`. The path is not derived from `Rail_Main` triangles, so moving the rail mesh in Blender without moving its anchors can make visuals and the path diverge.
 
-The runtime camera and lights are still defined in `src/main.js`. Exported Blender lights are removed on import, and the Blender camera is exported but unused.
+The runtime uses the exported Blender scene camera: its transform, orthographic scale and clip range. Its render resolution sets the portrait canvas ratio, and export copies that resolution into the temporary export scene. Building switches a landscape render resolution to `CAMERA_RESOLUTION`. Lights are still defined in `src/main.js`; exported Blender lights are removed on import.
 
 `docs/primitive_playable_xz_bbox_skeleton.svg` is an XZ silhouette guide, not a live constraint.
 

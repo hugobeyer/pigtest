@@ -72,6 +72,7 @@ def export_glb(path=EXPORT_PATH):
         raise ValueError(f'{obj.name}: evaluated geometry has no faces; nothing renderable would be exported')
       snapshots[obj]=(matrix,mesh,materials)
     temporary=bpy.data.scenes.new('PrimitiveExport')
+    for key in ('resolution_x','resolution_y','pixel_aspect_x','pixel_aspect_y'): setattr(temporary.render,key,getattr(source_scene.render,key))
     export_root=bpy.data.objects.new('PrimitiveScene',None)
     temporary.collection.objects.link(export_root)
     export_root['authored_up_axis']='Z'

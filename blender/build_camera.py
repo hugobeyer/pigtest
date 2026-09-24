@@ -1,8 +1,10 @@
 import bpy
 from math import cos, radians, sin
-from config import CAMERA_DISTANCE, CAMERA_ELEVATION_DEGREES, CAMERA_OFFSET_Y, CAMERA_OFFSET_Z, CAMERA_ORTHO_SCALE
+from config import CAMERA_RESOLUTION, CAMERA_DISTANCE, CAMERA_ELEVATION_DEGREES, CAMERA_OFFSET_Y, CAMERA_OFFSET_Z, CAMERA_ORTHO_SCALE
 
 def build_camera(collection, target):
+  render=bpy.context.scene.render
+  if render.resolution_x>render.resolution_y: render.resolution_x,render.resolution_y=CAMERA_RESOLUTION
   camera=next((obj for obj in collection.objects if obj.type=='CAMERA'),None)
   if camera: return camera
   data=bpy.data.cameras.new('Camera')

@@ -12,28 +12,15 @@ renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFShadowMap;
 document.querySelector('#app').appendChild(renderer.domElement);
 
-const WORLD_H=23.4;
-const camera=new THREE.OrthographicCamera();
+let camera;
 
 function resize(){
-  const aspect=9/16;
+  const aspect=(camera.right-camera.left)/(camera.top-camera.bottom);
   let h=innerHeight, w=h*aspect;
   if(w>innerWidth){w=innerWidth; h=w/aspect;}
-  camera.left=-WORLD_H*aspect*.5;
-  camera.right=WORLD_H*aspect*.5;
-  camera.top=WORLD_H*.5;
-  camera.bottom=-WORLD_H*.5;
-  camera.near=.1;
-  camera.far=100;
-  const elev=THREE.MathUtils.degToRad(62), dist=24;
-  camera.position.set(0,-Math.cos(elev)*dist+1.25,Math.sin(elev)*dist-6.6);
-  camera.lookAt(0,.40,0);
-  camera.updateProjectionMatrix();
   renderer.setSize(w,h,false);
   Object.assign(renderer.domElement.style,{width:w+'px',height:h+'px',position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)'});
 }
-addEventListener('resize',resize);
-resize();
 
 scene.add(new THREE.HemisphereLight(0xffffff,0x303449,1.65));
 const key=new THREE.DirectionalLight(0xffffff,2.65);
@@ -75,6 +62,9 @@ function frame(now){
 loadAssets(new URL('../assets/primitive_scene.glb',import.meta.url).href).then(assets=>{
   initGameplay(scene,assets);
   scene.add(assets.root);
+  camera=assets.camera;
+  resize();
+  addEventListener('resize',resize);
   enableInput();
   last=performance.now();
   renderer.setAnimationLoop(frame);
