@@ -1,8 +1,9 @@
 export const MOTION={speed:10.7,aimTime:.028,runnerLift:.38+.015};
-export const SHOT={speed:22.0,minDuration:.045,radius:.24,segments:[16,12],targetZ:.84*.72,mouth:[0,.92,.67]};
+export const SHOT={speed:22.0,minDuration:.045,targetZ:.84*.72,mouth:[0,.92,.67]};
 export const PATH={sideOffset:1.38,verticalOffset:2.38,cornerRadius:1.10,laneGap:.42,endOffset:.15,arcSteps:12};
 export const PIGS={ammo:20,visibleRows:3,railCapacity:5};
 export const FRAME={maxDelta:.033};
+export const WIN={delay:.5,title:'LEVEL CLEAR',hint:'Tap to play again'};
 
 export const ANIM={
   tapBump:{amount:.15,duration:.08},

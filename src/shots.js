@@ -1,12 +1,11 @@
-import * as THREE from 'three';
+import {instantiate} from './assets.js';
 import {destroyCell} from './grid.js';
 import {SHOT} from './tokens.js';
 
 const shots=[];
 
-export function fireShot(scene,from,cell,material){
-  const mesh=new THREE.Mesh(new THREE.SphereGeometry(SHOT.radius,...SHOT.segments),material);
-  mesh.castShadow=true;
+export function fireShot(scene,from,cell,template){
+  const mesh=instantiate(template);
   const to=cell.position.clone();
   to.z=SHOT.targetZ;
   mesh.position.copy(from);
@@ -23,7 +22,6 @@ export function updateShots(dt){
     if(k>=1){
       destroyCell(s.cell);
       s.scene.remove(s.mesh);
-      s.mesh.geometry.dispose();
       shots.splice(i,1);
     }
   }

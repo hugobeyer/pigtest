@@ -3,12 +3,13 @@ from collections import Counter
 
 PIG_COLUMN_NAMES=tuple(f'PigColumn_{index}' for index in range(4))
 PIG_NAMES=('Pig_Light','Pig_Dark')
+BULLET_NAMES=('Bullet_Light','Bullet_Dark')
 BLOCK_NAMES=('Grid_Block_Light','Grid_Block_Dark')
 RAIL_NAMES=('Rail_Start','Rail_Main','Rail_End')
 SLOT_NAMES=tuple(f'Slot_{index}' for index in range(5))
 ANCHOR_NAMES=('RailStart','RailEnd','GridCenter','CameraTarget')
-REQUIRED_NAMES=(*PIG_COLUMN_NAMES,*PIG_NAMES,*RAIL_NAMES,*BLOCK_NAMES,*SLOT_NAMES,*ANCHOR_NAMES)
-RENDERABLE_NAMES=(*PIG_NAMES,*RAIL_NAMES,*BLOCK_NAMES,*SLOT_NAMES)
+REQUIRED_NAMES=(*PIG_COLUMN_NAMES,*PIG_NAMES,*BULLET_NAMES,*RAIL_NAMES,*BLOCK_NAMES,*SLOT_NAMES,*ANCHOR_NAMES)
+RENDERABLE_NAMES=(*PIG_NAMES,*BULLET_NAMES,*RAIL_NAMES,*BLOCK_NAMES,*SLOT_NAMES)
 OBSOLETE=re.compile(r'^(Pig_\d+|Pig_\d+_\d+|PigRunner|Grid_r\d+_c\d+)$')
 RENDERABLE_TYPES={'MESH','CURVE'}
 

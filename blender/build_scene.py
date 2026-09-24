@@ -6,7 +6,7 @@ from pathlib import Path
 SCRIPT_DIR=Path(__file__).resolve().parent
 if not (SCRIPT_DIR/'asset_contract.py').is_file(): raise RuntimeError('Open the external blender/build_scene.py in the Text Editor; do not paste into an internal text block.')
 if str(SCRIPT_DIR) not in sys.path: sys.path.insert(0, str(SCRIPT_DIR))
-for name in ('config','asset_contract','migrate','mesh_assets','materials','build_grid','build_rail','build_pigs','build_slots','build_anchors','build_camera','build_lighting'):
+for name in ('config','asset_contract','migrate','mesh_assets','materials','build_grid','build_rail','build_pigs','build_bullets','build_slots','build_anchors','build_camera','build_lighting'):
   if name in sys.modules: importlib.reload(sys.modules[name])
 
 from build_anchors import build_anchors
@@ -14,6 +14,7 @@ from build_camera import build_camera
 from build_grid import build_grid
 from build_lighting import build_lighting
 from build_pigs import build_pigs
+from build_bullets import build_bullets
 from build_rail import build_rail
 from build_slots import build_slots
 from materials import build_materials
@@ -40,6 +41,7 @@ def build_scene():
   build_grid(groups['Grid'], materials, points['GridCenter'])
   build_rail(groups['Rail'], materials)
   build_pigs(groups['Pigs'], materials)
+  build_bullets(groups['Pigs'], materials)
   build_slots(groups['Slots'], materials)
   build_camera(groups['Camera'], points['CameraTarget'])
   build_lighting(groups['Lighting'])

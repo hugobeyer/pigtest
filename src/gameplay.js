@@ -1,20 +1,21 @@
 import * as THREE from 'three';
-import {createGrid} from './grid.js';
+import {createGrid, remainingCells} from './grid.js';
 import {createPath} from './path.js';
 import {createPigs, takePig, tapTargets} from './pigs.js';
 import {initRunners, launchRunner, runs, updateRunners} from './runners.js';
 import {updateShots} from './shots.js';
-import {updateTweens} from './tweens.js';
+import {tween, updateTweens} from './tweens.js';
+import {showWin} from './win.js';
 import {createLabel} from './labels.js';
-import {LABEL, PIGS} from './tokens.js';
+import {LABEL, PIGS, WIN} from './tokens.js';
 
-let capacityLabel, pigTemplates;
+let capacityLabel, pigTemplates, won=false;
 export {tapTargets};
 
 export function initGameplay(scene,assets){
   pigTemplates=assets.pigs;
   const grid=createGrid(scene,assets.gridCenter,assets.blocks);
-  initRunners(scene,pigTemplates,createPath(grid,assets.anchors));
+  initRunners(scene,pigTemplates,assets.bullets,createPath(grid,assets.anchors));
   createPigs(scene,assets.columns,pigTemplates);
   const box=new THREE.Box3().setFromObject(assets.railStart);
   capacityLabel=createLabel(scene);
@@ -22,7 +23,7 @@ export function initGameplay(scene,assets){
 }
 
 export function tap(object){
-  if(runs.length>=PIGS.railCapacity)return false;
+  if(won || runs.length>=PIGS.railCapacity)return false;
   const pig=takePig(object);
   if(!pig)return false;
   launchRunner({template:pig.isLight ? pigTemplates.light : pigTemplates.dark,ammo:pig.ammo,isLight:pig.isLight});
@@ -33,5 +34,9 @@ export function updateGameplay(dt){
   updateRunners(dt);
   updateShots(dt);
   updateTweens(dt);
+  if(!won && remainingCells()===0){
+    won=true;
+    tween(WIN.delay,null,showWin);
+  }
   capacityLabel.userData.set(`${PIGS.railCapacity-runs.length}/${PIGS.railCapacity}`);
 }

@@ -28,11 +28,12 @@ It fails explicitly if the new names already exist alongside old objects.
 | --- | --- |
 | Pigs | `PigColumn_0` through `PigColumn_3` (Empties), plus `Pig_Light` and `Pig_Dark` |
 | Rail | `Rail_Start`, `Rail_Main`, `Rail_End` |
+| Bullets | `Bullet_Light`, `Bullet_Dark` |
 | Grid | `Grid_Block_Light`, `Grid_Block_Dark` |
 | Slots | `Slot_0` through `Slot_4` |
 | Anchors | `RailStart`, `RailEnd`, `GridCenter`, `CameraTarget` (Empties) |
 
-The pig models, rail, grid blocks and slots must have an exportable mesh/curve on the object or in its descendants. Required names with Blender suffixes such as `.001` and leftover `Pig_XX`/`PigRunner`/`Grid_rXX_cYY` objects are reported, not silently accepted.
+The pig and bullet models, rail, grid blocks and slots must have an exportable mesh/curve on the object or in its descendants. Required names with Blender suffixes such as `.001` and leftover `Pig_XX`/`PigRunner`/`Grid_rXX_cYY` objects are reported, not silently accepted.
 
 Each `PigColumn` needs `queue` (text of `D`/`L`, front first) and a positive `row_step`. `GridCenter` needs positive integers `rows`, `columns`, `checker` and a positive `step`. Slots need an integer `slot` matching their index. Existing colors and light/dark choices are not reset. `validate_assets(root)` returns missing names, duplicates, errors, per-asset renderable hierarchy counts and total export-object count. `require_assets(root)` raises on failures.
 
@@ -75,9 +76,9 @@ The runtime builds its state from the imported nodes (`src/grid.js`, `src/pigs.j
 
 - The grid is laid out from `GridCenter`'s `rows`, `columns`, `step` and `checker`, drawn as two instanced meshes of `Grid_Block_Light` and `Grid_Block_Dark`. Destroying a cell hides its instance.
 - Each `PigColumn` shows `PIGS.visibleRows` pigs, cloned from `Pig_Light` or `Pig_Dark` by queue colour, spaced by `row_step` behind the Empty. Only the front pig can be tapped. The column slides forward and the next `queue` entry appears at the back.
-- Runners are clones of the tapped pig's model, and bullets use its material.
+- Runners are clones of the tapped pig's model; their shots are clones of `Bullet_Light` or `Bullet_Dark`.
+- When every cell is destroyed, a flat win panel appears after `WIN.delay`; tapping it restarts.
 - Each pig starts with `PIGS.ammo` shots. The runner shows its remaining shots and leaves the rail when it runs out. At most `PIGS.railCapacity` runners share the rail, and the label under `Rail_Start` shows the free slots. These labels are runtime canvas sprites.
-- The projectile sphere is the only geometry the runtime creates.
 
 The gameplay path keeps its current node layout:
 

@@ -1,17 +1,18 @@
 import * as THREE from 'three';
-import {instantiate, materialOf} from './assets.js';
+import {instantiate} from './assets.js';
 import {createLabel} from './labels.js';
 import {validTarget} from './grid.js';
 import {fireShot} from './shots.js';
 import {bump, vanish} from './tweens.js';
 import {ANIM, LABEL, MOTION, SHOT} from './tokens.js';
 
-let scene, path, labelLift;
+let scene, path, bullets, labelLift;
 export const runs=[];
 const mouthLocal=new THREE.Vector3(...SHOT.mouth);
 
-export function initRunners(targetScene,templates,runnerPath){
+export function initRunners(targetScene,templates,bulletTemplates,runnerPath){
   scene=targetScene;
+  bullets=bulletTemplates;
   path=runnerPath;
   const box=new THREE.Box3().setFromObject(templates.dark,true);
   labelLift=box.max.z-box.min.z+LABEL.lift;
@@ -33,7 +34,7 @@ export function launchRunner({template,ammo,isLight}){
   const parts=spawn(template);
   parts.label.userData.set(String(ammo));
   runs.push({
-    ...parts,material:materialOf(template),ammo,isLight,
+    ...parts,bullet:isLight ? bullets.light : bullets.dark,ammo,isLight,
     nodeIndex:0,phase:'move',
     from:path.entry.clone(),to:path.entry.clone(),
     stepT:1,stepDuration:0,
@@ -46,7 +47,7 @@ function fire(run){
   const cell=run.targetCell;
   run.targetCell=null;
   if(!cell || !cell.alive)return;
-  fireShot(scene,run.runner.localToWorld(mouthLocal.clone()),cell,run.material);
+  fireShot(scene,run.runner.localToWorld(mouthLocal.clone()),cell,run.bullet);
   run.label.userData.set(String(--run.ammo));
   bump(run.pop,ANIM.shotBump);
 }

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-let grid;
+let grid, remaining;
 const hidden=new THREE.Matrix4().makeScale(0,0,0);
 
 export function createGrid(scene,center,blocks){
@@ -12,6 +12,7 @@ export function createGrid(scene,center,blocks){
     position:new THREE.Vector3(origin.x+(c-(columns-1)*.5)*step,origin.y+((rows-1)*.5-r)*step,origin.z)
   })));
   const cells=grid.flat();
+  remaining=cells.length;
   for(const [key,isLight] of [['light',true],['dark',false]]){
     let template=null;
     blocks[key].traverse(o=>{if(!template && o.isMesh)template=o;});
@@ -56,4 +57,7 @@ export function destroyCell(cell){
   cell.alive=false;
   cell.mesh.setMatrixAt(cell.index,hidden);
   cell.mesh.instanceMatrix.needsUpdate=true;
+  remaining--;
 }
+
+export const remainingCells=()=>remaining;

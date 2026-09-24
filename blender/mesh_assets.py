@@ -31,3 +31,17 @@ def cube(name, location, size, material, collection, parent=None, floor_pivot=Fa
   if obj: return obj
   mesh=box_mesh(name+'_Mesh', size, material, floor_pivot)
   return mesh_object(name, mesh, location, material, collection, parent)
+
+
+def sphere_mesh(name, radius, material):
+  mesh=bpy.data.meshes.get(name)
+  if mesh: return mesh
+  import bmesh
+  bm=bmesh.new()
+  bmesh.ops.create_icosphere(bm, subdivisions=2, radius=radius)
+  for face in bm.faces: face.smooth=True
+  mesh=bpy.data.meshes.new(name)
+  bm.to_mesh(mesh)
+  bm.free()
+  mesh.materials.append(material)
+  return mesh
