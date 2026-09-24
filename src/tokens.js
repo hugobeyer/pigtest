@@ -5,10 +5,10 @@ export const PIGS={ammo:20,railCapacity:5,columnSnap:.1};
 export const FRAME={maxDelta:.033};
 
 export const ANIM={
-  tapBump:{amount:.15,duration:.14},
-  enterBump:{amount:.25,duration:.22},
-  shotBump:{amount:.12,duration:.1},
-  vanish:{rise:1.6,duration:.35}
+  tapBump:{amount:.15,duration:.08},
+  enterBump:{amount:.25,duration:.12},
+  shotBump:{amount:.12,duration:.06},
+  vanish:{rise:3.2,duration:.6}
 };
 export const LABEL={height:.8,lift:.35,capacityGap:.55,backOpacity:.45,canvas:[256,128],baseline:4,font:'900 96px "Arial Black", Arial, sans-serif',fill:'#fff',stroke:'#1d1f2e',strokeWidth:18};
 export const RENDER={background:0x505471,maxPixelRatio:2};
