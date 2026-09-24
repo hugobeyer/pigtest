@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {instantiate} from './assets.js';
 import {createLabel} from './labels.js';
 import {validTarget} from './grid.js';
 import {fireShot} from './shots.js';
@@ -18,11 +19,7 @@ export function initRunners(targetScene,runnerTemplate,runnerPath){
 }
 
 function spawn(material){
-  const runner=new THREE.Group(), pop=new THREE.Group(), body=template.clone();
-  template.matrixWorld.decompose(body.position,body.quaternion,body.scale);
-  body.visible=true;
-  body.traverse(o=>{if(o.isMesh)o.material=material;});
-  pop.add(body);
+  const runner=new THREE.Group(), pop=instantiate(template,material);
   runner.add(pop);
   const label=createLabel(runner);
   label.position.z=labelLift;

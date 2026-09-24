@@ -1,12 +1,27 @@
+import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
-export const ROWS=26, COLS=26, PIG_COUNT=12;
-const pad=n=>String(n).padStart(2,'0');
+export const PIG_COLUMNS=4;
 
 function requireObject(root,name){
   const object=root.getObjectByName(name);
   if(!object)throw new Error(`Missing Blender object: ${name}`);
   return object;
+}
+
+export function materialOf(object){
+  let material=null;
+  object.traverse(o=>{if(!material && o.isMesh)material=o.material;});
+  return material;
+}
+
+export function instantiate(template,material){
+  const wrapper=new THREE.Group(), body=template.clone();
+  template.matrixWorld.decompose(body.position,body.quaternion,body.scale);
+  body.visible=true;
+  body.traverse(o=>{if(o.isMesh)o.material=material;});
+  wrapper.add(body);
+  return wrapper;
 }
 
 export async function loadAssets(url){
@@ -19,16 +34,20 @@ export async function loadAssets(url){
     if(object.isLight)lights.push(object);
   });
   lights.forEach(light=>light.parent.remove(light));
-  ['Rail_Main','Rail_End','GridCenter','CameraTarget'].forEach(name=>requireObject(root,name));
+  ['Rail_Main','Rail_End','CameraTarget'].forEach(name=>requireObject(root,name));
   const camera=root.getObjectByProperty('isOrthographicCamera',true);
   if(!camera)throw new Error('Missing Blender orthographic camera');
-  const runner=requireObject(root,'PigRunner');
-  runner.visible=false;
+  const [runner,light,dark]=['PigRunner','Grid_Block_Light','Grid_Block_Dark'].map(name=>{
+    const object=requireObject(root,name);
+    object.visible=false;
+    return object;
+  });
   return {
-    root,runner,camera,
+    root,camera,runner,
+    blocks:{light,dark},
+    gridCenter:requireObject(root,'GridCenter'),
     railStart:requireObject(root,'Rail_Start'),
     anchors:{RailStart:requireObject(root,'RailStart'),RailEnd:requireObject(root,'RailEnd')},
-    grid:Array.from({length:ROWS},(_,r)=>Array.from({length:COLS},(_,c)=>requireObject(root,`Grid_r${pad(r)}_c${pad(c)}`))),
-    pigs:Array.from({length:PIG_COUNT},(_,i)=>requireObject(root,`Pig_${pad(i)}`))
+    columns:Array.from({length:PIG_COLUMNS},(_,i)=>requireObject(root,`PigColumn_${i}`))
   };
 }

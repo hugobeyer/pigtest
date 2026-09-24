@@ -4,29 +4,21 @@ The saved `.blend` is the source of truth. Open `source_files/scene.blend` to co
 
 ## Sidebar controls
 
-In Blender's Scripting workspace, open `blender/scene_ui.py` and click **Run Script** once. Then open any **3D Viewport**, press **N** and select the **Primitive** tab. **Pull Latest** runs `git pull --ff-only` in the project folder and reloads the panel; if the pull brings a newer `.blend`, it tells you to use **File > Revert**. Use **Build Missing Assets** for new scenes, **Prepare Scene** for existing legacy pig names, and **Export GLB** to write `assets/primitive_scene.glb`. The panel loads the current scripts directly, so you do not have to open each one. Asset buttons require Object Mode. Export errors appear in the status area and full tracebacks in Blender's system console. **Run Vite & Play** starts the installed local Vite executable at `http://127.0.0.1:5173/`, waits for it to respond, then opens your browser. **Stop Vite** stops only the process started by this panel; no install or external service is involved. Port 5173 must be free. The GLB is not exported automatically when starting Vite; click **Export GLB** first if you have new Blender changes.
+In Blender's Scripting workspace, open `blender/scene_ui.py` and click **Run Script** once. Then open any **3D Viewport**, press **N** and select the **Primitive** tab. **Pull Latest** runs `git pull --ff-only` in the project folder and reloads the panel; if the pull brings a newer `.blend`, it tells you to use **File > Revert**. Use **Build Missing Assets** for new scenes, **Prepare Scene** to convert an older scene with 12 pig objects and 676 grid objects, and **Export GLB** to write `assets/primitive_scene.glb`. The panel loads the current scripts directly, so you do not have to open each one. Asset buttons require Object Mode. Export errors appear in the status area and full tracebacks in Blender's system console. **Run Vite & Play** starts the installed local Vite executable at `http://127.0.0.1:5173/`, waits for it to respond, then opens your browser. **Stop Vite** stops only the process started by this panel; no install or external service is involved. Port 5173 must be free. The GLB is not exported automatically when starting Vite; click **Export GLB** first if you have new Blender changes.
 
 Running the script registers the panel for the current Blender session. To keep it after restart, install `scene_ui.py` as a Blender add-on and enable **Primitive Scene Tools** in Preferences. No external packages are required. After changing the panel script, rerun it to refresh its registration.
 
 Scripts do not save the `.blend` automatically. Save explicitly in Blender after authoring or preparation. Export does not persist preparation on your behalf.
 
-## Prepare existing authored assets
+## Prepare an older scene
 
-Run **`prepare_export.py` once**, then save the `.blend`. It does not run generators.
+Run **`prepare_export.py` once**, then save the `.blend`. It converts the old layout:
 
-- Migrate legacy roots `Pig_0_0` … `Pig_2_3` to `Pig_00` … `Pig_11`, in row-major order.
-- Preserve the root objects, transforms, child names, geometry, modifiers and existing metadata.
-- Add missing pig `is_light` metadata using the original checker defaults; keep authored values.
-- If absent, create `PigRunner` as a linked object-subtree copy of `Pig_00`.
-- Keep every copied part's mesh link, local transform, material overrides and modifiers.
-- Remap modifier/constraint Object pointers within the copied subtree to their copied targets.
-- Detach the runner root from any source parent and place its origin at world `(0, 0, 0)`.
-- Retain the source root's world orientation/scale, without its world placement.
-- Never replace an existing runner, merge distinct authored meshes, or relink existing objects.
+- `Pig_00` … `Pig_11` become `PigColumn_0` … `PigColumn_3`, one Empty per column at its front pig. `queue` keeps the three authored colors and continues alternating to `PIG_QUEUE_LENGTH`. `row_step` is the authored spacing between rows. The old pig objects and their bodies are deleted.
+- `Grid_rXX_cYY` become `Grid_Block_Light` and `Grid_Block_Dark` (one light and one dark cell are kept and renamed). `GridCenter` gets `rows`, `columns`, `step` and `checker` from the old cells and is centred on them. The other cells are deleted.
+- `PigRunner` is kept and becomes the single pig model.
 
-Name collisions and ambiguous legacy duplicates fail explicitly. An animated/constrained first pig root requires an explicitly authored neutral `PigRunner`; preparation will not discard those controls to infer a template. Copied child drivers and external dependencies remain authored references; inspect those for a complex rig. Existing `PigRunner` placement is never reset.
-
-Preparation validates the result and reports missing or invalid assets rather than creating rail/grid/anchor geometry. If validation fails after migration, those explicit preparation edits remain in memory; correct the reported assets before saving/exporting. Rerunning preparation does not duplicate migrated roots or an existing runner.
+It fails explicitly if the new names already exist, and validates the result.
 
 ## Exact asset contract
 
@@ -34,28 +26,30 @@ Preparation validates the result and reports missing or invalid assets rather th
 
 | Assets | Required names |
 | --- | --- |
-| Pigs | `Pig_00` through `Pig_11`, plus `PigRunner` |
+| Pigs | `PigColumn_0` through `PigColumn_3` (Empties), plus `PigRunner` |
 | Rail | `Rail_Start`, `Rail_Main`, `Rail_End` |
-| Grid | `Grid_r00_c00` through `Grid_r25_c25` (676 objects) |
+| Grid | `Grid_Block_Light`, `Grid_Block_Dark` |
 | Slots | `Slot_0` through `Slot_4` |
 | Anchors | `RailStart`, `RailEnd`, `GridCenter`, `CameraTarget` (Empties) |
 
-Pigs, runner, rail, grid and slots must have an exportable mesh/curve on the object or in its descendants. Multipart pigs are supported; one mesh per pig is not required. Pig roots cannot be nested inside one another. Required names with Blender suffixes such as `.001`, legacy roots, and out-of-range pig/grid names are reported, not silently accepted.
+The runner, rail, grid blocks and slots must have an exportable mesh/curve on the object or in its descendants. Required names with Blender suffixes such as `.001` and leftover `Pig_XX`/`Grid_rXX_cYY` objects are reported, not silently accepted.
 
-Grid metadata must include matching `row`, `column`, `checker_row`, `checker_column` and boolean `is_light`; pigs and runner need boolean `is_light`. Slots need an integer `slot` matching their index. Existing colors and light/dark choices are not reset. `validate_assets(root)` returns missing names, duplicates, errors, per-asset renderable hierarchy counts and total export-object count. `require_assets(root)` raises on failures.
+Each `PigColumn` needs `queue` (text of `D`/`L`, front first) and a positive `row_step`. `GridCenter` needs positive integers `rows`, `columns`, `checker` and a positive `step`. Slots need an integer `slot` matching their index. Existing colors and light/dark choices are not reset. `validate_assets(root)` returns missing names, duplicates, errors, per-asset renderable hierarchy counts and total export-object count. `require_assets(root)` raises on failures.
 
 ## Create or complete a scene
 
-Run **`build_scene.py`** only to generate missing assets. It creates the exact names above, with linked pig bodies and a linked runner template. Legacy pig roots cause a preflight error before any building: prepare them first.
+Run **`build_scene.py`** only to generate missing assets. It creates the exact names above. Leftover `Pig_XX`/`Grid_rXX_cYY` objects cause a preflight error before any building: prepare them first.
 
-Existing pig roots are preserved as whole authored hierarchies; the builder does not add replacement bodies to them. Other existing geometry, transforms, materials, camera settings, anchors and lighting are not reset. Unrelated scene objects remain untouched. Keep required names stable: deleting or renaming assets can cause a later build to create missing names again. Config layout changes affect only newly created assets; the integration contract remains 12 pigs and a 26×26 grid.
+Existing geometry, transforms, materials, camera settings, anchors and lighting are not reset. Unrelated scene objects remain untouched. Keep required names stable: deleting or renaming assets can cause a later build to create missing names again. Config layout changes affect only newly created assets; grid size and pig queues live on `GridCenter` and the `PigColumn` Empties.
 
 ## Edit in Blender
 
-- Edit a linked pig body in **Edit Mode** to change its shared shape, including the runner.
+- Edit `PigRunner` to change every pig, in the bank and on the rail.
+- Edit a `Grid_Block` mesh to change every grid block; the two blocks share one mesh.
+- Move a `PigColumn` to move its whole queue; edit `queue` and `row_step` in its custom properties.
+- Change the grid layout with `GridCenter`'s location and its `rows`, `columns`, `step` and `checker` properties.
 - Distinct authored meshes stay distinct; preparation/export do not force sharing.
 - Move, rotate or scale objects in **Object Mode** for independent placements.
-- Grid boxes remain independently addressable, with checker metadata and material slots.
 - Object-linked materials allow differently colored objects to share mesh data.
 - `Rail_Main` remains an editable Curve; `Rail_Profile` controls its cross-section.
 - Rail terminals, anchors, camera and lighting remain individually editable.
@@ -77,20 +71,20 @@ Authoring stays Z-up; GLB export uses Y-up. Root extras record `authored_up_axis
 
 Blender and the exported GLB own the runtime visuals: the grid, pigs, runner, rail pieces, ground and materials. Three.js generates no replacement geometry for them. `src/assets.js` loads the GLB, rotates its root once, and resolves the exact contract names. A missing name stops initialization with an error, and no interaction starts.
 
-`src/gameplay.js` builds state directly on the imported nodes:
+The runtime builds its state from the imported nodes (`src/grid.js`, `src/pigs.js`, `src/runners.js`):
 
-- Each `Grid_rXX_cYY` node becomes a destructible cell, using its exported `row`, `column` and `is_light` values. Destroying a cell hides that node.
-- Clicking a `Pig_XX` hierarchy hides that imported pig.
-- The hidden `PigRunner` template is cloned for each run from its world transform, and the clone takes the clicked pig's Blender material.
-- Each pig starts with `PIG_AMMO` shots. The runner shows its remaining shots and leaves the rail when it runs out. At most `RAIL_CAPACITY` runners share the rail, and the label under `Rail_Start` shows the free slots. These labels are runtime canvas sprites.
-- Shots aim at the cell's world position. The projectile sphere is the only geometry the runtime creates.
+- The grid is laid out from `GridCenter`'s `rows`, `columns`, `step` and `checker`, drawn as two instanced meshes of `Grid_Block_Light` and `Grid_Block_Dark`. Destroying a cell hides its instance.
+- Each `PigColumn` shows `PIGS.visibleRows` pigs, cloned from `PigRunner`, spaced by `row_step` behind the Empty. Only the front pig can be tapped. The column slides forward and the next `queue` entry appears at the back.
+- Pigs and runners use the grid blocks' light and dark materials, so their colours always match the blocks.
+- Each pig starts with `PIGS.ammo` shots. The runner shows its remaining shots and leaves the rail when it runs out. At most `PIGS.railCapacity` runners share the rail, and the label under `Rail_Start` shows the free slots. These labels are runtime canvas sprites.
+- The projectile sphere is the only geometry the runtime creates.
 
 The gameplay path keeps its current node layout:
 
 - Lane positions come from the imported grid.
 - The start point and the bottom rail line come from `RailStart`.
 - The left rail line and the end point come from `RailEnd`.
-- Rail offsets, the corner radius and the speeds stay in `src/config.js`. The path is not derived from `Rail_Main` triangles, so moving the rail mesh in Blender without moving its anchors can make visuals and the path diverge.
+- Rail offsets, the corner radius and the speeds stay in `src/tokens.js`. The path is not derived from `Rail_Main` triangles, so moving the rail mesh in Blender without moving its anchors can make visuals and the path diverge.
 
 The runtime uses the exported Blender scene camera: its transform, orthographic scale and clip range. Its render resolution sets the portrait canvas ratio, and export copies that resolution into the temporary export scene. Building switches a landscape render resolution to `CAMERA_RESOLUTION`. Lights are still defined in `src/main.js`; exported Blender lights are removed on import.
 
@@ -98,13 +92,7 @@ The runtime uses the exported Blender scene camera: its transform, orthographic 
 
 ## Manual checks in Blender (not run by the coding agent)
 
-1. Open a copy of the authored `.blend`; record pig transforms, mesh links and modifiers.
-2. Prepare twice; confirm 12 exact pig roots and one runner, without extra legacy roots.
-3. Confirm all original pig parts/edits remain and runner parts share their source mesh data.
-4. Check runner world origin is zero and each part retains its source-relative placement.
-5. On a fresh scene, build twice; confirm 676 grid objects and no duplicate asset names.
-6. Edit distinct meshes, materials, camera and rail; prepare/export without losing those edits.
-7. Export a driven modifier using a source-object name; confirm evaluation used the original name.
-8. Confirm the GLB contains all required nodes, independent pig objects and correct materials.
-9. Check a collection instance fails explicitly; check an exporter error restores source names.
-10. Confirm no temporary scene/objects remain and the saved `.blend` was not overwritten.
+1. Run **Prepare Scene** on the authored `.blend`; confirm 4 `PigColumn` Empties, two `Grid_Block` objects and no `Pig_XX`/`Grid_rXX_cYY` left.
+2. Check each column's `queue` and `row_step`, and `GridCenter`'s grid properties.
+3. Build twice; confirm nothing is duplicated.
+4. Export and confirm the game shows the full grid and three pigs per column.

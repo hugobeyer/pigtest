@@ -7,7 +7,7 @@ const shots=[];
 export function fireShot(scene,from,cell,material){
   const mesh=new THREE.Mesh(new THREE.SphereGeometry(SHOT.radius,...SHOT.segments),material);
   mesh.castShadow=true;
-  const to=cell.object.getWorldPosition(new THREE.Vector3());
+  const to=cell.position.clone();
   to.z=SHOT.targetZ;
   mesh.position.copy(from);
   scene.add(mesh);

@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import {ROWS, COLS} from './assets.js';
 import {MOTION, PATH} from './tokens.js';
 
 export function createPath(grid,anchors){
   const {sideOffset,verticalOffset,cornerRadius:R,laneGap,endOffset,arcSteps}=PATH;
-  const colX=grid[0].map(cell=>cell.object.getWorldPosition(new THREE.Vector3()).x);
-  const rowY=grid.map(row=>row[0].object.getWorldPosition(new THREE.Vector3()).y);
+  const ROWS=grid.length, COLS=grid[0].length;
+  const colX=grid[0].map(cell=>cell.position.x);
+  const rowY=grid.map(row=>row[0].position.y);
   const start=anchors.RailStart.getWorldPosition(new THREE.Vector3());
   const end=anchors.RailEnd.getWorldPosition(new THREE.Vector3());
   const GRID_LEFT=colX[0], GRID_RIGHT=colX[COLS-1], GRID_TOP=rowY[0];

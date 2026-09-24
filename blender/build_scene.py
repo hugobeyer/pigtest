@@ -17,7 +17,7 @@ from build_pigs import build_pigs
 from build_rail import build_rail
 from build_slots import build_slots
 from materials import build_materials
-from asset_contract import preflight_pigs, require_assets
+from asset_contract import preflight, require_assets
 
 
 def collection(parent, name):
@@ -31,15 +31,15 @@ def collection(parent, name):
 
 def build_scene():
   if bpy.context.mode!='OBJECT': raise RuntimeError('Switch to Object Mode before building.')
-  preflight_pigs(bpy.data.objects)
+  preflight(bpy.data.objects)
   root=collection(bpy.context.scene.collection, 'PrimitiveScene')
   groups={name:collection(root,name) for name in ('Grid','Rail','Pigs','Slots','GameplayAnchors','Camera','Lighting')}
   materials=build_materials()
-  build_grid(groups['Grid'], materials)
+  points=build_anchors(groups['GameplayAnchors'])
+  build_grid(groups['Grid'], materials, points['GridCenter'])
   build_rail(groups['Rail'], materials)
   build_pigs(groups['Pigs'], materials)
   build_slots(groups['Slots'], materials)
-  points=build_anchors(groups['GameplayAnchors'])
   build_camera(groups['Camera'], points['CameraTarget'])
   build_lighting(groups['Lighting'])
   require_assets(root)

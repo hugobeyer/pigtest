@@ -80,7 +80,7 @@ class PRIMITIVE_OT_build(bpy.types.Operator):
 class PRIMITIVE_OT_prepare(bpy.types.Operator):
   bl_idname='primitive.prepare_export'
   bl_label='Prepare Scene'
-  bl_description='Rename legacy pig roots and add a linked PigRunner if missing; save the blend afterwards'
+  bl_description='Convert old Pig_XX and Grid_rXX_cYY objects into pig columns and grid blocks; save the blend afterwards'
   bl_options={'REGISTER','UNDO'}
 
   @classmethod

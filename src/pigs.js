@@ -1,21 +1,14 @@
 import * as THREE from 'three';
+import {instantiate} from './assets.js';
 import {createLabel} from './labels.js';
 import {bump, grow, slide, tween} from './tweens.js';
 import {ANIM, LABEL, PIGS} from './tokens.js';
 
 let columns, materials;
-const box=new THREE.Box3();
-const world=object=>object.getWorldPosition(new THREE.Vector3());
-
-export function materialOf(object){
-  let material=null;
-  object.traverse(o=>{if(!material && o.isMesh)material=o.material;});
-  return material;
-}
 
 function paint(object,pig){
   object.userData.pig=pig;
-  object.visible=object.userData.label.visible=!!pig;
+  object.visible=!!pig;
   if(!pig)return;
   const material=pig.isLight ? materials.light : materials.dark;
   object.traverse(o=>{if(o.isMesh)o.material=material;});
@@ -26,27 +19,29 @@ function refresh(column){
   column.objects.forEach((object,i)=>object.userData.label.material.opacity=i===0 ? 1 : LABEL.backOpacity);
 }
 
-export function createPigs(scene,pigs){
-  const byColumn={};
-  for(const pig of pigs){
-    if(typeof pig.userData.is_light!=='boolean')throw new Error(`${pig.name}: invalid is_light metadata`);
-    box.setFromObject(pig);
-    const label=createLabel(scene);
-    const offset=new THREE.Vector3(0,box.getCenter(new THREE.Vector3()).y,box.max.z+LABEL.lift).sub(world(pig).setX(0));
-    pig.userData.label=label;
-    pig.userData.labelOffset=offset;
-    (byColumn[Math.round(world(pig).x/PIGS.columnSnap)]??=[]).push(pig);
-  }
-  materials={light:materialOf(pigs.find(pig=>pig.userData.is_light)),dark:materialOf(pigs.find(pig=>!pig.userData.is_light))};
-  columns=Object.values(byColumn).map(objects=>{
-    objects.sort((a,b)=>world(b).y-world(a).y);
-    const first=objects[0].userData.is_light;
-    const queue=Array.from({length:PIGS.perColumn},(_,i)=>({isLight:i<objects.length ? objects[i].userData.is_light : (i%2===0)===first,ammo:PIGS.ammo}));
-    const column={objects,slots:objects.map(object=>object.position.clone()),queue,busy:false};
+export function createPigs(scene,columnObjects,template,pigMaterials){
+  materials=pigMaterials;
+  const box=new THREE.Box3().setFromObject(template,true);
+  const labelLift=box.max.z-box.min.z+LABEL.lift;
+  columns=columnObjects.map(columnObject=>{
+    const {queue,row_step:rowStep}=columnObject.userData;
+    if(!/^[DL]+$/.test(queue) || !(rowStep>0))throw new Error(`${columnObject.name}: requires queue (D/L) and positive row_step`);
+    const front=columnObject.getWorldPosition(new THREE.Vector3());
+    const slots=Array.from({length:PIGS.visibleRows},(_,i)=>front.clone().setY(front.y-rowStep*i));
+    const objects=slots.map(slot=>{
+      const object=instantiate(template,materials.dark);
+      object.position.copy(slot);
+      object.userData.label=createLabel(object);
+      object.userData.label.position.z=labelLift;
+      scene.add(object);
+      return object;
+    });
+    const column={objects,slots,queue:[...queue].map(key=>({isLight:key==='L',ammo:PIGS.ammo})),busy:false};
     objects.forEach(object=>paint(object,column.queue.shift()??null));
     refresh(column);
     return column;
   });
+  return columns.flatMap(column=>column.objects);
 }
 
 function advance(column){
@@ -68,11 +63,4 @@ export function takePig(object){
   bump(object,ANIM.tapBump);
   tween(ANIM.tapBump.duration,null,()=>advance(column));
   return pig;
-}
-
-export function updatePigs(){
-  for(const column of columns)for(const object of column.objects){
-    const {label,labelOffset}=object.userData;
-    object.getWorldPosition(label.position).add(labelOffset);
-  }
 }
