@@ -59,9 +59,9 @@ for (int blade = 0; blade < blade_count; blade++)
     float base_x = is_center ? 0.0 : side * blade_width * 0.18;
     float base_z = is_center ? -blade_width * 0.2
         : blade_width * 0.15 * float(pair) * (1.0 - radial_spread);
-    float lean = fan * height * spread * (is_center ? 0.55 : 0.8);
-    float curl = (is_center ? fit01(rand(key + set(53, 31, 11)), -1.0, 1.0) : side)
-        * bend * blade_height * 0.25;
+float lean = fan * height * spread * (is_center ? 0.55 : 0.8);
+float lean_sign = is_center ? sign(fan) : side;
+float curl = -lean_sign * bend * blade_height * 0.25;
     float depth_lean = (rand(key + set(67, 41, 17)) - 0.5) * depth * height;
     vector positions[];
     float parameters[], distances[];
