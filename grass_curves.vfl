@@ -1,0 +1,114 @@
+int seed = chi("seed");
+vector center = chv("center");
+int blade_count = chi("blade_count");
+if (blade_count == 0) blade_count = 5;
+blade_count = clamp(blade_count, 1, 24);
+int points_per_blade = chi("points_per_blade");
+if (points_per_blade == 0) points_per_blade = 20;
+points_per_blade = clamp(points_per_blade, 6, 96);
+float height = chf("height");
+if (height <= 0.0) height = 1.2;
+float blade_width = chf("blade_width");
+if (blade_width <= 0.0) blade_width = 0.35;
+float spread = chf("spread");
+if (spread <= 0.0) spread = 0.65;
+float radial_spread = clamp(chf("radial_spread"), 0.0, 1.0);
+float flatness = chf("flatness");
+if (flatness <= 0.0) flatness = 0.3;
+flatness = clamp(flatness, 0.03, 1.0);
+float height_randomness = clamp(chf("height_randomness"), 0.0, 1.0);
+float width_randomness = clamp(chf("width_randomness"), 0.0, 1.0);
+float bend = clamp(chf("bend"), 0.0, 1.0);
+float depth = max(chf("depth"), 0.0);
+float rotation = radians(chf("rotation"));
+vector right = set(cos(rotation), 0, -sin(rotation));
+vector front = set(sin(rotation), 0, cos(rotation));
+vector world_up = set(0, 1, 0);
+
+for (int blade = 0; blade < blade_count; blade++)
+{
+    vector key = set(float(seed), float(blade), 613.0);
+    int is_center = blade == 0;
+    int pair = max(0, (blade - 1) / 2);
+    float side = blade % 2 == 1 ? -1.0 : 1.0;
+    vector blade_right = right;
+    vector blade_front = front;
+    if (!is_center)
+    {
+        int side_count = max(blade_count - 1, 1);
+        int left_count = (side_count + 1) / 2;
+        int slot = pair + (side > 0.0 ? left_count : 0);
+        float step = 6.283185307179586 / float(side_count);
+        float target_angle = 3.141592653589793
+            - float(left_count - 1) * step * 0.5 + float(slot) * step;
+        target_angle += (rand(key + set(97, 53, 31)) - 0.5) * step * 0.2;
+        float start_angle = side < 0.0 ? 3.141592653589793 : 0.0;
+        float difference = target_angle - start_angle;
+        float turn = atan2(sin(difference), cos(difference)) * radial_spread;
+        blade_right = right * cos(turn) + front * sin(turn);
+        blade_front = front * cos(turn) - right * sin(turn);
+    }
+    float fan = is_center ? (rand(key + set(7, 19, 3)) - 0.5) * 0.3
+        : side * fit01(rand(key + set(23, 11, 5)), 0.75, 1.15);
+    float tier = float(pair) / float(max((blade_count - 2) / 2, 1));
+    float height_ratio = is_center ? 1.0 : lerp(0.75, 0.42, clamp(tier, 0.0, 1.0));
+    float blade_height = height * height_ratio * lerp(1.0,
+        fit01(rand(key + set(37, 17, 13)), 0.65, 1.35), height_randomness);
+    float width = blade_width * (is_center ? 1.0 : 0.85) * lerp(1.0,
+        fit01(rand(key + set(43, 29, 7)), 0.6, 1.4), width_randomness);
+    float base_x = is_center ? 0.0 : side * blade_width * 0.18;
+    float base_z = is_center ? -blade_width * 0.2
+        : blade_width * 0.15 * float(pair) * (1.0 - radial_spread);
+    float lean = fan * height * spread * (is_center ? 0.55 : 0.8);
+    float curl = (is_center ? fit01(rand(key + set(53, 31, 11)), -1.0, 1.0) : side)
+        * bend * blade_height * 0.25;
+    float depth_lean = (rand(key + set(67, 41, 17)) - 0.5) * depth * height;
+    vector positions[];
+    float parameters[], distances[];
+    float total_length = 0.0;
+
+    for (int point = 0; point < points_per_blade; point++)
+    {
+        float t = 0.5 - 0.5 * cos(float(point) / float(points_per_blade - 1)
+            * 3.141592653589793);
+        float x = base_x + lean * pow(t, 1.65)
+            + curl * sin(t * 3.141592653589793);
+        float y = blade_height * t;
+        float z = base_z + depth_lean * t * t;
+        vector position = center + blade_right * x + world_up * y + blade_front * z;
+        if (point > 0) total_length += distance(position, positions[point - 1]);
+        append(positions, position);
+        append(parameters, t);
+        append(distances, total_length);
+    }
+
+    float tint = is_center ? 0.85 : rand(key + set(79, 47, 23)) * 0.65;
+    vector color = lerp(set(0.12, 0.55, 0.045), set(0.65, 0.92, 0.035), tint);
+    int prim = addprim(0, "polyline");
+    for (int point = 0; point < points_per_blade; point++)
+    {
+        float t = parameters[point];
+        float base_profile = lerp(0.35, 1.0, smooth(0.0, 0.3, t));
+        float tip = clamp((t - 0.65) / 0.35, 0.0, 1.0);
+        float tip_profile = sqrt(max(0.0, 1.0 - tip * tip));
+        float radius = width * 0.5 * max(base_profile * tip_profile, 0.02);
+        vector tangent = normalize(positions[min(point + 1, points_per_blade - 1)]
+            - positions[max(point - 1, 0)]);
+        vector up = normalize(blade_front - tangent * dot(blade_front, tangent));
+        int pt = addpoint(0, positions[point]);
+        addvertex(0, prim, pt);
+        setpointattrib(0, "pscale", pt, radius, "set");
+        setpointattrib(0, "scale", pt, set(1, flatness, 1), "set");
+        setpointattrib(0, "N", pt, tangent, "set");
+        setpointattrib(0, "up", pt, up, "set");
+        setpointattrib(0, "curveu", pt, distances[point] / max(total_length, 1e-10), "set");
+        setpointattrib(0, "blade_id", pt, blade, "set");
+        setpointattrib(0, "Cd", pt, color, "set");
+    }
+    setprimattrib(0, "name", prim, sprintf("grass_blade_%d", blade), "set");
+    setprimattrib(0, "blade_id", prim, blade, "set");
+    setprimgroup(0, "grass_curves", prim, 1);
+    setprimgroup(0, "center_blade", prim, is_center);
+}
+
+setdetailattrib(0, "blade_count", blade_count, "set");

@@ -1,0 +1,119 @@
+int seed = chi("seed");
+int curve_count = chi("curve_count");
+if (curve_count == 0) curve_count = 5;
+curve_count = clamp(curve_count, 1, 32);
+int points_per_curve = chi("points_per_curve");
+if (points_per_curve == 0) points_per_curve = 24;
+points_per_curve = clamp(points_per_curve, 4, 128);
+
+float curve_length = chf("length");
+if (curve_length <= 0.0) curve_length = 3.0;
+float length_randomness = clamp(chf("length_randomness"), 0.0, 1.0);
+float thickness = chf("thickness");
+if (thickness <= 0.0) thickness = 0.12;
+float thickness_randomness = clamp(chf("thickness_randomness"), 0.0, 1.0);
+float spread = max(chf("spread"), 0.0);
+float spread_randomness = clamp(chf("spread_randomness"), 0.0, 1.0);
+float root_length = max(chf("root_length"), 0.0);
+float root_length_randomness = clamp(chf("root_length_randomness"), 0.0, 1.0);
+int center_curves = clamp(chi("center_curves"), 0, curve_count);
+float displacement = max(chf("displacement"), 0.0);
+float displacement_frequency = chf("displacement_frequency");
+if (displacement_frequency <= 0.0) displacement_frequency = 1.5;
+float tip_scale = clamp(chf("tip_scale"), 0.02, 1.0);
+
+float phase = rand(set(float(seed), 13.0, 71.0)) * 6.283185307179586;
+float center_priorities[];
+for (int curve = 0; curve < curve_count; curve++)
+    append(center_priorities, rand(set(float(seed), float(curve), 229.0)));
+int center_order[] = argsort(center_priorities);
+int center_flags[];
+resize(center_flags, curve_count);
+for (int i = 0; i < center_curves; i++) center_flags[center_order[i]] = 1;
+
+for (int curve = 0; curve < curve_count; curve++)
+{
+    vector key = set(float(seed), float(curve), 173.0);
+    float angle = phase + float(curve) / float(curve_count) * 6.283185307179586;
+    angle += (rand(key + set(11, 3, 7)) - 0.5)
+        * 6.283185307179586 / float(curve_count) * 0.3;
+    vector direction = set(cos(angle), 0, sin(angle));
+    vector tangent = set(-sin(angle), 0, cos(angle));
+    float target_length = curve_length * lerp(1.0,
+        fit01(rand(key + set(23, 17, 5)), 0.5, 1.5), length_randomness);
+    float curve_radius = thickness * lerp(1.0,
+        fit01(rand(key + set(37, 7, 19)), 0.35, 1.65), thickness_randomness);
+    int is_center = center_flags[curve];
+    float spread_sample = rand(key + set(41, 29, 13));
+    float spread_multiplier = lerp(fit01(spread_sample, 0.75, 1.25),
+        fit01(spread_sample, 0.1, 2.0), spread_randomness);
+    float curve_spread = spread * spread_multiplier;
+    float center_width = max(spread * 0.1, thickness * 0.4);
+    if (is_center) curve_spread = center_width * fit01(spread_sample, 0.3, 1.0);
+    float bend = (rand(key + set(53, 31, 11)) - 0.5)
+        * (is_center ? center_width : spread);
+    float curve_displacement = is_center
+        ? min(displacement * 0.2, center_width) : displacement;
+    float root_extension = is_center ? 0.0 : root_length * lerp(1.0,
+        fit01(rand(key + set(97, 47, 61)), 0.2, 1.8), root_length_randomness);
+    vector noise_offset = set(
+        rand(key + set(67, 43, 3)),
+        rand(key + set(7, 79, 23)),
+        rand(key + set(31, 17, 89))) * 100.0;
+
+    vector positions[];
+    float distances[];
+    float total_length = 0.0;
+    for (int point = 0; point < points_per_curve; point++)
+    {
+        float t = float(point) / float(points_per_curve - 1);
+        float envelope = sin(t * 3.141592653589793);
+        float flare = is_center ? 1.0
+            : 0.25 + 0.75 * (pow(1.0 - t, 4.0) + pow(t, 4.0));
+        vector p = direction * curve_spread * flare
+            + tangent * bend * envelope;
+        p.y = target_length * t;
+        vector n = noise(noise_offset + set(0, t * displacement_frequency, 0));
+        n = n * 2.0 - 1.0;
+        n.y = 0.0;
+        p += n * curve_displacement * envelope;
+        if (point > 0) total_length += distance(p, positions[point - 1]);
+        append(positions, p);
+        append(distances, total_length);
+    }
+
+    vector anchor = positions[0];
+    float length_scale = target_length / max(total_length, 1e-10);
+    total_length = 0.0;
+    for (int point = 0; point < points_per_curve; point++)
+    {
+        float t = float(point) / float(points_per_curve - 1);
+        positions[point] = anchor + (positions[point] - anchor) * length_scale
+            + direction * root_extension * pow(1.0 - t, 4.0);
+        if (point > 0) total_length += distance(positions[point], positions[point - 1]);
+        distances[point] = total_length;
+    }
+    int prim = addprim(0, "polyline");
+    for (int point = 0; point < points_per_curve; point++)
+    {
+        float u = distances[point] / max(total_length, 1e-10);
+        vector p = positions[point];
+        float profile = pow(max(0.0, sin(u * 3.141592653589793)), 0.65);
+        float radius = curve_radius * lerp(tip_scale, 1.0, profile);
+        int pt = addpoint(0, p);
+        addvertex(0, prim, pt);
+        setpointattrib(0, "pscale", pt, radius, "set");
+        setpointattrib(0, "curveu", pt, u, "set");
+        setpointattrib(0, "curve_id", pt, curve, "set");
+        setpointattrib(0, "is_center", pt, is_center, "set");
+    }
+    setprimattrib(0, "name", prim, sprintf("trunk_curve_%d", curve), "set");
+    setprimattrib(0, "curve_id", prim, curve, "set");
+    setprimattrib(0, "curve_length", prim, total_length, "set");
+    setprimattrib(0, "is_center", prim, is_center, "set");
+    setprimgroup(0, "trunk_curves", prim, 1);
+    setprimgroup(0, "center_curves", prim, is_center);
+    setprimgroup(0, "outer_curves", prim, !is_center);
+}
+
+setdetailattrib(0, "curve_count", curve_count, "set");

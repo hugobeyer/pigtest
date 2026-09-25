@@ -1,0 +1,147 @@
+function int canopy_point(
+    vector position; vector radii; vector4 orientation; vector color;
+    int layer; int id)
+{
+    float radius = max(radii.x, max(radii.y, radii.z));
+    int pt = addpoint(0, position);
+    setpointattrib(0, "pscale", pt, radius, "set");
+    setpointattrib(0, "scale", pt, radii / max(radius, 1e-8), "set");
+    setpointattrib(0, "orient", pt, orientation, "set");
+    setpointattrib(0, "Cd", pt, color, "set");
+    setpointattrib(0, "layer", pt, layer, "set");
+    setpointattrib(0, "id", pt, id, "set");
+    string layer_name = "large";
+    if (layer == 1) layer_name = "upper";
+    if (layer == 2) layer_name = "outer";
+    setpointattrib(0, "layer_name", pt, layer_name, "set");
+    setpointgroup(0, "canopy", pt, 1);
+    setpointgroup(0, sprintf("%s_canopy", layer_name), pt, 1);
+    return pt;
+}
+
+function vector canopy_color(vector base; vector key; float variation)
+{
+    float tint = rand(key + set(43, 29, 37)) * 2.0 - 1.0;
+    return clamp(base * (1.0 + tint * variation * 0.18)
+        + set(0.08, 0.035, -0.025) * tint * variation,
+        set(0, 0, 0), set(1, 1, 1));
+}
+
+int seed = chi("seed");
+vector center = chv("center");
+float width = chf("width");
+if (width <= 0.0) width = 3.4;
+float height = chf("height");
+if (height <= 0.0) height = 2.8;
+int lower_count = chi("lower_count");
+if (lower_count == 0) lower_count = 6;
+lower_count = clamp(lower_count, 3, 16);
+int upper_count = chi("upper_count");
+if (upper_count == 0) upper_count = 4;
+upper_count = clamp(upper_count, 3, 12);
+int outer_count = chi("outer_count");
+if (outer_count == 0) outer_count = lower_count * 2 + upper_count;
+outer_count = clamp(outer_count, 0, 64);
+float outer_scale = chf("outer_scale");
+if (outer_scale <= 0.0) outer_scale = 1.0;
+outer_scale = clamp(outer_scale, 0.1, 2.0);
+float irregularity = clamp(chf("irregularity"), 0.0, 1.0);
+float droop = clamp(chf("droop"), 0.0, 1.0);
+float color_variation = clamp(chf("color_variation"), 0.0, 1.0);
+vector leaf_color = chv("leaf_color");
+if (dot(leaf_color, leaf_color) < 1e-12) leaf_color = set(0.12, 0.55, 0.09);
+
+float phase = rand(set(float(seed), 29.0, 7.0)) * 6.283185307179586;
+vector main_positions[];
+vector main_radii[];
+vector4 main_orientations[];
+int id = 0;
+
+for (int layer = 0; layer < 2; layer++)
+{
+    int count = layer == 0 ? lower_count : upper_count;
+    float ring_radius = width * (layer == 0 ? 0.23 : 0.16);
+    float ring_height = height * (layer == 0 ? 0.38 : 0.64);
+    float ring_phase = phase + (layer == 0 ? 0.0 : 3.141592653589793 / float(count));
+    for (int blob = 0; blob < count; blob++)
+    {
+        vector key = set(float(seed), float(id), 97.0);
+        float angle = ring_phase + float(blob) / float(count) * 6.283185307179586;
+        angle += (rand(key + set(11, 3, 17)) - 0.5) * irregularity
+            * 6.283185307179586 / float(count) * 0.25;
+        vector direction = set(cos(angle), 0, sin(angle));
+        float distance_scale = 1.0 + (rand(key + set(5, 23, 13)) - 0.5) * irregularity * 0.2;
+        vector position = center + direction * ring_radius * distance_scale;
+        position.y += ring_height + (rand(key + set(19, 31, 7)) - 0.5)
+            * irregularity * height * 0.1;
+        float size_variation = 1.0 + (rand(key + set(41, 2, 29)) - 0.5) * irregularity * 0.25;
+        vector radii = set(width * (layer == 0 ? 0.26 : 0.23),
+                           height * (layer == 0 ? 0.36 : 0.30),
+                           width * (layer == 0 ? 0.24 : 0.215)) * size_variation;
+        vector4 orientation = quaternion(1.570796326794897 - angle, set(0, 1, 0));
+        vector color = canopy_color(leaf_color, key, color_variation);
+        canopy_point(position, radii, orientation, color, layer, id);
+        append(main_positions, position);
+        append(main_radii, radii);
+        append(main_orientations, orientation);
+        id++;
+    }
+}
+
+vector crown_position = center + set(0, height * 0.77, 0);
+crown_position += set(cos(phase), 0, sin(phase)) * width * irregularity * 0.035;
+vector crown_radii = set(width * 0.255, height * 0.25, width * 0.24);
+vector4 crown_orientation = quaternion(phase, set(0, 1, 0));
+vector crown_color = clamp(leaf_color * (1.0 + color_variation * 0.1),
+    set(0, 0, 0), set(1, 1, 1));
+canopy_point(crown_position, crown_radii, crown_orientation, crown_color, 1, id);
+append(main_positions, crown_position);
+append(main_radii, crown_radii);
+append(main_orientations, crown_orientation);
+id++;
+
+int outer_emitted = 0;
+for (int blob = 0; blob < outer_count; blob++)
+{
+    vector key = set(float(seed), float(blob), 557.0);
+    float angle = phase + (float(blob) + 0.35) / float(outer_count) * 6.283185307179586;
+    angle += (rand(key + set(11, 7, 3)) - 0.5) * irregularity
+        * 6.283185307179586 / float(outer_count) * 0.45;
+    vector direction = set(cos(angle), 0, sin(angle));
+    float size_variation = 1.0 + (rand(key + set(31, 13, 19)) - 0.5) * irregularity * 0.3;
+    vector radii = set(width * 0.105, height * 0.20 * (1.0 + droop * 0.2),
+                       width * 0.045) * outer_scale * size_variation;
+    float height_band = blob % 3 == 0 ? 0.60 : 0.30;
+    vector ray_origin = center;
+    ray_origin.y += height * (height_band - droop * 0.07
+        + (rand(key + set(17, 23, 5)) - 0.5) * irregularity * 0.10);
+    float outer_distance = -1.0;
+    for (int parent = 0; parent < len(main_positions); parent++)
+    {
+        vector4 orientation = main_orientations[parent];
+        vector4 inverse = set(-orientation.x, -orientation.y, -orientation.z, orientation.w);
+        vector local_origin = qrotate(inverse, ray_origin - main_positions[parent]) / main_radii[parent];
+        vector local_direction = qrotate(inverse, direction) / main_radii[parent];
+        float a = dot(local_direction, local_direction);
+        float b = 2.0 * dot(local_origin, local_direction);
+        float c = dot(local_origin, local_origin) - 1.0;
+        float discriminant = b * b - 4.0 * a * c;
+        if (discriminant < 0.0 || a <= 1e-12) continue;
+        float hit = (-b + sqrt(discriminant)) / (2.0 * a);
+        if (hit > outer_distance) outer_distance = hit;
+    }
+    if (outer_distance <= 0.0) continue;
+    vector position = ray_origin + direction * (outer_distance + radii.z * 0.15);
+    vector4 yaw = quaternion(1.570796326794897 - angle, set(0, 1, 0));
+    vector4 tilt = quaternion(-atan(0.12 + droop * 0.55), set(1, 0, 0));
+    vector4 orientation = qmultiply(yaw, tilt);
+    vector color = canopy_color(leaf_color, key, color_variation);
+    canopy_point(position, radii, orientation, color, 2, id);
+    id++;
+    outer_emitted++;
+}
+
+setattribtypeinfo(0, "point", "orient", "quaternion");
+setdetailattrib(0, "canopy_points", id, "set");
+setdetailattrib(0, "outer_points", outer_emitted, "set");
+setdetailattrib(0, "canopy_seed", seed, "set");

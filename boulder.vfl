@@ -1,0 +1,463 @@
+function void clip_boulder(
+    export vector positions[];
+    export int counts[];
+    vector normal; float distance_to_origin; float epsilon)
+{
+    vector next_positions[];
+    int next_counts[];
+    vector cap[];
+    int offset = 0;
+    int clipped = 0;
+
+    foreach (int count; counts)
+    {
+        vector polygon[];
+        for (int i = 0; i < count; i++)
+        {
+            vector a = positions[offset + i];
+            vector b = positions[offset + (i + 1) % count];
+            float da = dot(normal, a) - distance_to_origin;
+            float db = dot(normal, b) - distance_to_origin;
+            int inside_a = da <= 0.0;
+            int inside_b = db <= 0.0;
+
+            if (!inside_a) clipped = 1;
+            if (inside_a) append(polygon, a);
+            if (inside_a != inside_b)
+            {
+                vector p = lerp(a, b, clamp(da / (da - db), 0.0, 1.0));
+                append(polygon, p);
+                int duplicate = 0;
+                foreach (vector previous; cap)
+                {
+                    if (distance(previous, p) <= epsilon)
+                    {
+                        duplicate = 1;
+                        break;
+                    }
+                }
+                if (!duplicate) append(cap, p);
+            }
+        }
+        offset += count;
+
+        vector clean[];
+        foreach (vector p; polygon)
+        {
+            if (len(clean) == 0) append(clean, p);
+            else if (distance(clean[len(clean) - 1], p) > epsilon)
+                append(clean, p);
+        }
+        if (len(clean) > 1)
+        {
+            if (distance(clean[0], clean[len(clean) - 1]) <= epsilon)
+                resize(clean, len(clean) - 1);
+        }
+        if (len(clean) >= 3)
+        {
+            foreach (vector p; clean) append(next_positions, p);
+            append(next_counts, len(clean));
+        }
+    }
+
+    if (clipped && len(cap) >= 3 && len(next_counts) > 0)
+    {
+        vector center = 0;
+        foreach (vector p; cap) center += p;
+        center /= float(len(cap));
+
+        vector reference = abs(normal.y) < 0.9 ? set(0, 1, 0) : set(1, 0, 0);
+        vector u = normalize(cross(reference, normal));
+        vector v = cross(normal, u);
+        float angles[];
+        foreach (vector p; cap)
+        {
+            vector delta = p - center;
+            append(angles, atan2(dot(delta, v), dot(delta, u)));
+        }
+        int order[] = argsort(angles);
+        foreach (int index; order) append(next_positions, cap[index]);
+        append(next_counts, len(cap));
+    }
+
+    positions = next_positions;
+    counts = next_counts;
+}
+
+function float boulder_volume(vector positions[]; int counts[])
+{
+    if (len(positions) == 0) return 0.0;
+    vector reference = positions[0];
+    float volume = 0.0;
+    int offset = 0;
+    foreach (int count; counts)
+    {
+        for (int i = 1; i < count - 1; i++)
+        {
+            volume += dot(positions[offset] - reference,
+                cross(positions[offset + i] - reference,
+                      positions[offset + i + 1] - reference));
+        }
+        offset += count;
+    }
+    return abs(volume) / 6.0;
+}
+
+function vector boulder_face_normal(vector positions[]; int offset; int count)
+{
+    vector normal = 0;
+    vector reference = positions[offset];
+    for (int i = 1; i < count - 1; i++)
+    {
+        normal += cross(positions[offset + i] - reference,
+                        positions[offset + i + 1] - reference);
+    }
+    if (length(normal) > 0.0) return normalize(normal);
+    return set(0, 0, 0);
+}
+
+vector size = chv("size");
+if (dot(size, size) < 1e-12) size = set(2.0, 2.4, 1.8);
+size = max(abs(size), set(0.001, 0.001, 0.001));
+int facets = chi("facets");
+if (facets == 0) facets = 24;
+facets = clamp(facets, 8, 128);
+int seed = chi("seed");
+float irregularity = clamp(chf("irregularity"), 0.0, 1.0);
+float base_flatness = clamp(chf("base_flatness"), 0.0, 1.0);
+int splits = clamp(chi("splits"), 0, 24);
+float split_angle = clamp(chf("split_angle"), 0.0, 60.0);
+float split_randomness = clamp(chf("split_randomness"), 0.0, 1.0);
+float seam_gap = max(chf("seam_gap"), 0.0);
+float inner_chamfer = clamp(chf("inner_chamfer"), 0.0, 0.3);
+
+float chamfer_pinch = clamp(chf("chamfer_pinch"), 0.0, 1.0);
+float chamfer_randomness = clamp(chf("chamfer_randomness"), 0.0, 1.0);
+int chamfer_seed = chi("chamfer_seed");
+float epsilon = 1e-6;
+
+vector corners[] = array(
+    set(-1, -1, -1), set(1, -1, -1),
+    set(1, 1, -1), set(-1, 1, -1),
+    set(-1, -1, 1), set(1, -1, 1),
+    set(1, 1, 1), set(-1, 1, 1));
+int indices[] = array(
+    3, 2, 1, 0,
+    5, 6, 7, 4,
+    1, 5, 4, 0,
+    7, 6, 2, 3,
+    4, 7, 3, 0,
+    2, 6, 5, 1);
+vector positions[];
+foreach (int index; indices) append(positions, corners[index]);
+int counts[] = array(4, 4, 4, 4, 4, 4);
+
+float golden_angle = 2.399963229728653;
+float phase = rand(set(float(seed), 17.0, 31.0)) * 6.283185307179586;
+for (int i = 0; i < facets; i++)
+{
+    float y = 1.0 - 2.0 * (float(i) + 0.5) / float(facets);
+    float radius = sqrt(max(0.0, 1.0 - y * y));
+    float angle = float(i) * golden_angle + phase;
+    vector normal = set(cos(angle) * radius, y, sin(angle) * radius);
+    vector key = set(float(seed), float(i), 53.0);
+    vector jitter = set(
+        rand(key + set(11, 3, 7)),
+        rand(key + set(5, 19, 13)),
+        rand(key + set(23, 17, 2))) * 2.0 - 1.0;
+    normal = normalize(normal + jitter * irregularity * 0.22);
+    float support = 0.88 + irregularity
+        * (rand(key + set(41, 29, 37)) * 2.0 - 1.0) * 0.16;
+    clip_boulder(positions, counts, normal, support, epsilon);
+}
+
+if (base_flatness > 0.0)
+{
+    float bottom = 1e10;
+    foreach (vector p; positions) bottom = min(bottom, p.y);
+    float base_height = lerp(bottom, -0.45, base_flatness);
+    clip_boulder(positions, counts, set(0, -1, 0), -base_height, epsilon);
+}
+
+vector minimum = set(1e10, 1e10, 1e10);
+vector maximum = set(-1e10, -1e10, -1e10);
+foreach (vector p; positions)
+{
+    minimum = min(minimum, p);
+    maximum = max(maximum, p);
+}
+vector extent = max(maximum - minimum, set(epsilon, epsilon, epsilon));
+vector origin = set((minimum.x + maximum.x) * 0.5,
+                    minimum.y,
+                    (minimum.z + maximum.z) * 0.5);
+
+for (int i = 0; i < len(positions); i++)
+    positions[i] = (positions[i] - origin) / extent * size;
+epsilon = max(min(size.x, min(size.y, size.z)) * 1e-6, 1e-9);
+
+int parents[] = array(-1);
+vector node_normals[] = array(set(0, 0, 0));
+float node_distances[] = array(0.0);
+float node_volumes[] = array(boulder_volume(positions, counts));
+int leaves[] = array(0);
+
+for (int split = 0; split < splits; split++)
+{
+    int selected = 0;
+    for (int i = 1; i < len(leaves); i++)
+    {
+        if (node_volumes[leaves[i]] > node_volumes[leaves[selected]])
+            selected = i;
+    }
+    int parent = leaves[selected];
+    vector candidate_positions[] = positions;
+    int candidate_counts[] = counts;
+    int path[];
+    for (int node = parent; node > 0; node = parents[node])
+        append(path, node);
+    for (int i = len(path) - 1; i >= 0; i--)
+    {
+        int node = path[i];
+        clip_boulder(candidate_positions, candidate_counts,
+            node_normals[node], node_distances[node], epsilon);
+    }
+
+    vector low = set(1e10, 1e10, 1e10);
+    vector high = set(-1e10, -1e10, -1e10);
+    foreach (vector p; candidate_positions)
+    {
+        low = min(low, p);
+        high = max(high, p);
+    }
+    vector dimensions = high - low;
+    int axis = 0;
+    if (dimensions.y > dimensions.x) axis = 1;
+    if (dimensions.z > dimensions[axis]) axis = 2;
+    vector normal = 0;
+    normal[axis] = 1.0;
+    vector reference = axis == 1 ? set(1, 0, 0) : set(0, 1, 0);
+    vector u = normalize(cross(reference, normal));
+    vector v = cross(normal, u);
+    vector key = set(float(seed), float(split), 137.0);
+    float azimuth = rand(key + set(19, 7, 3)) * 6.283185307179586;
+    float tilt = radians(split_angle) * sqrt(rand(key + set(31, 13, 5)));
+    normal = normalize(normal * cos(tilt)
+        + (u * cos(azimuth) + v * sin(azimuth)) * sin(tilt));
+    float projection_min = 1e10;
+    float projection_max = -1e10;
+    foreach (vector p; candidate_positions)
+    {
+        float projection = dot(normal, p);
+        projection_min = min(projection_min, projection);
+        projection_max = max(projection_max, projection);
+    }
+    float ratio = 0.5 + (rand(key + set(43, 23, 11)) - 0.5)
+        * split_randomness * 0.4;
+    float plane_distance = lerp(projection_min, projection_max, ratio);
+    vector left_positions[] = candidate_positions;
+    vector right_positions[] = candidate_positions;
+    int left_counts[] = candidate_counts;
+    int right_counts[] = candidate_counts;
+    clip_boulder(left_positions, left_counts, normal, plane_distance, epsilon);
+    clip_boulder(right_positions, right_counts, -normal, -plane_distance, epsilon);
+    float left_volume = boulder_volume(left_positions, left_counts);
+    float right_volume = boulder_volume(right_positions, right_counts);
+    float minimum_volume = max(node_volumes[parent] * 1e-7, epsilon * epsilon * epsilon);
+    if (left_volume <= minimum_volume || right_volume <= minimum_volume) break;
+
+    int left = len(parents);
+    append(parents, parent);
+    append(node_normals, normal);
+    append(node_distances, plane_distance);
+    append(node_volumes, left_volume);
+    int right = len(parents);
+    append(parents, parent);
+    append(node_normals, -normal);
+    append(node_distances, -plane_distance);
+    append(node_volumes, right_volume);
+    leaves[selected] = left;
+    append(leaves, right);
+}
+
+
+int emitted_pieces = 0;
+for (int piece = 0; piece < len(leaves); piece++)
+{
+    vector piece_positions[] = positions;
+    int piece_counts[] = counts;
+    vector seam_normals[];
+    float seam_distances[];
+    int path[];
+    for (int node = leaves[piece]; node > 0; node = parents[node])
+        append(path, node);
+    for (int i = len(path) - 1; i >= 0; i--)
+    {
+        int node = path[i];
+        clip_boulder(piece_positions, piece_counts,
+            node_normals[node], node_distances[node], epsilon);
+        append(seam_normals, node_normals[node]);
+        append(seam_distances, node_distances[node]);
+    }
+    if (len(piece_counts) < 4) continue;
+
+    vector center = 0;
+    vector low = set(1e10, 1e10, 1e10);
+    vector high = set(-1e10, -1e10, -1e10);
+    foreach (vector p; piece_positions)
+    {
+        center += p;
+        low = min(low, p);
+        high = max(high, p);
+    }
+    center /= float(len(piece_positions));
+    vector dimensions = high - low;
+    float piece_scale = min(dimensions.x, min(dimensions.y, dimensions.z));
+
+
+    for (int seam = 0; seam < len(seam_normals); seam++)
+    {
+        vector normal = seam_normals[seam];
+        float clearance = max(0.0, seam_distances[seam] - dot(normal, center));
+        float inset = min(seam_gap * 0.5, clearance * 0.75);
+        seam_distances[seam] -= inset;
+        clip_boulder(piece_positions, piece_counts,
+            normal, seam_distances[seam], epsilon);
+    }
+
+    vector chamfer_normals[];
+    float chamfer_distances[];
+    if (inner_chamfer > 0.0 && len(seam_normals) > 0)
+    {
+        vector source_positions[] = piece_positions;
+        int source_counts[] = piece_counts;
+        for (int seam = 0; seam < len(seam_normals); seam++)
+        {
+            vector seam_normal = seam_normals[seam];
+            float seam_distance = seam_distances[seam];
+            int source_offset = 0;
+            foreach (int count; source_counts)
+            {
+                vector face_normal = boulder_face_normal(source_positions, source_offset, count);
+                float alignment = dot(face_normal, seam_normal);
+                int touches = 0;
+                for (int i = 0; i < count; i++)
+                {
+                    if (abs(dot(seam_normal, source_positions[source_offset + i])
+                        - seam_distance) <= epsilon * 4.0) touches++;
+                }
+                if (touches >= 2 && dot(face_normal, face_normal) > 0.5
+                    && alignment > -0.999 && alignment < 0.999)
+                {
+                    float face_distance = dot(face_normal, source_positions[source_offset]);
+                    vector middle = (seam_normal + face_normal) * 0.5;
+                    float middle_length = length(middle);
+                    vector middle_normal = middle / middle_length;
+                    float middle_support = (seam_distance + face_distance)
+                        * 0.5 / middle_length;
+                    float middle_clearance = max(0.0,
+                        middle_support - dot(middle_normal, center));
+                    vector chamfer_key = middle_normal * 37.17
+                        + set(float(seed), float(chamfer_seed), float(leaves[piece]));
+                    float width_variation = lerp(1.0,
+                        fit01(rand(chamfer_key), 0.25, 1.75), chamfer_randomness);
+                    float width = min(inner_chamfer * piece_scale
+                        * lerp(1.0, 2.0, chamfer_pinch) * width_variation,
+                        middle_clearance * 0.75);
+                    if (width > epsilon)
+                    {
+                        float distance_to_origin = middle_support - width;
+                        int duplicate = 0;
+                        for (int k = 0; k < len(chamfer_normals); k++)
+                        {
+                            if (dot(middle_normal, chamfer_normals[k]) > 0.999999
+                                && abs(distance_to_origin - chamfer_distances[k]) <= epsilon)
+                                duplicate = 1;
+                        }
+                        if (!duplicate)
+                        {
+                            append(chamfer_normals, middle_normal);
+                            append(chamfer_distances, distance_to_origin);
+                        }
+                    }
+                }
+                source_offset += count;
+            }
+        }
+        for (int i = 0; i < len(chamfer_normals); i++)
+        {
+            clip_boulder(piece_positions, piece_counts,
+                chamfer_normals[i], chamfer_distances[i], epsilon);
+        }
+    }
+
+    if (len(piece_counts) < 4
+        || boulder_volume(piece_positions, piece_counts) <= epsilon * epsilon * epsilon)
+        continue;
+
+
+    vector unique_positions[];
+    int point_ids[];
+    int offset = 0;
+    foreach (int count; piece_counts)
+    {
+        int face_points[];
+        vector face_normal = boulder_face_normal(piece_positions, offset, count);
+        int is_fracture = 0;
+        int is_chamfer = 0;
+        for (int seam = 0; seam < len(seam_normals); seam++)
+        {
+            if (dot(face_normal, seam_normals[seam]) < 0.99999) continue;
+            int on_plane = 1;
+            for (int i = 0; i < count; i++)
+            {
+                if (abs(dot(seam_normals[seam], piece_positions[offset + i])
+                    - seam_distances[seam]) > epsilon * 4.0) on_plane = 0;
+            }
+            if (on_plane) is_fracture = 1;
+        }
+        for (int bevel = 0; bevel < len(chamfer_normals); bevel++)
+        {
+            if (dot(face_normal, chamfer_normals[bevel]) < 0.99999) continue;
+            int on_plane = 1;
+            for (int i = 0; i < count; i++)
+            {
+                if (abs(dot(chamfer_normals[bevel], piece_positions[offset + i])
+                    - chamfer_distances[bevel]) > epsilon * 4.0) on_plane = 0;
+            }
+            if (on_plane) is_chamfer = 1;
+        }
+        for (int i = 0; i < count; i++)
+        {
+            vector p = piece_positions[offset + i];
+            int index = -1;
+            for (int j = 0; j < len(unique_positions); j++)
+            {
+                if (distance(unique_positions[j], p) <= epsilon)
+                {
+                    index = j;
+                    break;
+                }
+            }
+            if (index < 0)
+            {
+                index = len(unique_positions);
+                append(unique_positions, p);
+                int point_id = addpoint(0, p);
+                append(point_ids, point_id);
+                setpointattrib(0, "piece_id", point_id, piece, "set");
+            }
+            append(face_points, point_ids[index]);
+        }
+        offset += count;
+        int prim = addprim(0, "poly", face_points);
+        setprimattrib(0, "piece_id", prim, piece, "set");
+        setprimattrib(0, "name", prim, sprintf("piece_%d", piece), "set");
+        setprimgroup(0, "boulder", prim, 1);
+        setprimgroup(0, "fracture_faces", prim, is_fracture);
+        setprimgroup(0, "inner_chamfer_faces", prim, is_chamfer);
+        setprimgroup(0, "exterior_faces", prim, !is_fracture && !is_chamfer);
+    }
+    emitted_pieces++;
+}
+
+setdetailattrib(0, "piece_count", emitted_pieces, "set");

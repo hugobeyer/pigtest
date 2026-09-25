@@ -1,0 +1,570 @@
+function void tree_face(
+    int point_ids[]; vector positions[]; int corners[];
+    export vector normals[]; string part; int piece)
+{
+    int vertices[];
+    foreach (int index; corners) append(vertices, point_ids[index]);
+    int prim = addprim(0, "poly", vertices);
+    vector normal = 0;
+    vector origin = positions[corners[0]];
+    for (int i = 1; i < len(corners) - 1; i++)
+    {
+        normal += cross(positions[corners[i]] - origin,
+                        positions[corners[i + 1]] - origin);
+    }
+    foreach (int index; corners) normals[index] += normal;
+    setprimattrib(0, "name", prim, sprintf("%s_%d", part, piece), "set");
+    setprimattrib(0, "piece_id", prim, piece, "set");
+    setprimgroup(0, part, prim, 1);
+    if (part == "outer_foliage") setprimgroup(0, "foliage", prim, 1);
+}
+
+function void tree_surface(
+    vector positions[]; int sides; int rings;
+    vector color; string part; int piece)
+{
+    int point_ids[];
+    vector normals[];
+    resize(normals, len(positions));
+    foreach (vector p; positions)
+    {
+        int pt = addpoint(0, p);
+        append(point_ids, pt);
+        setpointattrib(0, "Cd", pt, color, "set");
+        setpointattrib(0, "piece_id", pt, piece, "set");
+    }
+
+    for (int side = 0; side < sides; side++)
+    {
+        int next = (side + 1) % sides;
+        int face[] = array(0, 1 + side, 1 + next);
+        tree_face(point_ids, positions, face, normals, part, piece);
+    }
+    for (int ring = 0; ring < rings - 1; ring++)
+    {
+        int lower = 1 + ring * sides;
+        int upper = lower + sides;
+        for (int side = 0; side < sides; side++)
+        {
+            int next = (side + 1) % sides;
+            int face[] = array(lower + side, upper + side,
+                               upper + next, lower + next);
+            tree_face(point_ids, positions, face, normals, part, piece);
+        }
+    }
+    int top = len(positions) - 1;
+    int last = 1 + (rings - 1) * sides;
+    for (int side = 0; side < sides; side++)
+    {
+        int next = (side + 1) % sides;
+        int face[] = array(top, last + next, last + side);
+        tree_face(point_ids, positions, face, normals, part, piece);
+    }
+    for (int i = 0; i < len(point_ids); i++)
+        setpointattrib(0, "N", point_ids[i], normalize(normals[i]), "set");
+}
+
+function vector[] tree_lobe_positions(
+    vector center; vector radii; vector lean;
+    int sides; int rings; int seed; int piece;
+    float irregularity; float droop)
+{
+    vector positions[];
+    vector key = set(float(seed), float(piece), 173.0);
+    float phase = rand(key) * 6.283185307179586;
+    vector bottom = set(0, -radii.y * (1.0 + droop * 0.25), 0);
+    bottom += lean * bottom.y;
+    append(positions, center + bottom);
+
+    for (int ring = 0; ring < rings; ring++)
+    {
+        float t = float(ring + 1) / float(rings + 1);
+        float latitude = t * 3.141592653589793;
+        float height = -cos(latitude);
+        float radial = sin(latitude);
+        float shoulder = 1.0 + 0.12 * height;
+        float y = height * radii.y
+            - droop * radii.y * 0.25 * pow((1.0 - height) * 0.5, 2.0);
+        for (int side = 0; side < sides; side++)
+        {
+            float angle = float(side) / float(sides) * 6.283185307179586;
+            float broad_shape = sin(angle * 3.0 + phase)
+                * sin(latitude) * 0.07
+                + cos(angle * 2.0 - phase) * sin(latitude * 2.0) * 0.04;
+            float radius = radial * shoulder * (1.0 + irregularity * broad_shape);
+            vector p = set(cos(angle) * radii.x * radius,
+                           y,
+                           sin(angle) * radii.z * radius);
+            p += lean * y;
+            append(positions, center + p);
+        }
+    }
+    vector top = set(0, radii.y, 0);
+    top += lean * top.y;
+    append(positions, center + top);
+    return positions;
+}
+
+function void tree_lobe(
+    vector center; vector radii; vector lean; vector color;
+    int sides; int rings; int seed; int piece;
+    float irregularity; float droop)
+{
+    vector positions[] = tree_lobe_positions(center, radii, lean,
+        sides, rings, seed, piece, irregularity, droop);
+    tree_surface(positions, sides, rings, color, "foliage", piece);
+}
+
+function void tree_grid_mesh(
+    vector source[]; int sides; int rings;
+    export vector positions[]; export int counts[])
+{
+    resize(positions, 0);
+    resize(counts, 0);
+    for (int side = 0; side < sides; side++)
+    {
+        int next = (side + 1) % sides;
+        int face[] = array(0, 1 + side, 1 + next);
+        foreach (int index; face) append(positions, source[index]);
+        append(counts, 3);
+    }
+    for (int ring = 0; ring < rings - 1; ring++)
+    {
+        int lower = 1 + ring * sides;
+        int upper = lower + sides;
+        for (int side = 0; side < sides; side++)
+        {
+            int next = (side + 1) % sides;
+            int face[] = array(lower + side, upper + side, upper + next, lower + next);
+            foreach (int index; face) append(positions, source[index]);
+            append(counts, 4);
+        }
+    }
+    int last = 1 + (rings - 1) * sides;
+    for (int side = 0; side < sides; side++)
+    {
+        int next = (side + 1) % sides;
+        int face[] = array(len(source) - 1, last + next, last + side);
+        foreach (int index; face) append(positions, source[index]);
+        append(counts, 3);
+    }
+}
+
+function void tree_clip_mesh(
+    export vector positions[]; export int counts[];
+    vector normal; float plane_distance; int close_cut; float epsilon)
+{
+    vector result[], cap[];
+    int result_counts[];
+    int offset = 0;
+    int removed = 0;
+    foreach (int count; counts)
+    {
+        vector polygon[];
+        for (int i = 0; i < count; i++)
+        {
+            vector a = positions[offset + i];
+            vector b = positions[offset + (i + 1) % count];
+            float da = dot(normal, a) - plane_distance;
+            float db = dot(normal, b) - plane_distance;
+            int inside_a = da <= 0.0;
+            int inside_b = db <= 0.0;
+            if (!inside_a) removed = 1;
+            if (inside_a) append(polygon, a);
+            if (inside_a != inside_b)
+            {
+                vector p = lerp(a, b, clamp(da / (da - db), 0.0, 1.0));
+                append(polygon, p);
+                if (close_cut)
+                {
+                    int duplicate = 0;
+                    foreach (vector previous; cap)
+                        if (distance(previous, p) <= epsilon) duplicate = 1;
+                    if (!duplicate) append(cap, p);
+                }
+            }
+        }
+        offset += count;
+        vector clean[];
+        foreach (vector p; polygon)
+        {
+            if (len(clean) == 0) append(clean, p);
+            else if (distance(clean[len(clean) - 1], p) > epsilon) append(clean, p);
+        }
+        if (len(clean) > 1)
+        {
+            if (distance(clean[0], clean[len(clean) - 1]) <= epsilon)
+                resize(clean, len(clean) - 1);
+        }
+        if (len(clean) >= 3)
+        {
+            vector area = 0;
+            for (int i = 1; i < len(clean) - 1; i++)
+                area += cross(clean[i] - clean[0], clean[i + 1] - clean[0]);
+            if (length(area) > epsilon * epsilon)
+            {
+                foreach (vector p; clean) append(result, p);
+                append(result_counts, len(clean));
+            }
+        }
+    }
+    if (close_cut && removed && len(cap) >= 3 && len(result_counts) > 0)
+    {
+        vector center = 0;
+        foreach (vector p; cap) center += p;
+        center /= float(len(cap));
+        vector reference = abs(normal.y) < 0.9 ? set(0, 1, 0) : set(1, 0, 0);
+        vector u = normalize(cross(reference, normal));
+        vector v = cross(normal, u);
+        float angles[];
+        foreach (vector p; cap)
+        {
+            vector delta = p - center;
+            append(angles, atan2(dot(delta, v), dot(delta, u)));
+        }
+        int order[] = argsort(angles);
+        foreach (int index; order) append(result, cap[index]);
+        append(result_counts, len(cap));
+    }
+    positions = result;
+    counts = result_counts;
+}
+
+
+function void tree_emit_mesh(
+    vector positions[]; int counts[]; vector color;
+    string part; int piece; float epsilon)
+{
+    vector unique_positions[], normals[];
+    int point_ids[], vertex_indices[];
+    foreach (vector p; positions)
+    {
+        int index = -1;
+        for (int i = 0; i < len(unique_positions); i++)
+        {
+            if (distance(unique_positions[i], p) <= epsilon)
+            {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0)
+        {
+            index = len(unique_positions);
+            append(unique_positions, p);
+            int pt = addpoint(0, p);
+            append(point_ids, pt);
+            setpointattrib(0, "Cd", pt, color, "set");
+            setpointattrib(0, "piece_id", pt, piece, "set");
+        }
+        append(vertex_indices, index);
+    }
+    resize(normals, len(unique_positions));
+    int offset = 0;
+    foreach (int count; counts)
+    {
+        int face[];
+        for (int i = 0; i < count; i++) append(face, vertex_indices[offset + i]);
+        tree_face(point_ids, unique_positions, face, normals, part, piece);
+        offset += count;
+    }
+    for (int i = 0; i < len(point_ids); i++)
+        setpointattrib(0, "N", point_ids[i], normalize(normals[i]), "set");
+}
+
+function vector tree_strand_center(
+    float t; vector root_direction; vector branch_direction; vector lean;
+    float height; float trunk_height; float core_radius;
+    float root_reach; float branch_reach)
+{
+    float root_weight = 1.0 - smooth(0.0, 0.38, t);
+    float branch_weight = smooth(0.58, 1.0, t);
+    float y = height * pow(t, 1.35);
+    vector center = root_direction * (core_radius + root_reach * root_weight)
+        + branch_direction * branch_reach * branch_weight;
+    center += lean * pow(clamp(y / trunk_height, 0.0, 1.0), 1.5);
+    center.y = y;
+    return center;
+}
+
+function float tree_ray_triangle(
+    vector origin; vector direction; vector a; vector b; vector c)
+{
+    vector edge1 = b - a;
+    vector edge2 = c - a;
+    vector p = cross(direction, edge2);
+    float determinant = dot(edge1, p);
+    if (abs(determinant) <= 1e-10 * max(length(edge1) * length(edge2), 1e-12))
+        return -1.0;
+    float inverse = 1.0 / determinant;
+    vector delta = origin - a;
+    float u = dot(delta, p) * inverse;
+    if (u < -1e-6 || u > 1.0 + 1e-6) return -1.0;
+    vector q = cross(delta, edge1);
+    float v = dot(direction, q) * inverse;
+    if (v < -1e-6 || u + v > 1.0 + 1e-6) return -1.0;
+    float t = dot(edge2, q) * inverse;
+    return t > 0.0 ? t : -1.0;
+}
+
+int seed = chi("seed");
+float trunk_height = chf("trunk_height");
+if (trunk_height <= 0.0) trunk_height = 2.0;
+float trunk_radius = chf("trunk_radius");
+if (trunk_radius <= 0.0) trunk_radius = 0.35;
+float canopy_width = chf("canopy_width");
+if (canopy_width <= 0.0) canopy_width = 3.4;
+float canopy_height = chf("canopy_height");
+if (canopy_height <= 0.0) canopy_height = 2.8;
+int lower_lobes = chi("lower_lobes");
+if (lower_lobes == 0) lower_lobes = 6;
+lower_lobes = clamp(lower_lobes, 3, 12);
+int upper_lobes = chi("upper_lobes");
+if (upper_lobes == 0) upper_lobes = 4;
+upper_lobes = clamp(upper_lobes, 3, 10);
+int outer_blobs = chi("outer_blobs");
+if (outer_blobs == 0) outer_blobs = lower_lobes * 2 + upper_lobes;
+outer_blobs = clamp(outer_blobs, 0, 48);
+float outer_blob_scale = chf("outer_blob_scale");
+if (outer_blob_scale <= 0.0) outer_blob_scale = 1.0;
+outer_blob_scale = clamp(outer_blob_scale, 0.1, 2.0);
+int sides = chi("sides");
+if (sides == 0) sides = 20;
+sides = clamp(sides, 8, 48);
+int lobe_rings = chi("lobe_rings");
+if (lobe_rings == 0) lobe_rings = 12;
+lobe_rings = clamp(lobe_rings, 5, 32);
+int trunk_rings = chi("trunk_rings");
+if (trunk_rings == 0) trunk_rings = 12;
+trunk_rings = clamp(trunk_rings, 4, 32);
+int root_count = chi("root_count");
+if (root_count == 0) root_count = 5;
+root_count = clamp(root_count, 3, 8);
+float root_flare = clamp(chf("root_flare"), 0.0, 2.0);
+int root_tubes = chi("root_tubes");
+float root_length = chf("root_length");
+if (root_length <= 0.0) root_length = trunk_radius * (2.5 + root_flare);
+float root_thickness = chf("root_thickness");
+if (root_thickness <= 0.0) root_thickness = trunk_radius * 0.65;
+float branch_spread = chf("branch_spread");
+if (branch_spread <= 0.0) branch_spread = canopy_width * 0.22;
+float lean_amount = clamp(chf("lean"), 0.0, 1.0);
+float irregularity = clamp(chf("irregularity"), 0.0, 1.0);
+float droop = clamp(chf("droop"), 0.0, 1.0);
+float color_variation = clamp(chf("color_variation"), 0.0, 1.0);
+vector leaf_color = chv("leaf_color");
+if (dot(leaf_color, leaf_color) < 1e-12) leaf_color = set(0.12, 0.55, 0.09);
+vector trunk_color = chv("trunk_color");
+if (dot(trunk_color, trunk_color) < 1e-12) trunk_color = set(0.46, 0.25, 0.065);
+
+float phase = rand(set(float(seed), 29.0, 7.0)) * 6.283185307179586;
+vector lean_direction = set(cos(phase), 0, sin(phase));
+vector trunk_lean = lean_direction * lean_amount * trunk_height * 0.15;
+vector trunk_top = trunk_lean + set(0, trunk_height, 0);
+if (root_tubes != 1)
+{
+vector trunk_positions[];
+append(trunk_positions, set(0, 0, 0));
+int trunk_sides = max(sides, root_count * 6);
+
+for (int ring = 0; ring < trunk_rings; ring++)
+{
+    float t = pow(float(ring) / float(trunk_rings - 1), 1.35);
+    float y = t * trunk_height;
+    vector center = trunk_lean * pow(t, 1.5);
+    center.y = y;
+    center += set(-lean_direction.z, 0, lean_direction.x)
+        * sin(t * 3.141592653589793) * trunk_radius * irregularity * 0.2;
+    float taper = lerp(1.0, 0.72, t);
+    float base_flare = (0.2 + root_flare * 0.45) * pow(1.0 - t, 3.5);
+    float root_weight = pow(1.0 - t, 5.0);
+    for (int side = 0; side < trunk_sides; side++)
+    {
+        float angle = float(side) / float(trunk_sides) * 6.283185307179586;
+        float root_profile = pow(0.5 + 0.5 * cos(float(root_count)
+            * (angle - phase)), 3.0);
+        float root_radius = (0.35 + root_flare) * root_profile * root_weight;
+        float bark_shape = irregularity * 0.055
+            * sin(angle * 3.0 + phase + t * 0.8);
+        float radius = trunk_radius * (taper + base_flare + root_radius + bark_shape);
+        append(trunk_positions, center
+            + set(cos(angle) * radius, 0, sin(angle) * radius));
+    }
+}
+append(trunk_positions, trunk_top);
+tree_surface(trunk_positions, trunk_sides, trunk_rings, trunk_color, "trunk", 0);
+}
+
+if (root_tubes == 1)
+{
+    int strand_sides = clamp(sides, 8, 24);
+    int strand_rings = max(trunk_rings, 12);
+    float epsilon = max(trunk_radius * 1e-6, 1e-9);
+    for (int root = 0; root < root_count; root++)
+    {
+        vector key = set(float(seed), float(root), 257.0);
+        float angle = phase + float(root) / float(root_count) * 6.283185307179586;
+        angle += (rand(key) - 0.5) * irregularity * 0.25;
+        vector direction = set(cos(angle), 0, sin(angle));
+        float branch_angle = angle + (rand(key + set(43, 3, 17)) - 0.5)
+            * irregularity * 0.65;
+        vector branch_direction = set(cos(branch_angle), 0, sin(branch_angle));
+        vector reference = set(-sin(angle), 0, cos(angle));
+        float root_reach = root_length * (1.0 + (rand(key + set(7, 19, 31)) - 0.5)
+            * irregularity * 0.35);
+        float branch_reach = branch_spread * (1.0 + (rand(key + set(13, 37, 7)) - 0.5)
+            * irregularity * 0.3);
+        float thickness = root_thickness * (1.0 + (rand(key + set(23, 11, 5)) - 0.5)
+            * irregularity * 0.25);
+        float height = trunk_height + canopy_height * 0.22;
+        float core_radius = min(trunk_radius * 0.35, thickness * 0.65);
+        vector grid[];
+        append(grid, tree_strand_center(0.0, direction, branch_direction, trunk_lean,
+            height, trunk_height, core_radius, root_reach, branch_reach));
+        for (int ring = 0; ring < strand_rings; ring++)
+        {
+            float t = float(ring + 1) / float(strand_rings + 1);
+            vector center = tree_strand_center(t, direction, branch_direction, trunk_lean,
+                height, trunk_height, core_radius, root_reach, branch_reach);
+            vector previous = tree_strand_center(max(0.0, t - 0.001),
+                direction, branch_direction, trunk_lean,
+                height, trunk_height, core_radius, root_reach, branch_reach);
+            vector next = tree_strand_center(min(1.0, t + 0.001),
+                direction, branch_direction, trunk_lean,
+                height, trunk_height, core_radius, root_reach, branch_reach);
+            vector tangent = normalize(next - previous);
+            vector u = normalize(reference - tangent * dot(reference, tangent));
+            vector v = normalize(cross(u, tangent));
+            float radius = thickness * pow(sin(t * 3.141592653589793), 0.65)
+                * (1.0 + root_flare * 0.15 * (1.0 - t));
+            for (int side = 0; side < strand_sides; side++)
+            {
+                float theta = float(side) / float(strand_sides) * 6.283185307179586;
+                append(grid, center + (u * cos(theta) + v * sin(theta)) * radius);
+            }
+        }
+        append(grid, tree_strand_center(1.0, direction, branch_direction, trunk_lean,
+            height, trunk_height, core_radius, root_reach, branch_reach));
+        vector positions[];
+        int counts[];
+        tree_grid_mesh(grid, strand_sides, strand_rings, positions, counts);
+        tree_clip_mesh(positions, counts, set(0, -1, 0), 0.0, 1, epsilon);
+        tree_emit_mesh(positions, counts, trunk_color, "trunk",
+            lower_lobes + upper_lobes + 3 + root, epsilon);
+    }
+}
+
+vector canopy_surface[];
+int canopy_faces[];
+int piece = 1;
+for (int tier = 0; tier < 2; tier++)
+{
+    int count = tier == 0 ? lower_lobes : upper_lobes;
+    float tier_radius = canopy_width * (tier == 0 ? 0.265 : 0.175);
+    float tier_height = canopy_height * (tier == 0 ? 0.13 : 0.46);
+    float tier_phase = phase + (tier == 0 ? 0.0 : 3.141592653589793 / float(count));
+    for (int lobe = 0; lobe < count; lobe++)
+    {
+        vector key = set(float(seed), float(piece), 97.0);
+        float angle = float(lobe) / float(count) * 6.283185307179586 + tier_phase;
+        angle += (rand(key + set(11, 3, 17)) - 0.5)
+            * irregularity * 0.35;
+        vector direction = set(cos(angle), 0, sin(angle));
+        float distance_scale = 1.0 + (rand(key + set(5, 23, 13)) - 0.5)
+            * irregularity * 0.2;
+        vector center = trunk_top + direction * tier_radius * distance_scale;
+        center.y += tier_height + (rand(key + set(19, 31, 7)) - 0.5)
+            * irregularity * canopy_height * 0.13;
+        float variation = 1.0 + (rand(key + set(41, 2, 29)) - 0.5)
+            * irregularity * 0.3;
+        vector radii = set(canopy_width * 0.24,
+                           canopy_height * (tier == 0 ? 0.42 : 0.37),
+                           canopy_width * 0.24) * variation;
+        radii.x *= 1.0 + (rand(key + set(3, 43, 11)) - 0.5) * irregularity * 0.15;
+        radii.z *= 1.0 + (rand(key + set(37, 17, 5)) - 0.5) * irregularity * 0.15;
+        vector lobe_lean = direction * 0.04;
+        float tint = rand(key + set(7, 53, 23)) * 2.0 - 1.0;
+        vector color = leaf_color * (1.0 + tint * color_variation * 0.18);
+        color += set(0.08, 0.035, -0.025) * tint * color_variation;
+        color = clamp(color, set(0, 0, 0), set(1, 1, 1));
+        vector grid[] = tree_lobe_positions(center, radii, lobe_lean,
+            sides, lobe_rings, seed, piece, irregularity, 0.0);
+        tree_surface(grid, sides, lobe_rings, color, "foliage", piece);
+        vector surface[];
+        int faces[];
+        tree_grid_mesh(grid, sides, lobe_rings, surface, faces);
+        foreach (vector p; surface) append(canopy_surface, p);
+        foreach (int count; faces) append(canopy_faces, count);
+        piece++;
+    }
+}
+
+vector crown_center = trunk_top + set(0, canopy_height * 0.67, 0);
+crown_center += lean_direction * canopy_width * irregularity * 0.035;
+vector crown_radii = set(canopy_width * 0.285, canopy_height * 0.34, canopy_width * 0.275);
+vector crown_color = clamp(leaf_color * (1.0 + color_variation * 0.1),
+    set(0, 0, 0), set(1, 1, 1));
+vector crown_grid[] = tree_lobe_positions(crown_center, crown_radii, lean_direction * 0.035,
+    sides, lobe_rings, seed, piece, irregularity, 0.0);
+tree_surface(crown_grid, sides, lobe_rings, crown_color, "foliage", piece);
+vector crown_surface[];
+int crown_faces[];
+tree_grid_mesh(crown_grid, sides, lobe_rings, crown_surface, crown_faces);
+foreach (vector p; crown_surface) append(canopy_surface, p);
+foreach (int count; crown_faces) append(canopy_faces, count);
+
+int outer_emitted = 0;
+int outer_sides = min(sides, 16);
+int outer_rings = min(lobe_rings, 10);
+for (int blob = 0; blob < outer_blobs; blob++)
+{
+    vector key = set(float(seed), float(blob), 557.0);
+    float angle = phase + (float(blob) + 0.35) / float(outer_blobs) * 6.283185307179586;
+    angle += (rand(key + set(11, 7, 3)) - 0.5) * irregularity
+        * 6.283185307179586 / float(outer_blobs) * 0.45;
+    vector direction = set(cos(angle), 0, sin(angle));
+    vector tangent = set(direction.z, 0, -direction.x);
+    float variation = 1.0 + (rand(key + set(31, 13, 19)) - 0.5) * irregularity * 0.3;
+    float scale = outer_blob_scale * variation;
+    vector radii = set(canopy_width * 0.105, canopy_height * 0.21,
+                       canopy_width * 0.045) * scale;
+    float height_band = blob % 3 == 0 ? 0.43 : 0.13;
+    vector ray_origin = trunk_top;
+    ray_origin.y += canopy_height * (height_band
+        + (rand(key + set(17, 23, 5)) - 0.5) * irregularity * 0.12)
+        - radii.y * (0.55 + droop * 0.2);
+    float outer_distance = -1.0;
+    int offset = 0;
+    foreach (int count; canopy_faces)
+    {
+        for (int i = 1; i < count - 1; i++)
+        {
+            float hit = tree_ray_triangle(ray_origin, direction,
+                canopy_surface[offset], canopy_surface[offset + i],
+                canopy_surface[offset + i + 1]);
+            outer_distance = max(outer_distance, hit);
+        }
+        offset += count;
+    }
+    if (outer_distance <= 0.0) continue;
+    vector center = ray_origin + direction * (outer_distance + radii.z * 0.2);
+    vector local_lean = set(0, 0, -(0.12 + droop * 0.32));
+    int outer_piece = piece + root_count + 2 + blob;
+    vector grid[] = tree_lobe_positions(set(0, 0, 0), radii, local_lean,
+        outer_sides, outer_rings, seed, outer_piece, irregularity, droop);
+    for (int i = 0; i < len(grid); i++)
+    {
+        vector p = grid[i];
+        grid[i] = center + tangent * p.x + set(0, p.y, 0) + direction * p.z;
+    }
+    float tint = rand(key + set(43, 29, 37)) * 2.0 - 1.0;
+    vector color = clamp(leaf_color * (1.0 + tint * color_variation * 0.18)
+        + set(0.08, 0.035, -0.025) * tint * color_variation,
+        set(0, 0, 0), set(1, 1, 1));
+    tree_surface(grid, outer_sides, outer_rings, color, "outer_foliage", outer_piece);
+    outer_emitted++;
+}
+
+setdetailattrib(0, "foliage_lobes", piece + outer_emitted, "set");
+setdetailattrib(0, "outer_foliage_lobes", outer_emitted, "set");
+setdetailattrib(0, "tree_seed", seed, "set");
