@@ -1,18 +1,23 @@
 import GUI from 'lil-gui';
 import look from './look.json';
 import {catcher} from './environment.js';
-import {ENVIRONMENT} from './tokens.js';
+import {ENVIRONMENT, LIGHTS, SHADING} from './tokens.js';
 import {uniforms as vignette} from './ground.js';
 import {sheenColor, uniforms as shade} from './shading.js';
 
 export function debug({scene,ambient,key,blender}){
   const state=structuredClone(look);
-  state.environment={wrap:ENVIRONMENT.wrap,power:ENVIRONMENT.power,...state.environment};
+  const curve=({terminator,softness,darkColor})=>({terminator,softness,darkColor});
+  state.shading={...curve(SHADING),...state.shading};
+  state.environment={...curve(ENVIRONMENT),...state.environment};
+  for(const group of [state.shading,state.environment]){delete group.wrap; delete group.power;}
+  state.shadow={shadowMapSize:LIGHTS.key.shadowMapSize,...state.shadow};
   const on={sss:true,rim:true,outline:true,sheen:true,vignette:true};
   const {shading:s,environment:e,ground:g,hemisphere:h}=state;
   const live={sun:'#'+key.color.getHexString(),sunIntensity:key.intensity,sky:'#'+ambient.color.getHexString(),skyIntensity:ambient.intensity};
   const apply=()=>{
-    shade.uWrap.value=s.wrap; shade.uPower.value=s.power; shade.uSceneryWrap.value=e.wrap; shade.uSceneryPower.value=e.power;
+    shade.uTerminator.value=s.terminator; shade.uSoftness.value=s.softness; shade.uDarkColor.value.set(s.darkColor);
+    shade.uSceneryTerminator.value=e.terminator; shade.uScenerySoftness.value=e.softness; shade.uSceneryDarkColor.value.set(e.darkColor);
     shade.uSssStrength.value=on.sss ? s.sss.strength : 0; shade.uSssWidth.value=s.sss.width;
     shade.uRimColor.value.set(s.rim.color); shade.uRimStrength.value=on.rim ? s.rim.strength : 0; shade.uRimPower.value=s.rim.power;
     shade.uOutlineColor.value.set(s.outline.color); shade.uOutlineFrom.value=s.outline.from; shade.uOutlineStrength.value=on.outline ? s.outline.strength : 0;
@@ -24,15 +29,18 @@ export function debug({scene,ambient,key,blender}){
     if(blender.world){ambient.color.set(live.sky); ambient.intensity=live.skyIntensity;}
     else{ambient.color.set(h.sky); ambient.intensity=h.intensity;}
     key.color.set(live.sun); key.intensity=live.sunIntensity;
-    Object.assign(key.shadow,state.shadow);
+    const {shadowMapSize,...shadow}=state.shadow;
+    Object.assign(key.shadow,shadow);
+    if(key.shadow.mapSize.x!==shadowMapSize){key.shadow.map?.dispose(); key.shadow.map=null; key.shadow.mapSize.set(shadowMapSize,shadowMapSize);}
     scene.background.set(state.background);
   };
 
   const gui=new GUI({title:'Look  (G to hide)',width:420});
   gui.domElement.style.setProperty('--name-width','48%');
-  const character=gui.addFolder('Pigs, blocks, rail');
-  character.add(s,'wrap',0,1,.01).name('wrap (lower = softer)');
-  character.add(s,'power',.5,4,.01);
+  const character=gui.addFolder('Pigs, blocks, bullets');
+  character.add(s,'terminator',-1,1,.01).name('shadow starts (lower = more lit)');
+  character.add(s,'softness',.01,1,.01).name('edge softness');
+  character.addColor(s,'darkColor').name('dark side color');
   character.add(on,'sss').name('SSS on');
   character.add(s.sss,'strength',0,1,.01).name('SSS strength');
   character.add(s.sss,'width',.02,1,.01).name('SSS width');
@@ -47,8 +55,9 @@ export function debug({scene,ambient,key,blender}){
 
   const scenery=gui.addFolder('Scenery');
   scenery.add(e,'lit').name('lit (save, then reloads)');
-  scenery.add(e,'wrap',0,1,.01).name('wrap (lower = softer)');
-  scenery.add(e,'power',.5,4,.01).name('power');
+  scenery.add(e,'terminator',-1,1,.01).name('shadow starts (lower = more lit)');
+  scenery.add(e,'softness',.01,1,.01).name('edge softness');
+  scenery.addColor(e,'darkColor').name('dark side color');
   scenery.add(on,'sheen').name('sheen on');
   scenery.add(e.sheen,'strength',0,1,.01).name('sheen strength');
   scenery.add(e.sheen,'power',1,16,.1).name('sheen power');
@@ -70,6 +79,7 @@ export function debug({scene,ambient,key,blender}){
   const light=gui.addFolder('Light');
   light.addColor(h,'ground').name('ambient bounce');
   if(!blender.world){light.addColor(h,'sky').name('ambient sky'); light.add(h,'intensity',0,6,.01).name('ambient intensity');}
+  light.add(state.shadow,'shadowMapSize',[512,1024,2048,4096]).name('shadow map size');
   light.add(state.shadow,'radius',0,12,.1).name('shadow blur');
   light.add(state.shadow,'normalBias',0,.2,.001).name('shadow normal bias');
   light.add(state.shadow,'bias',-.005,.005,.00005).name('shadow bias');

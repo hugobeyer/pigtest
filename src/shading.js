@@ -12,7 +12,8 @@ function isCharacter(object){
 
 const converted={character:new Map(),scenery:new Map()};
 export const uniforms={
-  uWrap:{value:SHADING.wrap},uPower:{value:SHADING.power},uSceneryWrap:{value:ENVIRONMENT.wrap},uSceneryPower:{value:ENVIRONMENT.power},
+  uTerminator:{value:SHADING.terminator},uSoftness:{value:SHADING.softness},uDarkColor:{value:new THREE.Color(SHADING.darkColor)},
+  uSceneryTerminator:{value:ENVIRONMENT.terminator},uScenerySoftness:{value:ENVIRONMENT.softness},uSceneryDarkColor:{value:new THREE.Color(ENVIRONMENT.darkColor)},
   uSssStrength:{value:SHADING.sss.strength},uSssWidth:{value:SHADING.sss.width},
   uRimColor:{value:new THREE.Color(SHADING.rim.color)},uRimStrength:{value:SHADING.rim.strength},uRimPower:{value:SHADING.rim.power},
   uOutlineColor:{value:new THREE.Color(SHADING.outline.color)},uOutlineFrom:{value:SHADING.outline.from},uOutlineStrength:{value:SHADING.outline.strength},
@@ -23,8 +24,8 @@ const specular='\treflectedLight.directSpecular += irradiance * specularBRDF * m
 
 function patch(shader){
   Object.assign(shader.uniforms,uniforms);
-  shader.fragmentShader=`uniform float uWrap, uPower, uSceneryWrap, uSceneryPower, uSssStrength, uSssWidth, uSheenStrength, uSheenPower, uSheenAlbedo, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
-uniform vec3 uRimColor, uOutlineColor, uSheenColor;
+  shader.fragmentShader=`uniform float uTerminator, uSoftness, uSceneryTerminator, uScenerySoftness, uSssStrength, uSssWidth, uSheenStrength, uSheenPower, uSheenAlbedo, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
+uniform vec3 uDarkColor, uSceneryDarkColor, uRimColor, uOutlineColor, uSheenColor;
 `+shader.fragmentShader
     .replace('#include <lights_physical_pars_fragment>',THREE.ShaderChunk.lights_physical_pars_fragment.replace(specular,`\t#ifdef GOOSHY_CHARACTER
 ${specular}
@@ -34,17 +35,26 @@ ${specular}
 \t\treflectedLight.directSpecular += directLight.color * uSheenColor * mix( vec3( 1.0 ), hue, uSheenAlbedo ) * uSheenStrength * sheen;
 \t#endif`).replace(diffuse,`\tfloat nl = dot( geometryNormal, directLight.direction );
 \t#ifdef GOOSHY_CHARACTER
-\t\tfloat wrapped = pow( saturate( nl * uWrap + 1.0 - uWrap ), uPower );
+\t\tfloat lit = smoothstep( uTerminator - uSoftness, uTerminator + uSoftness, nl );
+\t\tvec3 dark = uDarkColor;
+\t\tfloat band = 1.0 - smoothstep( 0.0, uSssWidth, abs( nl - uTerminator ) );
 \t#else
-\t\tfloat wrapped = pow( saturate( nl * uSceneryWrap + 1.0 - uSceneryWrap ), uSceneryPower );
+\t\tfloat lit = smoothstep( uSceneryTerminator - uScenerySoftness, uSceneryTerminator + uScenerySoftness, nl );
+\t\tvec3 dark = uSceneryDarkColor;
+\t\tfloat band = 0.0;
 \t#endif
-\tfloat band = 1.0 - smoothstep( 0.0, uSssWidth, abs( nl ) );
+\t#if NUM_DIR_LIGHTS > 0
+\t\tvec3 lightColor = directionalLights[ 0 ].color;
+\t#else
+\t\tvec3 lightColor = directLight.color;
+\t#endif
+\tvec3 unshadowed = directLight.color / max( lightColor, vec3( 1e-4 ) );
 \t#if NUM_HEMI_LIGHTS > 0
 \t\tvec3 sky = hemisphereLights[ 0 ].skyColor;
 \t#else
 \t\tvec3 sky = vec3( 1.0 );
 \t#endif
-\treflectedLight.directDiffuse += directLight.color * wrapped * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );
+\treflectedLight.directDiffuse += lightColor * mix( dark, vec3( 1.0 ), lit * unshadowed ) * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );
 \t#ifdef GOOSHY_CHARACTER
 \t\treflectedLight.directDiffuse += directLight.color * BRDF_Lambert( material.diffuseContribution ) * sky * uSssStrength * band;
 \t#endif`))
