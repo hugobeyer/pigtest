@@ -1,7 +1,8 @@
 import * as THREE from 'three';
+import {isEnvironment} from './environment.js';
 import {SHADING} from './tokens.js';
 
-const converted=new Map();
+const converted={character:new Map(),scenery:new Map()};
 const uniforms={
   uWrap:{value:SHADING.wrap},uPower:{value:SHADING.power},
   uSssStrength:{value:SHADING.sss.strength},uSssWidth:{value:SHADING.sss.width},
@@ -23,29 +24,37 @@ uniform vec3 uRimColor, uOutlineColor;
 \t#else
 \t\tvec3 sky = vec3( 1.0 );
 \t#endif
-\treflectedLight.directDiffuse += directLight.color * ( wrapped * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F ) + BRDF_Lambert( material.diffuseContribution ) * sky * uSssStrength * band );`))
-    .replace('#include <opaque_fragment>',`float facing = 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) );
+\treflectedLight.directDiffuse += directLight.color * wrapped * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );
+\t#ifdef GOOSHY_CHARACTER
+\t\treflectedLight.directDiffuse += directLight.color * BRDF_Lambert( material.diffuseContribution ) * sky * uSssStrength * band;
+\t#endif`))
+    .replace('#include <opaque_fragment>',`#ifdef GOOSHY_CHARACTER
+float facing = 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) );
 #if NUM_DIR_LIGHTS > 0
 outgoingLight += uRimColor * uRimStrength * saturate( 0.5 - 0.5 * dot( normal, directionalLights[ 0 ].direction ) ) * pow( facing, uRimPower );
 #endif
 outgoingLight = mix( outgoingLight, uOutlineColor, uOutlineStrength * sin( saturate( ( facing - uOutlineFrom ) / ( 1.0 - uOutlineFrom ) ) * PI ) );
+#endif
 #include <opaque_fragment>`);
 }
 
-export function gooshy(source){
-  if(!converted.has(source)){
+function gooshy(source,character){
+  const cache=character ? converted.character : converted.scenery;
+  if(!cache.has(source)){
     const material=source.clone();
     material.shadowSide=THREE.DoubleSide;
+    if(character)material.defines={...material.defines,GOOSHY_CHARACTER:''};
     material.onBeforeCompile=patch;
-    material.customProgramCacheKey=()=>'gooshy';
-    converted.set(source,material);
+    material.customProgramCacheKey=()=>character ? 'gooshy-character' : 'gooshy-scenery';
+    cache.set(source,material);
   }
-  return converted.get(source);
+  return cache.get(source);
 }
 
 export function shadeGameplay(root){
   root.traverse(o=>{
     if(!o.isMesh || o.material.isMeshBasicMaterial || o.material.isShadowMaterial)return;
-    o.material=Array.isArray(o.material) ? o.material.map(gooshy) : gooshy(o.material);
+    const character=!isEnvironment(o);
+    o.material=Array.isArray(o.material) ? o.material.map(m=>gooshy(m,character)) : gooshy(o.material,character);
   });
 }

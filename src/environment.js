@@ -3,7 +3,7 @@ import {ENVIRONMENT} from './tokens.js';
 
 const unlit=new Map();
 
-function isEnvironment(object){
+export function isEnvironment(object){
   for(let o=object;o;o=o.parent)if(o.userData.environment)return true;
   return false;
 }
