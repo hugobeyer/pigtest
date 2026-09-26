@@ -18,8 +18,8 @@ export const ANIM={
   vanish:{rise:3.2,duration:.6}
 };
 export const LABEL={height:.8,lift:.35,capacityGap:.55,backOpacity:.45,canvas:[256,128],baseline:4,font:'900 96px "Arial Black", Arial, sans-serif',fill:'#fff',stroke:'#1d1f2e',strokeWidth:18};
-export const SHADING={wrap:.8,power:1.3,shadowTint:0x8f86b8,rim:{color:0xbfd4ff,strength:.3,power:1.6},outline:{color:0x1d1f2e,from:.6,strength:.35},specular:{color:0xffffff,strength:.55,size:.93,softness:.02}};
-export const ENVIRONMENT={shadowOpacity:.35,shadowColor:0x1e4a2c,specular:{color:0xffffff,strength:.2,size:.94,softness:.03}};
+export const SHADING={wrap:.5,power:2,shadowTint:0x8f86b8,rim:{color:0xbfd4ff,strength:.3,power:1.6},outline:{color:0x1d1f2e,from:.6,strength:.35}};
+export const ENVIRONMENT={shadowOpacity:.35,shadowColor:0x1e4a2c};
 export const GROUND={name:'Ground_Plane',radius:[9,15],inner:.3,outer:1.2,middle:1.08,edge:.72};
 export const RENDER={background:0x6fbf4a,maxPixelRatio:2};
 export const LIGHTS={
