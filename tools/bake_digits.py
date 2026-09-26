@@ -5,7 +5,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 ROOT=Path(__file__).resolve().parent.parent
 FONT=ROOT/'tools'/'fonts'/'LilitaOne-Regular.ttf'
 OUT=ROOT/'assets'/'fonts'
-GLYPHS='0123456789/'
+GLYPHS='0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ!'
 HEIGHT=128
 SCALE=4
 SIZE=96
@@ -60,8 +60,8 @@ def main():
     layout[glyph]=[x,image.width]
     x+=image.width
   OUT.mkdir(parents=True,exist_ok=True)
-  sheet.save(OUT/'digits.webp','WEBP',lossless=True)
-  (OUT/'digits.json').write_text(json.dumps({'height':HEIGHT,'glyphs':layout})+'\n')
+  sheet.save(OUT/'digits.webp','WEBP',quality=92,method=6)
+  (OUT/'digits.json').write_text(json.dumps({'height':HEIGHT,'space':round(HEIGHT*.28),'glyphs':layout})+'\n')
 
 
 if __name__=='__main__':main()

@@ -5,9 +5,9 @@ canvas{display:block}
 #win .title{width:min(78vw,420px)}
 #win ul{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column;gap:6px}
 #win li{display:flex;justify-content:space-between;gap:24px;font-size:15px;font-weight:700;opacity:0;animation:win-row .3s ease-out both}
-#win li span{opacity:.7}
-#win li b{font-size:18px;font-variant-numeric:tabular-nums}
-#win em{font-style:normal;font-size:13px;font-weight:700;letter-spacing:.12em;opacity:.7}
+#win li{align-items:center}
+#win canvas{display:block}
+#win .hint{opacity:.8}
 .word{aspect-ratio:1024/380;background:var(--word) center/contain no-repeat;pointer-events:none}
 .word::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 38%,#fffc 50%,transparent 62%) no-repeat;background-size:250% 100%;background-position:150% 0;-webkit-mask:var(--word) center/contain no-repeat;mask:var(--word) center/contain no-repeat;mix-blend-mode:soft-light}
 .popup{position:fixed;z-index:5;transform:translate(-50%,-50%);animation:word-life var(--life) linear forwards}

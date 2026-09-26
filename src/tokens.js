@@ -8,6 +8,7 @@ export const FRAME={maxDelta:.033};
 export const WIN={
   delay:1.1,title:'level_clear',hint:'Tap to play again',
   bumpIn:.55,swing:2.4,swingAngle:3,rowStagger:.12,countDuration:.8,
+  text:{label:20,value:26,hint:16},
   stats:[['blocks','Blocks'],['time','Time'],['pigs','Pigs used'],['shots','Shots'],['bestCombo','Best combo']]
 };
 
