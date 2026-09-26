@@ -50,7 +50,7 @@ export async function loadAssets(url){
   lights.forEach(light=>light.parent.remove(light));
   const ground=root.getObjectByName(GROUND.name);
   if(ground)ground.userData.environment=true;
-  prepareEnvironment(root);
+  prepareEnvironment(root,ground);
   if(ground)vignette(ground,requireObject(root,'CameraTarget').getWorldPosition(new THREE.Vector3()));
   shadeGameplay(root);
   ['Rail_Main','Rail_End','CameraTarget'].forEach(name=>requireObject(root,name));

@@ -18,7 +18,7 @@ uniform vec3 uSssColor, uRimColor, uOutlineColor;
     .replace('#include <lights_physical_pars_fragment>',THREE.ShaderChunk.lights_physical_pars_fragment.replace(diffuse,`\tfloat nl = dot( geometryNormal, directLight.direction );
 \tfloat wrapped = pow( saturate( nl * uWrap + 1.0 - uWrap ), uPower );
 \tfloat band = 1.0 - smoothstep( 0.0, uSssWidth, abs( nl ) );
-\treflectedLight.directDiffuse += directLight.color * ( wrapped * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F ) + uSssColor * uSssStrength * band * RECIPROCAL_PI );`))
+\treflectedLight.directDiffuse += directLight.color * ( wrapped * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F ) + BRDF_Lambert( material.diffuseContribution ) * uSssColor * uSssStrength * band * 2.0 );`))
     .replace('#include <opaque_fragment>',`float facing = 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) );
 #if NUM_DIR_LIGHTS > 0
 outgoingLight += uRimColor * uRimStrength * saturate( 0.5 - 0.5 * dot( normal, directionalLights[ 0 ].direction ) ) * pow( facing, uRimPower );
