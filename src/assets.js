@@ -53,7 +53,7 @@ export async function loadAssets(url){
   prepareEnvironment(root,ground);
   if(ground)vignette(ground,requireObject(root,'CameraTarget').getWorldPosition(new THREE.Vector3()));
   shadeGameplay(root);
-  ['Rail_Main','Rail_End','CameraTarget'].forEach(name=>requireObject(root,name));
+  requireObject(root,'CameraTarget');
   const camera=root.getObjectByProperty('isPerspectiveCamera',true);
   if(!camera)throw new Error('Missing Blender perspective camera');
   const [pigLight,pigDark,bulletLight,bulletDark,light,dark]=['Pig_Light','Pig_Dark','Bullet_Light','Bullet_Dark','Grid_Block_Light','Grid_Block_Dark'].map(name=>{
@@ -67,7 +67,6 @@ export async function loadAssets(url){
     bullets:{light:bulletLight,dark:bulletDark},
     blocks:{light,dark},
     gridCenter:requireObject(root,'GridCenter'),
-    railStart:requireObject(root,'Rail_Start'),
     anchors:{RailStart:requireObject(root,'RailStart'),RailEnd:requireObject(root,'RailEnd')},
     columns:Array.from({length:PIG_COLUMNS},(_,i)=>requireObject(root,`PigColumn_${i}`))
   };

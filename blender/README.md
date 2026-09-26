@@ -27,7 +27,6 @@ It fails explicitly if the new names already exist alongside old objects.
 | Assets | Required names |
 | --- | --- |
 | Pigs | `PigColumn_0` through `PigColumn_3` (Empties), plus `Pig_Light` and `Pig_Dark` |
-| Rail | `Rail_Start`, `Rail_Main`, `Rail_End` |
 | Bullets | `Bullet_Light`, `Bullet_Dark` |
 | Grid | `Grid_Block_Light`, `Grid_Block_Dark` |
 | Anchors | `RailStart`, `RailEnd`, `GridCenter`, `CameraTarget` (Empties) |
@@ -51,7 +50,7 @@ Existing geometry, transforms, materials, camera settings, anchors and lighting 
 - Distinct authored meshes stay distinct; preparation/export do not force sharing.
 - Move, rotate or scale objects in **Object Mode** for independent placements.
 - Object-linked materials allow differently colored objects to share mesh data.
-- `Rail_Main` remains an editable Curve; `Rail_Profile` controls its cross-section.
+- Rail meshes are optional art with any names; only the `RailStart` and `RailEnd` Empties drive the path.
 - Rail terminals, anchors, camera and lighting remain individually editable.
 - Save the `.blend` to retain edits; do not rebuild to save them.
 
@@ -82,7 +81,7 @@ The runtime builds its state from the imported nodes (`src/grid.js`, `src/pigs.j
 - `Environment` objects are exported with an `environment` flag. The runtime draws them unlit with their Blender texture and colour, adds a transparent shadow catcher (`ENVIRONMENT.shadowOpacity`) so live shadows from pigs, blocks and runners land on them, and stops them casting shadows. Gameplay objects stay lit.
 - `Environment` objects are exported with an `environment` flag. The runtime draws them unlit with their Blender texture and colour, and adds a transparent shadow catcher (`ENVIRONMENT.shadowOpacity`) so live shadows land on them. They also cast live shadows, onto each other and onto gameplay. Gameplay objects stay lit.
 - Effects live in `src/fx/` and are tuned by `FX` in `src/tokens.js`: pooled particles (instanced copies of the grid block meshes) for runner deaths and win confetti; blocks bump, then shrink and rise away; shot-count and rail-counter punches; front-pig idle bob; screen shake when a row or column clears; a random combo word (never the same twice in a row) every `FX.combo.every` hits.
-- Each pig starts with `PIGS.ammo` shots. The runner shows its remaining shots and leaves the rail when it runs out. At most `PIGS.railCapacity` runners share the rail, and the label under `Rail_Start` shows the free slots. These labels are runtime canvas sprites.
+- Each pig starts with `PIGS.ammo` shots. The runner shows its remaining shots and leaves the rail when it runs out. At most `PIGS.railCapacity` runners share the rail, and the label below the `RailStart` Empty shows the free slots. These labels are runtime canvas sprites.
 
 The gameplay path keeps its current node layout:
 
