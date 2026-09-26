@@ -11,7 +11,7 @@ export function debug({scene,fog,ambient,key,blender}){
   state.shading={...curve(SHADING),...state.shading};
   state.environment={...curve(ENVIRONMENT),...state.environment};
   for(const group of [state.shading,state.environment]){delete group.wrap; delete group.power;}
-  state.ground={offset:[...GROUND.offset],...state.ground};
+  state.ground={offset:[...GROUND.offset],scenery:GROUND.scenery,characters:GROUND.characters,...state.ground};
   state.fog=structuredClone(FOG);
   state.shadow={shadowMapSize:LIGHTS.key.shadowMapSize,...state.shadow};
   const on={sss:true,rim:true,outline:true,sheen:true,vignette:true};
@@ -25,6 +25,7 @@ export function debug({scene,fog,ambient,key,blender}){
     shade.uOutlineColor.value.set(s.outline.color); shade.uOutlineFrom.value=s.outline.from; shade.uOutlineStrength.value=on.outline ? s.outline.strength : 0;
     shade.uSheenStrength.value=on.sheen ? e.sheen.strength : 0; shade.uSheenPower.value=e.sheen.power; sheenColor(e.sheen,shade.uSheenColor.value); shade.uSheenAlbedo.value=e.sheen.albedo;
     catcher.color.set(e.shadowColor); catcher.opacity=e.shadowOpacity;
+    vignette.uSceneryVignette.value=on.vignette ? g.scenery : 0; vignette.uCharacterVignette.value=on.vignette ? g.characters : 0;
     vignette.uOffset.value.fromArray(g.offset); vignette.uRadius.value.fromArray(g.radius); vignette.uInner.value=g.inner; vignette.uOuter.value=g.outer;
     vignette.uMiddle.value.set(g.middle); vignette.uEdge.value.set(on.vignette ? g.edge : g.middle);
     ambient.groundColor.set(h.ground);
@@ -70,6 +71,8 @@ export function debug({scene,fog,ambient,key,blender}){
 
   const ground=gui.addFolder('Ground');
   ground.add(on,'vignette').name('vignette on');
+  ground.add(g,'scenery',0,1,.01).name('scenery follows vignette');
+  ground.add(g,'characters',0,1,.01).name('pigs/blocks follow vignette');
   ground.add(g.offset,0,-20,20,.1).name('center offset across');
   ground.add(g.offset,1,-20,20,.1).name('center offset up/down');
   ground.add(g.radius,0,1,40,.1).name('radius across');

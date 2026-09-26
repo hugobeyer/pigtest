@@ -3,7 +3,8 @@ import {GROUND} from './tokens.js';
 
 export const uniforms={
   uCenter:{value:new THREE.Vector2()},uOffset:{value:new THREE.Vector2(...GROUND.offset)},uRadius:{value:new THREE.Vector2(...GROUND.radius)},
-  uInner:{value:GROUND.inner},uOuter:{value:GROUND.outer},uMiddle:{value:new THREE.Color(GROUND.middle)},uEdge:{value:new THREE.Color(GROUND.edge)}
+  uInner:{value:GROUND.inner},uOuter:{value:GROUND.outer},uMiddle:{value:new THREE.Color(GROUND.middle)},uEdge:{value:new THREE.Color(GROUND.edge)},
+  uSceneryVignette:{value:GROUND.scenery},uCharacterVignette:{value:GROUND.characters}
 };
 
 export function vignette(ground,center){

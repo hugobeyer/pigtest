@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {uniforms as vignette} from './ground.js';
 import {ENVIRONMENT, SHADING} from './tokens.js';
 
 export const sheenColor=({hue,saturation},color=new THREE.Color())=>color.setHSL(hue/360,1,1-saturation/2);
@@ -23,8 +24,18 @@ const diffuse='\treflectedLight.directDiffuse += irradiance * BRDF_Lambert( mate
 const specular='\treflectedLight.directSpecular += irradiance * specularBRDF * material.multiScatteringCompensation;';
 
 function patch(shader){
-  Object.assign(shader.uniforms,uniforms);
-  shader.fragmentShader=`uniform float uTerminator, uSoftness, uSceneryTerminator, uScenerySoftness, uSssStrength, uSssWidth, uSheenStrength, uSheenPower, uSheenAlbedo, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
+  Object.assign(shader.uniforms,uniforms,vignette);
+  shader.vertexShader='varying vec2 vVignette;\n'+shader.vertexShader.replace('#include <project_vertex>',`#include <project_vertex>
+#ifdef USE_INSTANCING
+vVignette = ( modelMatrix * instanceMatrix * vec4( transformed, 1.0 ) ).xy;
+#else
+vVignette = ( modelMatrix * vec4( transformed, 1.0 ) ).xy;
+#endif`);
+  shader.fragmentShader=`varying vec2 vVignette;
+uniform vec2 uCenter, uOffset, uRadius;
+uniform float uInner, uOuter, uSceneryVignette, uCharacterVignette;
+uniform vec3 uMiddle, uEdge;
+uniform float uTerminator, uSoftness, uSceneryTerminator, uScenerySoftness, uSssStrength, uSssWidth, uSheenStrength, uSheenPower, uSheenAlbedo, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
 uniform vec3 uDarkColor, uSceneryDarkColor, uRimColor, uOutlineColor, uSheenColor;
 `+shader.fragmentShader
     .replace('#include <lights_physical_pars_fragment>',THREE.ShaderChunk.lights_physical_pars_fragment.replace(specular,`\t#ifdef GOOSHY_CHARACTER
@@ -65,6 +76,13 @@ outgoingLight += uRimColor * uRimStrength * saturate( 0.5 - 0.5 * dot( normal, d
 #endif
 outgoingLight = mix( outgoingLight, uOutlineColor, uOutlineStrength * sin( saturate( ( facing - uOutlineFrom ) / ( 1.0 - uOutlineFrom ) ) * PI ) );
 #endif
+float vignetted = smoothstep( uInner, uOuter, length( ( vVignette - uCenter - uOffset ) / uRadius ) );
+#ifdef GOOSHY_CHARACTER
+vignetted *= uCharacterVignette;
+#else
+vignetted *= uSceneryVignette;
+#endif
+outgoingLight *= mix( vec3( 1.0 ), uEdge / max( uMiddle, vec3( 1e-3 ) ), vignetted );
 #include <opaque_fragment>`);
 }
 
