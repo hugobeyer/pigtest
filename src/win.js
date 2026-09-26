@@ -1,3 +1,4 @@
+import {wordImage} from './fx/popups.js';
 import {WIN} from './tokens.js';
 
 const format={time:value=>`${value}s`};
@@ -8,7 +9,7 @@ export function showWin(stats){
   panel.style.setProperty('--bump-in',`${WIN.bumpIn}s`);
   panel.style.setProperty('--swing',`${WIN.swing}s`);
   panel.style.setProperty('--swing-angle',`${WIN.swingAngle}deg`);
-  panel.innerHTML=`<div class="card"><strong>${WIN.title}</strong><ul>${WIN.stats.map(([key,label],i)=>
+  panel.innerHTML=`<div class="card"><div class="word title" style="--word:url(${wordImage(WIN.title)})"></div><ul>${WIN.stats.map(([key,label],i)=>
     `<li style="animation-delay:${WIN.bumpIn+i*WIN.rowStagger}s"><span>${label}</span><b data-key="${key}">0</b></li>`).join('')}</ul><em>${WIN.hint}</em></div>`;
   panel.addEventListener('pointerdown',()=>location.reload());
   document.body.appendChild(panel);

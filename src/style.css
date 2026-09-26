@@ -2,13 +2,21 @@ html,body,#app{margin:0;width:100%;height:100%;overflow:hidden;background:#17182
 canvas{display:block}
 #win{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#171826b3;color:#fff;cursor:pointer}
 #win .card{display:flex;flex-direction:column;align-items:center;gap:14px;padding:26px 30px;min-width:220px;background:#2a2d45;border-radius:14px;box-shadow:0 10px 0 #151727;transform-origin:50% 0;animation:win-in var(--bump-in) cubic-bezier(.2,1.7,.4,1) both,win-swing var(--swing) ease-in-out var(--bump-in) infinite}
-#win strong{font-size:34px;font-weight:900;letter-spacing:.08em}
+#win .title{width:min(78vw,420px)}
 #win ul{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column;gap:6px}
 #win li{display:flex;justify-content:space-between;gap:24px;font-size:15px;font-weight:700;opacity:0;animation:win-row .3s ease-out both}
 #win li span{opacity:.7}
 #win li b{font-size:18px;font-variant-numeric:tabular-nums}
 #win em{font-style:normal;font-size:13px;font-weight:700;letter-spacing:.12em;opacity:.7}
+.word{aspect-ratio:1024/380;background:var(--word) center/contain no-repeat;pointer-events:none}
+.word::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 38%,#fffc 50%,transparent 62%) no-repeat;background-size:250% 100%;background-position:150% 0;-webkit-mask:var(--word) center/contain no-repeat;mask:var(--word) center/contain no-repeat;mix-blend-mode:soft-light}
+.popup{position:fixed;z-index:5;transform:translate(-50%,-50%);animation:word-life var(--life) linear forwards}
+.popup::after{animation:word-sweep var(--sweep) ease-in-out calc(var(--life)*.18) both}
+#win .title{position:relative}
+#win .title::after{animation:word-sweep 2.4s ease-in-out var(--bump-in) infinite}
+@keyframes word-life{0%{transform:translate(-50%,-50%) scale(.2) rotate(-10deg);opacity:0}12%{transform:translate(-50%,-50%) scale(1.18) rotate(4deg);opacity:1}22%{transform:translate(-50%,-50%) scale(.95) rotate(-2deg)}30%{transform:translate(-50%,-50%) scale(1) rotate(0)}72%{transform:translate(-50%,-62%) scale(1);opacity:1}100%{transform:translate(-50%,-130%) scale(.85);opacity:0}}
+@keyframes word-sweep{0%{background-position:150% 0}40%,100%{background-position:-50% 0}}
 @keyframes win-in{0%{transform:scale(.2);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
 @keyframes win-swing{0%,100%{transform:rotate(0)}25%{transform:rotate(var(--swing-angle))}75%{transform:rotate(calc(var(--swing-angle)*-1))}}
 @keyframes win-row{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){#win .card,#win li{animation:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){#win .card,#win li,.word::after{animation:none;opacity:1}}
