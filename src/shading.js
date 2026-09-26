@@ -16,7 +16,10 @@ uniform vec3 uShadowTint, uRimColor;
     .replace('#include <lights_lambert_pars_fragment>',THREE.ShaderChunk.lights_lambert_pars_fragment.replace(
       '\tfloat dotNL = saturate( dot( geometryNormal, directLight.direction ) );\n\tvec3 irradiance = dotNL * directLight.color;',
       '\tfloat wrapped = pow( saturate( dot( geometryNormal, directLight.direction ) * uWrap + 1.0 - uWrap ), uPower );\n\tvec3 irradiance = mix( uShadowTint, vec3( 1.0 ), wrapped ) * wrapped * directLight.color;'))
-    .replace('#include <opaque_fragment>','outgoingLight += uRimColor * uRimStrength * pow( 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) ), uRimPower );\n#include <opaque_fragment>');
+    .replace('#include <opaque_fragment>',`#if NUM_DIR_LIGHTS > 0
+outgoingLight += uRimColor * uRimStrength * saturate( dot( normal, directionalLights[ 0 ].direction ) ) * pow( 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) ), uRimPower );
+#endif
+#include <opaque_fragment>`);
 }
 
 export function gooshy(source){
