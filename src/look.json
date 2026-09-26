@@ -8,7 +8,7 @@
   },
   "environment": {
     "lit": true,
-    "sheen": { "strength": 0.15, "power": 4, "saturation": 0.8 },
+    "sheen": { "strength": 0.15, "power": 4, "hue": 45, "saturation": 0, "albedo": 0.8 },
     "shadowOpacity": 0.35,
     "shadowColor": "#1e4a2c"
   },

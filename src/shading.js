@@ -2,28 +2,30 @@ import * as THREE from 'three';
 import {isEnvironment} from './environment.js';
 import {ENVIRONMENT, SHADING} from './tokens.js';
 
+export const sheenColor=({hue,saturation},color=new THREE.Color())=>color.setHSL(hue/360,1,1-saturation/2);
+
 const converted={character:new Map(),scenery:new Map()};
 export const uniforms={
   uWrap:{value:SHADING.wrap},uPower:{value:SHADING.power},
   uSssStrength:{value:SHADING.sss.strength},uSssWidth:{value:SHADING.sss.width},
   uRimColor:{value:new THREE.Color(SHADING.rim.color)},uRimStrength:{value:SHADING.rim.strength},uRimPower:{value:SHADING.rim.power},
   uOutlineColor:{value:new THREE.Color(SHADING.outline.color)},uOutlineFrom:{value:SHADING.outline.from},uOutlineStrength:{value:SHADING.outline.strength},
-  uSheenStrength:{value:ENVIRONMENT.sheen.strength},uSheenPower:{value:ENVIRONMENT.sheen.power},uSheenSaturation:{value:ENVIRONMENT.sheen.saturation}
+  uSheenStrength:{value:ENVIRONMENT.sheen.strength},uSheenPower:{value:ENVIRONMENT.sheen.power},uSheenColor:{value:sheenColor(ENVIRONMENT.sheen)},uSheenAlbedo:{value:ENVIRONMENT.sheen.albedo}
 };
 const diffuse='\treflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );';
 const specular='\treflectedLight.directSpecular += irradiance * specularBRDF * material.multiScatteringCompensation;';
 
 function patch(shader){
   Object.assign(shader.uniforms,uniforms);
-  shader.fragmentShader=`uniform float uWrap, uPower, uSssStrength, uSssWidth, uSheenStrength, uSheenPower, uSheenSaturation, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
-uniform vec3 uRimColor, uOutlineColor;
+  shader.fragmentShader=`uniform float uWrap, uPower, uSssStrength, uSssWidth, uSheenStrength, uSheenPower, uSheenAlbedo, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
+uniform vec3 uRimColor, uOutlineColor, uSheenColor;
 `+shader.fragmentShader
     .replace('#include <lights_physical_pars_fragment>',THREE.ShaderChunk.lights_physical_pars_fragment.replace(specular,`\t#ifdef GOOSHY_CHARACTER
 ${specular}
 \t#else
 \t\tvec3 hue = material.diffuseContribution / max( max3( material.diffuseContribution ), 1e-3 );
 \t\tfloat sheen = pow( saturate( dot( geometryNormal, normalize( directLight.direction + geometryViewDir ) ) ), uSheenPower ) * dotNL;
-\t\treflectedLight.directSpecular += directLight.color * mix( vec3( 1.0 ), hue, uSheenSaturation ) * uSheenStrength * sheen;
+\t\treflectedLight.directSpecular += directLight.color * uSheenColor * mix( vec3( 1.0 ), hue, uSheenAlbedo ) * uSheenStrength * sheen;
 \t#endif`).replace(diffuse,`\tfloat nl = dot( geometryNormal, directLight.direction );
 \tfloat wrapped = pow( saturate( nl * uWrap + 1.0 - uWrap ), uPower );
 \tfloat band = 1.0 - smoothstep( 0.0, uSssWidth, abs( nl ) );
