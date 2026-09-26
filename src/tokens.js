@@ -41,5 +41,5 @@ export const FX={
   counterPunch:{amount:.35,duration:.16},
   idleBob:{height:.14,speed:5},
   shake:{amplitude:.05,duration:.15},
-  combo:{every:12,words:['nice','sweet','cool','wow','yes','combo','great','awesome'],width:.62,lift:1.2,duration:1.4,sweep:.55}
+  combo:{every:30,words:['nice','sweet','cool','wow','yes','combo','great','awesome'],width:.34,lift:1.2,duration:1.4,sweep:.55}
 };
