@@ -22,7 +22,7 @@ export function prepareEnvironment(root){
   const catcher=new THREE.ShadowMaterial({color:ENVIRONMENT.shadowColor,opacity:ENVIRONMENT.shadowOpacity,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
   for(const mesh of meshes){
     mesh.material=Array.isArray(mesh.material) ? mesh.material.map(unlitMaterial) : unlitMaterial(mesh.material);
-    mesh.castShadow=true;
+    if(!mesh.receiveShadow)continue;
     mesh.receiveShadow=false;
     const shadow=new THREE.Mesh(mesh.geometry,catcher);
     shadow.receiveShadow=true;

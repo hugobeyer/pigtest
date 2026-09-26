@@ -8,6 +8,11 @@ import {GROUND} from './tokens.js';
 export const PIG_COLUMNS=4;
 const WATTS_TO_LUX=683;
 
+function allows(object,key){
+  for(let o=object;o;o=o.parent)if(o.userData[key]!==undefined)return !!o.userData[key];
+  return true;
+}
+
 function requireObject(root,name){
   const object=root.getObjectByName(name);
   if(!object)throw new Error(`Missing Blender object: ${name}`);
@@ -35,7 +40,7 @@ export async function loadAssets(url){
   root.updateMatrixWorld(true);
   const lights=[];
   root.traverse(object=>{
-    if(object.isMesh){object.castShadow=true; object.receiveShadow=true;}
+    if(object.isMesh){object.castShadow=allows(object,'cast_shadow'); object.receiveShadow=allows(object,'receive_shadow');}
     if(object.isLight)lights.push(object);
   });
   const sun=lights.find(light=>light.isDirectionalLight);
