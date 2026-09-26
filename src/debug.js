@@ -1,6 +1,7 @@
 import GUI from 'lil-gui';
 import look from './look.json';
 import {catcher} from './environment.js';
+import {FOG_MODES, uniforms as fogBlend} from './fog.js';
 import {ENVIRONMENT, FOG, GROUND, LIGHTS, SHADING} from './tokens.js';
 import {uniforms as vignette} from './ground.js';
 import {sheenColor, uniforms as shade} from './shading.js';
@@ -36,7 +37,7 @@ export function debug({scene,fog,ambient,key,blender}){
     Object.assign(key.shadow,shadow);
     if(key.shadow.mapSize.x!==shadowMapSize){key.shadow.map?.dispose(); key.shadow.map=null; key.shadow.mapSize.set(shadowMapSize,shadowMapSize);}
     scene.background.set(state.background);
-    fog.color.set(state.fog.color); fog.near=state.fog.near; fog.far=state.fog.far; scene.fog=state.fog.enabled ? fog : null;
+    fogBlend.uFogMode.value=FOG_MODES.indexOf(state.fog.mode); fog.color.set(state.fog.color); fog.near=state.fog.near; fog.far=state.fog.far; scene.fog=state.fog.enabled ? fog : null;
   };
 
   const gui=new GUI({title:'Look  (G to hide)',width:420});
@@ -95,6 +96,7 @@ export function debug({scene,fog,ambient,key,blender}){
 
   const fogFolder=gui.addFolder('Fog (farther = foggier, top of screen)');
   fogFolder.add(state.fog,'enabled').name('fog on');
+  fogFolder.add(state.fog,'mode',FOG_MODES).name('blend on scenery/ground');
   fogFolder.addColor(state.fog,'color').name('fog color');
   fogFolder.add(state.fog,'near',0,200,.5).name('starts at distance');
   fogFolder.add(state.fog,'far',0,250,.5).name('full fog at distance');

@@ -23,7 +23,7 @@ export const LABEL={height:.8,lift:.35,capacityGap:.55,backOpacity:.45,canvas:[2
 export const SHADING={terminator:0,softness:.6,darkColor:'#9a9ab4',...look.shading};
 export const ENVIRONMENT={terminator:-.1,softness:.7,darkColor:'#8aa08a',...look.environment};
 export const GROUND={name:'Ground_Plane',offset:[0,0],scenery:.6,characters:0,...look.ground};
-export const FOG={enabled:true,color:'#cfe3b4',near:60,far:110,...look.fog};
+export const FOG={enabled:true,mode:'soft light',color:'#cfe3b4',near:60,far:110,...look.fog};
 export const RENDER={background:look.background,maxPixelRatio:2};
 export const LIGHTS={
   hemisphere:look.hemisphere,

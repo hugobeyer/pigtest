@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {blendFog} from './fog.js';
 import {uniforms as vignette} from './ground.js';
 import {ENVIRONMENT, SHADING} from './tokens.js';
 
@@ -31,7 +32,10 @@ vVignette = ( modelMatrix * instanceMatrix * vec4( transformed, 1.0 ) ).xy;
 #else
 vVignette = ( modelMatrix * vec4( transformed, 1.0 ) ).xy;
 #endif`);
-  shader.fragmentShader=`varying vec2 vVignette;
+  shader.fragmentShader=`#ifdef GOOSHY_CHARACTER
+#define FOG_MODE 0.0
+#endif
+varying vec2 vVignette;
 uniform vec2 uCenter, uOffset, uRadius;
 uniform float uInner, uOuter, uSceneryVignette, uCharacterVignette;
 uniform vec3 uMiddle, uEdge;
@@ -84,6 +88,7 @@ vignetted *= uSceneryVignette;
 #endif
 outgoingLight *= mix( vec3( 1.0 ), uEdge / max( uMiddle, vec3( 1e-3 ) ), vignetted );
 #include <opaque_fragment>`);
+  blendFog(shader);
 }
 
 function gooshy(source,character){
