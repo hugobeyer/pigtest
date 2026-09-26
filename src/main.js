@@ -81,4 +81,5 @@ loadAssets(new URL('../assets/primitive_scene.glb',import.meta.url).href).then(a
   enableInput();
   last=performance.now();
   renderer.setAnimationLoop(frame);
+  if(import.meta.env.DEV)import('./debug.js').then(({debug})=>debug({scene,ambient,key,blender:{world:!!assets.world}}));
 },error=>console.error('Blender GLB failed to load.',error));

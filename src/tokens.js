@@ -1,3 +1,5 @@
+import look from './look.json';
+
 export const MOTION={speed:10.7,aimTime:.028,runnerLift:.38+.015};
 export const SHOT={speed:22.0,minDuration:.045,targetZ:.84*.72,mouth:[0,.92,.67]};
 export const PATH={sideOffset:1.38,verticalOffset:2.38,cornerRadius:1.10,laneGap:.42,endOffset:.15,arcSteps:12};
@@ -18,13 +20,13 @@ export const ANIM={
   vanish:{rise:3.2,duration:.6}
 };
 export const LABEL={height:.8,lift:.35,capacityGap:.55,backOpacity:.45,canvas:[256,128],baseline:4,font:'900 96px "Arial Black", Arial, sans-serif',fill:'#fff',stroke:'#1d1f2e',strokeWidth:18};
-export const SHADING={wrap:.5,power:2,sss:{strength:.15,width:.35},rim:{color:0xbfd4ff,strength:.3,power:1.6},outline:{color:0x1d1f2e,from:.6,strength:.35}};
-export const ENVIRONMENT={lit:true,sheen:{strength:.15,power:4,saturation:.8},shadowOpacity:.35,shadowColor:0x1e4a2c};
-export const GROUND={name:'Ground_Plane',radius:[9,15],inner:.3,outer:1.2,middle:1.08,edge:.72};
-export const RENDER={background:0x6fbf4a,maxPixelRatio:2};
+export const SHADING=look.shading;
+export const ENVIRONMENT=look.environment;
+export const GROUND={name:'Ground_Plane',...look.ground};
+export const RENDER={background:look.background,maxPixelRatio:2};
 export const LIGHTS={
-  hemisphere:{sky:0xfff6e6,ground:0x5f8f45,intensity:2.2},
-  key:{color:0xffffff,intensity:2.65,position:[10,-14,18],target:[0,1.5,0],shadowMapSize:2048,shadowCamera:{left:-18,right:18,top:22,bottom:-22,near:.5,far:70},bias:-.00035,normalBias:.025,radius:4.0}
+  hemisphere:look.hemisphere,
+  key:{color:0xffffff,intensity:2.65,position:[10,-14,18],target:[0,1.5,0],shadowMapSize:2048,shadowCamera:{left:-18,right:18,top:22,bottom:-22,near:.5,far:70},...look.shadow}
 };
 export const FX={
   particles:{max:160,gravity:-22,spin:9},

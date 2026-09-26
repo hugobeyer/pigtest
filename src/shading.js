@@ -3,7 +3,7 @@ import {isEnvironment} from './environment.js';
 import {ENVIRONMENT, SHADING} from './tokens.js';
 
 const converted={character:new Map(),scenery:new Map()};
-const uniforms={
+export const uniforms={
   uWrap:{value:SHADING.wrap},uPower:{value:SHADING.power},
   uSssStrength:{value:SHADING.sss.strength},uSssWidth:{value:SHADING.sss.width},
   uRimColor:{value:new THREE.Color(SHADING.rim.color)},uRimStrength:{value:SHADING.rim.strength},uRimPower:{value:SHADING.rim.power},

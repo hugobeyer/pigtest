@@ -1,0 +1,19 @@
+{
+  "shading": {
+    "wrap": 0.5,
+    "power": 2,
+    "sss": { "strength": 0.15, "width": 0.35 },
+    "rim": { "color": "#bfd4ff", "strength": 0.3, "power": 1.6 },
+    "outline": { "color": "#1d1f2e", "from": 0.6, "strength": 0.35 }
+  },
+  "environment": {
+    "lit": true,
+    "sheen": { "strength": 0.15, "power": 4, "saturation": 0.8 },
+    "shadowOpacity": 0.35,
+    "shadowColor": "#1e4a2c"
+  },
+  "ground": { "radius": [9, 15], "inner": 0.3, "outer": 1.2, "middle": 1.08, "edge": 0.72 },
+  "hemisphere": { "sky": "#fff6e6", "ground": "#5f8f45", "intensity": 2.2 },
+  "shadow": { "bias": -0.00035, "normalBias": 0.025, "radius": 4 },
+  "background": "#6fbf4a"
+}

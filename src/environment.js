@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {ENVIRONMENT} from './tokens.js';
 
 const unlit=new Map();
+export const catcher=new THREE.ShadowMaterial({color:ENVIRONMENT.shadowColor,opacity:ENVIRONMENT.shadowOpacity,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
 
 export function isEnvironment(object){
   for(let o=object;o;o=o.parent)if(o.userData.environment)return true;
@@ -24,7 +25,6 @@ function isUnder(object,parent){
 export function prepareEnvironment(root,ground){
   const meshes=[];
   root.traverse(o=>{if(o.isMesh && isEnvironment(o) && !(ENVIRONMENT.lit && !isUnder(o,ground)))meshes.push(o);});
-  const catcher=new THREE.ShadowMaterial({color:ENVIRONMENT.shadowColor,opacity:ENVIRONMENT.shadowOpacity,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
   for(const mesh of meshes){
     mesh.material=Array.isArray(mesh.material) ? mesh.material.map(unlitMaterial) : unlitMaterial(mesh.material);
     if(!mesh.receiveShadow)continue;

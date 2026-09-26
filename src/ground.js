@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import {GROUND} from './tokens.js';
 
+export const uniforms={
+  uCenter:{value:new THREE.Vector2()},uRadius:{value:new THREE.Vector2(...GROUND.radius)},
+  uInner:{value:GROUND.inner},uOuter:{value:GROUND.outer},uMiddle:{value:GROUND.middle},uEdge:{value:GROUND.edge}
+};
+
 export function vignette(ground,center){
-  const uniforms={
-    uCenter:{value:new THREE.Vector2(center.x,center.y)},uRadius:{value:new THREE.Vector2(...GROUND.radius)},
-    uInner:{value:GROUND.inner},uOuter:{value:GROUND.outer},uMiddle:{value:GROUND.middle},uEdge:{value:GROUND.edge}
-  };
+  uniforms.uCenter.value.set(center.x,center.y);
   ground.traverse(o=>{
     if(!o.isMesh || o.material.isShadowMaterial)return;
     o.castShadow=false;
