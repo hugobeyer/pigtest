@@ -1,8 +1,14 @@
 import * as THREE from 'three';
-import {isEnvironment} from './environment.js';
 import {ENVIRONMENT, SHADING} from './tokens.js';
 
 export const sheenColor=({hue,saturation},color=new THREE.Color())=>color.setHSL(hue/360,1,1-saturation/2);
+
+const CHARACTERS=new Set(['Pig_Light','Pig_Dark','Bullet_Light','Bullet_Dark','Grid_Block_Light','Grid_Block_Dark']);
+
+function isCharacter(object){
+  for(let o=object;o;o=o.parent)if(CHARACTERS.has(o.name))return true;
+  return false;
+}
 
 const converted={character:new Map(),scenery:new Map()};
 export const uniforms={
@@ -68,7 +74,7 @@ function gooshy(source,character){
 export function shadeGameplay(root){
   root.traverse(o=>{
     if(!o.isMesh || o.material.isMeshBasicMaterial || o.material.isShadowMaterial)return;
-    const character=!isEnvironment(o);
+    const character=isCharacter(o);
     o.material=Array.isArray(o.material) ? o.material.map(m=>gooshy(m,character)) : gooshy(o.material,character);
   });
 }

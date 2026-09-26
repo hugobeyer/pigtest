@@ -4,7 +4,7 @@ import {ENVIRONMENT} from './tokens.js';
 const unlit=new Map();
 export const catcher=new THREE.ShadowMaterial({color:ENVIRONMENT.shadowColor,opacity:ENVIRONMENT.shadowOpacity,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
 
-export function isEnvironment(object){
+function isEnvironment(object){
   for(let o=object;o;o=o.parent)if(o.userData.environment)return true;
   return false;
 }
