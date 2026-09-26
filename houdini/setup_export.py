@@ -3,15 +3,11 @@ import hou
 EXPORT_DIR='$HIP/../source_files/export'
 TEXTURE_DIR='$HIP/../source_files/textures'
 
-PROPS_CODE='''string names[]  = {"rocks","fence","trees","paths","grass","flowers","clumps"};
-string groups[] = {"Rocks","Fences","Trees","Paths","Grass","Flowers","Clumps"};
-string items[]  = {"Rock","Fence","Tree","Path","Grass","Flower","Clump"};
-int i = find(names, s@name);
-if (i < 0 || s@id == "") s@path = "/Misc/Unnamed_" + itoa(@primnum);
-else {
-    string parts[] = split(s@id, "_");
-    s@path = sprintf("/%s/%s_%02d", groups[i], items[i], atoi(parts[-1]));
-}
+PROPS_CODE='''string prefixes[] = {"rock","fence","tree","path","grass","flower","clump"};
+string items[]    = {"Rock","Fence","Tree","Path","Grass","Flower","Clump"};
+string parts[] = split(s@id, "_");
+int i = find(prefixes, parts[0]);
+s@path = i < 0 ? "/Unnamed_" + itoa(@primnum) : sprintf("/%s_%02d", items[i], atoi(parts[-1]));
 s@shop_materialpath = "/mat/Env_Props";
 '''
 
