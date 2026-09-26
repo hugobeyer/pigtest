@@ -19,11 +19,11 @@ export const ANIM={
 };
 export const LABEL={height:.8,lift:.35,capacityGap:.55,backOpacity:.45,canvas:[256,128],baseline:4,font:'900 96px "Arial Black", Arial, sans-serif',fill:'#fff',stroke:'#1d1f2e',strokeWidth:18};
 export const SHADING={wrap:.5,power:2,shadowTint:0x8f86b8,rim:{color:0xbfd4ff,strength:.3,power:1.6},outline:{color:0x1d1f2e,from:.6,strength:.35}};
-export const ENVIRONMENT={shadowOpacity:.3};
-export const RENDER={background:0x505471,maxPixelRatio:2};
+export const ENVIRONMENT={shadowOpacity:.35,shadowColor:0x1e4a2c};
+export const RENDER={background:0x6fbf4a,maxPixelRatio:2};
 export const LIGHTS={
-  hemisphere:{sky:0xffffff,ground:0x303449,intensity:1.65},
-  key:{color:0xffffff,intensity:2.65,position:[10,-14,18],target:[0,1.5,0],shadowMapSize:2048,shadowCamera:{left:-18,right:18,top:22,bottom:-22,near:.5,far:70},bias:-.00035,normalBias:.025,radius:2.0}
+  hemisphere:{sky:0xfff6e6,ground:0x5f8f45,intensity:2.2},
+  key:{color:0xffffff,intensity:2.65,position:[10,-14,18],target:[0,1.5,0],shadowMapSize:2048,shadowCamera:{left:-18,right:18,top:22,bottom:-22,near:.5,far:70},bias:-.00035,normalBias:.025,radius:4.0}
 };
 export const FX={
   particles:{max:160,gravity:-22,spin:9},
