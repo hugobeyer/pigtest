@@ -65,7 +65,8 @@ loadAssets(new URL('../assets/primitive_scene.glb',import.meta.url).href).then(a
   if(assets.key){
     key.color.copy(assets.key.color);
     key.intensity=assets.key.intensity;
-    key.position.copy(key.target.position).addScaledVector(assets.key.direction,-key.position.distanceTo(key.target.position));
+    const distance=key.position.distanceTo(key.target.position);
+    key.position.copy(key.target.position).addScaledVector(assets.key.direction,-distance);
   }
   initGameplay(scene,assets);
   scene.add(assets.root);
