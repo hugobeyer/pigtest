@@ -80,13 +80,13 @@ outgoingLight += uRimColor * uRimStrength * saturate( 0.5 - 0.5 * dot( normal, d
 #endif
 outgoingLight = mix( outgoingLight, uOutlineColor, uOutlineStrength * sin( saturate( ( facing - uOutlineFrom ) / ( 1.0 - uOutlineFrom ) ) * PI ) );
 #endif
-float vignetted = smoothstep( uInner, uOuter, length( ( vVignette - uCenter - uOffset ) / uRadius ) );
+float vignetted = smoothstep( min( uInner, uOuter ), max( uInner, uOuter ) + 1e-3, length( ( vVignette - uCenter - uOffset ) / uRadius ) );
 #ifdef GOOSHY_CHARACTER
 vignetted *= uCharacterVignette;
 #else
 vignetted *= uSceneryVignette;
 #endif
-outgoingLight *= mix( vec3( 1.0 ), uEdge / max( uMiddle, vec3( 1e-3 ) ), vignetted );
+outgoingLight *= mix( vec3( 1.0 ), clamp( uEdge / max( uMiddle, vec3( 0.05 ) ), 0.0, 1.5 ), vignetted );
 #include <opaque_fragment>`);
   blendFog(shader);
 }
