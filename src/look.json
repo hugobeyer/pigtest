@@ -22,12 +22,13 @@
     "sheen": {
       "strength": 0.03,
       "power": 6.4,
-      "saturation": 1
+      "hue": 45,
+      "saturation": 0,
+      "albedo": 1
     },
     "shadowOpacity": 0.31,
     "shadowColor": "#082b1c"
   },
-<<<<<<< HEAD
   "ground": {
     "radius": [
       6.9,
@@ -35,8 +36,8 @@
     ],
     "inner": 1.16,
     "outer": 3,
-    "middle": 0.96,
-    "edge": 0.39
+    "middle": "#84cc5a",
+    "edge": "#57883c"
   },
   "hemisphere": {
     "sky": "#fff6e6",
@@ -49,10 +50,4 @@
     "radius": 0
   },
   "background": "#adb9a7"
-=======
-  "ground": { "radius": [9, 15], "inner": 0.3, "outer": 1.2, "middle": "#86d05c", "edge": "#4f9636" },
-  "hemisphere": { "sky": "#fff6e6", "ground": "#5f8f45", "intensity": 2.2 },
-  "shadow": { "bias": -0.00035, "normalBias": 0.025, "radius": 4 },
-  "background": "#6fbf4a"
->>>>>>> 316aa9715aa9ee34f0fc5adf359169285f77c0ce
 }
