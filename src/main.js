@@ -62,6 +62,11 @@ function frame(now){
 }
 
 loadAssets(new URL('../assets/primitive_scene.glb',import.meta.url).href).then(assets=>{
+  if(assets.key){
+    key.color.copy(assets.key.color);
+    key.intensity=assets.key.intensity;
+    key.position.copy(key.target.position).addScaledVector(assets.key.direction,-key.position.distanceTo(key.target.position));
+  }
   initGameplay(scene,assets);
   scene.add(assets.root);
   camera=assets.camera;

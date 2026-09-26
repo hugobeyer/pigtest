@@ -4,6 +4,7 @@ import {prepareEnvironment} from './environment.js';
 import {shadeGameplay} from './shading.js';
 
 export const PIG_COLUMNS=4;
+const WATTS_TO_LUX=683;
 
 function requireObject(root,name){
   const object=root.getObjectByName(name);
@@ -35,6 +36,8 @@ export async function loadAssets(url){
     if(object.isMesh){object.castShadow=true; object.receiveShadow=true;}
     if(object.isLight)lights.push(object);
   });
+  const sun=lights.find(light=>light.isDirectionalLight);
+  const key=sun && {color:sun.color.clone(),intensity:sun.intensity/WATTS_TO_LUX,direction:new THREE.Vector3(0,0,-1).transformDirection(sun.matrixWorld)};
   lights.forEach(light=>light.parent.remove(light));
   prepareEnvironment(root);
   shadeGameplay(root);
@@ -47,7 +50,7 @@ export async function loadAssets(url){
     return object;
   });
   return {
-    root,camera,
+    root,camera,key,
     pigs:{light:pigLight,dark:pigDark},
     bullets:{light:bulletLight,dark:bulletDark},
     blocks:{light,dark},
