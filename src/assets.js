@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {prepareEnvironment} from './environment.js';
+import {vignette} from './ground.js';
 import {shadeGameplay} from './shading.js';
+import {GROUND} from './tokens.js';
 
 export const PIG_COLUMNS=4;
 const WATTS_TO_LUX=683;
@@ -41,7 +43,10 @@ export async function loadAssets(url){
   const world=worldColor && {color:new THREE.Color().setRGB(...worldColor,THREE.LinearSRGBColorSpace),intensity:worldStrength};
   const key=sun && {color:sun.color.clone(),intensity:sun.intensity/WATTS_TO_LUX,direction:new THREE.Vector3(0,0,-1).transformDirection(sun.matrixWorld)};
   lights.forEach(light=>light.parent.remove(light));
+  const ground=root.getObjectByName(GROUND.name);
+  if(ground)ground.userData.environment=true;
   prepareEnvironment(root);
+  if(ground)vignette(ground,requireObject(root,'CameraTarget').getWorldPosition(new THREE.Vector3()));
   shadeGameplay(root);
   ['Rail_Main','Rail_End','CameraTarget'].forEach(name=>requireObject(root,name));
   const camera=root.getObjectByProperty('isPerspectiveCamera',true);

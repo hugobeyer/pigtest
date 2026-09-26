@@ -20,6 +20,7 @@ export const ANIM={
 export const LABEL={height:.8,lift:.35,capacityGap:.55,backOpacity:.45,canvas:[256,128],baseline:4,font:'900 96px "Arial Black", Arial, sans-serif',fill:'#fff',stroke:'#1d1f2e',strokeWidth:18};
 export const SHADING={wrap:.5,power:2,shadowTint:0x8f86b8,rim:{color:0xbfd4ff,strength:.3,power:1.6},outline:{color:0x1d1f2e,from:.6,strength:.35}};
 export const ENVIRONMENT={shadowOpacity:.35,shadowColor:0x1e4a2c};
+export const GROUND={name:'Ground_Plane',radius:[9,15],inner:.3,outer:1.2,middle:1.08,edge:.72};
 export const RENDER={background:0x6fbf4a,maxPixelRatio:2};
 export const LIGHTS={
   hemisphere:{sky:0xfff6e6,ground:0x5f8f45,intensity:2.2},
