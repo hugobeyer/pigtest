@@ -16,7 +16,7 @@ export function debug({scene,ambient,key,blender}){
     shade.uSheenStrength.value=on.sheen ? e.sheen.strength : 0; shade.uSheenPower.value=e.sheen.power; shade.uSheenSaturation.value=e.sheen.saturation;
     catcher.color.set(e.shadowColor); catcher.opacity=e.shadowOpacity;
     vignette.uRadius.value.fromArray(g.radius); vignette.uInner.value=g.inner; vignette.uOuter.value=g.outer;
-    vignette.uMiddle.value=on.vignette ? g.middle : 1; vignette.uEdge.value=on.vignette ? g.edge : 1;
+    vignette.uMiddle.value.set(g.middle); vignette.uEdge.value.set(on.vignette ? g.edge : g.middle);
     ambient.groundColor.set(h.ground);
     if(blender.world){ambient.color.set(live.sky); ambient.intensity=live.skyIntensity;}
     else{ambient.color.set(h.sky); ambient.intensity=h.intensity;}
@@ -54,8 +54,8 @@ export function debug({scene,ambient,key,blender}){
   ground.add(g.radius,1,1,40,.1).name('radius up/down');
   ground.add(g,'inner',0,2,.01);
   ground.add(g,'outer',0,3,.01);
-  ground.add(g,'middle',.5,1.5,.01);
-  ground.add(g,'edge',0,1.5,.01);
+  ground.addColor(g,'middle').name('center color');
+  ground.addColor(g,'edge').name('edge color');
   ground.addColor(e,'shadowColor').name('shadow color');
   ground.add(e,'shadowOpacity',0,1,.01).name('shadow opacity');
 

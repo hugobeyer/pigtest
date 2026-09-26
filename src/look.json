@@ -27,6 +27,7 @@
     "shadowOpacity": 0.31,
     "shadowColor": "#082b1c"
   },
+<<<<<<< HEAD
   "ground": {
     "radius": [
       6.9,
@@ -48,4 +49,10 @@
     "radius": 0
   },
   "background": "#adb9a7"
+=======
+  "ground": { "radius": [9, 15], "inner": 0.3, "outer": 1.2, "middle": "#86d05c", "edge": "#4f9636" },
+  "hemisphere": { "sky": "#fff6e6", "ground": "#5f8f45", "intensity": 2.2 },
+  "shadow": { "bias": -0.00035, "normalBias": 0.025, "radius": 4 },
+  "background": "#6fbf4a"
+>>>>>>> 316aa9715aa9ee34f0fc5adf359169285f77c0ce
 }
