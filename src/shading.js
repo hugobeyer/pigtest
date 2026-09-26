@@ -17,7 +17,7 @@ uniform vec3 uShadowTint, uRimColor;
       '\tfloat dotNL = saturate( dot( geometryNormal, directLight.direction ) );\n\tvec3 irradiance = dotNL * directLight.color;',
       '\tfloat wrapped = pow( saturate( dot( geometryNormal, directLight.direction ) * uWrap + 1.0 - uWrap ), uPower );\n\tvec3 irradiance = mix( uShadowTint, vec3( 1.0 ), wrapped ) * wrapped * directLight.color;'))
     .replace('#include <opaque_fragment>',`#if NUM_DIR_LIGHTS > 0
-outgoingLight += uRimColor * uRimStrength * saturate( dot( normal, directionalLights[ 0 ].direction ) ) * pow( 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) ), uRimPower );
+outgoingLight += uRimColor * uRimStrength * saturate( 0.5 - 0.5 * dot( normal, directionalLights[ 0 ].direction ) ) * pow( 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) ), uRimPower );
 #endif
 #include <opaque_fragment>`);
 }
