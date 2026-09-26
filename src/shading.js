@@ -29,6 +29,7 @@ export function gooshy(source){
   if(!converted.has(source)){
     const material=new THREE.MeshLambertMaterial(Object.fromEntries(keys.filter(key=>source[key]!==undefined).map(key=>[key,source[key]])));
     material.name=source.name;
+    material.shadowSide=THREE.DoubleSide;
     material.onBeforeCompile=patch;
     material.customProgramCacheKey=()=>'gooshy';
     converted.set(source,material);

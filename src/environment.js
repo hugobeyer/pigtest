@@ -11,7 +11,7 @@ function isEnvironment(object){
 function unlitMaterial(source){
   if(!unlit.has(source))unlit.set(source,new THREE.MeshBasicMaterial({
     map:source.map,color:source.color,vertexColors:source.vertexColors,
-    transparent:source.transparent,opacity:source.opacity,alphaTest:source.alphaTest,side:source.side
+    transparent:source.transparent,opacity:source.opacity,alphaTest:source.alphaTest,side:source.side,shadowSide:THREE.DoubleSide
   }));
   return unlit.get(source);
 }
