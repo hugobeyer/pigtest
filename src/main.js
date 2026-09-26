@@ -1,6 +1,7 @@
 import './style.css';
 import * as THREE from 'three';
 import {loadAssets} from './assets.js';
+import {sunDirection} from './environment.js';
 import {initGameplay, tap, tapTargets, updateGameplay} from './gameplay.js';
 import {FRAME, LIGHTS, RENDER} from './tokens.js';
 
@@ -73,6 +74,7 @@ loadAssets(new URL('../assets/primitive_scene.glb',import.meta.url).href).then(a
     const distance=key.position.distanceTo(key.target.position);
     key.position.copy(key.target.position).addScaledVector(assets.key.direction,-distance);
   }
+  sunDirection.value.subVectors(key.position,key.target.position).normalize();
   initGameplay(scene,assets);
   scene.add(assets.root);
   camera=assets.camera;
