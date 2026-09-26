@@ -28,7 +28,8 @@ export function debug({scene,ambient,key,blender}){
     scene.background.set(state.background);
   };
 
-  const gui=new GUI({title:'Look  (G to hide)'});
+  const gui=new GUI({title:'Look  (G to hide)',width:420});
+  gui.domElement.style.setProperty('--name-width','48%');
   const character=gui.addFolder('Pigs, blocks, rail');
   character.add(s,'wrap',0,1,.01).name('wrap (lower = softer)');
   character.add(s,'power',.5,4,.01);
