@@ -3,20 +3,22 @@ import {SHADING} from './tokens.js';
 
 const converted=new Map();
 const uniforms={
-  uWrap:{value:SHADING.wrap},uPower:{value:SHADING.power},uShadowTint:{value:new THREE.Color(SHADING.shadowTint)},
+  uWrap:{value:SHADING.wrap},uPower:{value:SHADING.power},
+  uSssColor:{value:new THREE.Color(SHADING.sss.color)},uSssStrength:{value:SHADING.sss.strength},uSssWidth:{value:SHADING.sss.width},
   uRimColor:{value:new THREE.Color(SHADING.rim.color)},uRimStrength:{value:SHADING.rim.strength},uRimPower:{value:SHADING.rim.power},
   uOutlineColor:{value:new THREE.Color(SHADING.outline.color)},uOutlineFrom:{value:SHADING.outline.from},uOutlineStrength:{value:SHADING.outline.strength}
 };
-const keys=['map','color','normalMap','normalMapType','normalScale','aoMap','aoMapIntensity','lightMap','lightMapIntensity','emissive','emissiveMap','emissiveIntensity','alphaMap','transparent','opacity','alphaTest','side','vertexColors'];
+const diffuse='\treflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );';
 
 function patch(shader){
   Object.assign(shader.uniforms,uniforms);
-  shader.fragmentShader=`uniform float uWrap, uPower, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
-uniform vec3 uShadowTint, uRimColor, uOutlineColor;
+  shader.fragmentShader=`uniform float uWrap, uPower, uSssStrength, uSssWidth, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
+uniform vec3 uSssColor, uRimColor, uOutlineColor;
 `+shader.fragmentShader
-    .replace('#include <lights_lambert_pars_fragment>',THREE.ShaderChunk.lights_lambert_pars_fragment.replace(
-      '\tfloat dotNL = saturate( dot( geometryNormal, directLight.direction ) );\n\tvec3 irradiance = dotNL * directLight.color;',
-      '\tfloat wrapped = pow( saturate( dot( geometryNormal, directLight.direction ) * uWrap + 1.0 - uWrap ), uPower );\n\tvec3 irradiance = mix( uShadowTint, vec3( 1.0 ), wrapped ) * wrapped * directLight.color;'))
+    .replace('#include <lights_physical_pars_fragment>',THREE.ShaderChunk.lights_physical_pars_fragment.replace(diffuse,`\tfloat nl = dot( geometryNormal, directLight.direction );
+\tfloat wrapped = pow( saturate( nl * uWrap + 1.0 - uWrap ), uPower );
+\tfloat band = 1.0 - smoothstep( 0.0, uSssWidth, abs( nl ) );
+\treflectedLight.directDiffuse += directLight.color * ( wrapped * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F ) + uSssColor * uSssStrength * band * RECIPROCAL_PI );`))
     .replace('#include <opaque_fragment>',`float facing = 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) );
 #if NUM_DIR_LIGHTS > 0
 outgoingLight += uRimColor * uRimStrength * saturate( 0.5 - 0.5 * dot( normal, directionalLights[ 0 ].direction ) ) * pow( facing, uRimPower );
@@ -27,8 +29,7 @@ outgoingLight = mix( outgoingLight, uOutlineColor, uOutlineStrength * sin( satur
 
 export function gooshy(source){
   if(!converted.has(source)){
-    const material=new THREE.MeshLambertMaterial(Object.fromEntries(keys.filter(key=>source[key]!==undefined).map(key=>[key,source[key]])));
-    material.name=source.name;
+    const material=source.clone();
     material.shadowSide=THREE.DoubleSide;
     material.onBeforeCompile=patch;
     material.customProgramCacheKey=()=>'gooshy';
