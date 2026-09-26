@@ -1,19 +1,51 @@
 {
   "shading": {
-    "wrap": 0.5,
-    "power": 2,
-    "sss": { "strength": 0.15, "width": 0.35 },
-    "rim": { "color": "#bfd4ff", "strength": 0.3, "power": 1.6 },
-    "outline": { "color": "#1d1f2e", "from": 0.6, "strength": 0.35 }
+    "wrap": 0.29,
+    "power": 1.03,
+    "sss": {
+      "strength": 0.5,
+      "width": 0.41
+    },
+    "rim": {
+      "color": "#43a037",
+      "strength": 0.3,
+      "power": 5.6
+    },
+    "outline": {
+      "color": "#143929",
+      "from": 0.74,
+      "strength": 0.25
+    }
   },
   "environment": {
     "lit": true,
-    "sheen": { "strength": 0.15, "power": 4, "saturation": 0.8 },
-    "shadowOpacity": 0.35,
-    "shadowColor": "#1e4a2c"
+    "sheen": {
+      "strength": 0.03,
+      "power": 6.4,
+      "saturation": 1
+    },
+    "shadowOpacity": 0.31,
+    "shadowColor": "#082b1c"
   },
-  "ground": { "radius": [9, 15], "inner": 0.3, "outer": 1.2, "middle": 1.08, "edge": 0.72 },
-  "hemisphere": { "sky": "#fff6e6", "ground": "#5f8f45", "intensity": 2.2 },
-  "shadow": { "bias": -0.00035, "normalBias": 0.025, "radius": 4 },
-  "background": "#6fbf4a"
+  "ground": {
+    "radius": [
+      6.9,
+      7.4
+    ],
+    "inner": 1.16,
+    "outer": 3,
+    "middle": 0.96,
+    "edge": 0.39
+  },
+  "hemisphere": {
+    "sky": "#fff6e6",
+    "ground": "#033a45",
+    "intensity": 2.2
+  },
+  "shadow": {
+    "bias": -0.00375,
+    "normalBias": 0.03,
+    "radius": 0
+  },
+  "background": "#adb9a7"
 }
