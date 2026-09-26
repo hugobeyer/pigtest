@@ -1,71 +1,71 @@
 {
   "shading": {
-    "terminator": 0.47,
-    "softness": 0.94,
-    "darkColor": "#a6a6e8",
+    "terminator": 0.01,
+    "softness": 0.18,
+    "darkColor": "#0f1b34",
     "sss": {
-      "strength": 0.5,
-      "width": 0.67
+      "strength": 0.64,
+      "width": 0.66
     },
     "rim": {
-      "color": "#e2e444",
-      "strength": 0.79,
-      "power": 6.8
+      "color": "#6dd459",
+      "strength": 0.53,
+      "power": 5.1
     },
     "outline": {
-      "color": "#7fc775",
-      "from": 0.7,
-      "strength": 0.44
+      "color": "#598132",
+      "from": 0.37,
+      "strength": 0.14
     }
   },
   "environment": {
-    "terminator": 0.0800000000000001,
-    "softness": 1,
-    "darkColor": "#5ab5b5",
+    "terminator": -0.71,
+    "softness": 0.67,
+    "darkColor": "#7eaea0",
     "lit": true,
     "sheen": {
-      "strength": 0.15,
-      "power": 14.4,
-      "hue": 70,
-      "saturation": 0.65,
-      "albedo": 0.39
+      "strength": 0.25,
+      "power": 3,
+      "hue": 27,
+      "saturation": 0.9,
+      "albedo": 0.89
     },
-    "shadowOpacity": 0.67,
-    "shadowColor": "#133f53"
+    "shadowOpacity": 0.8,
+    "shadowColor": "#082a3a"
   },
   "ground": {
     "offset": [
-      0.300000000000001,
-      13.3
+      0,
+      12.3
     ],
     "scenery": 1,
-    "characters": 0.33,
+    "characters": 0.61,
     "radius": [
-      7.9,
-      30.4
+      5.1,
+      16.9
     ],
-    "inner": 0.59,
-    "outer": 2.41,
-    "middle": "#77b913",
-    "edge": "#11c80e"
+    "inner": 0.7,
+    "outer": 2.71,
+    "middle": "#84c832",
+    "edge": "#909d62"
   },
   "hemisphere": {
     "sky": "#fff6e6",
-    "ground": "#ded81b",
+    "ground": "#b4590e",
     "intensity": 2.2
   },
   "shadow": {
     "shadowMapSize": 2048,
-    "bias": -0.00195,
-    "normalBias": 0.016,
-    "radius": 0.7
+    "bias": -0.0003,
+    "normalBias": 0.047,
+    "radius": 1.1
   },
-  "background": "#adb9a7",
+  "background": "#51544f",
   "fog": {
     "enabled": false,
-    "mode": "soft light",
-    "color": "#c6d12e",
-    "near": 70,
-    "far": 199
+    "mode": "multiply",
+    "color": "#4300a8",
+    "near": 38.5,
+    "far": 218
   }
 }
