@@ -30,12 +30,11 @@ It fails explicitly if the new names already exist alongside old objects.
 | Rail | `Rail_Start`, `Rail_Main`, `Rail_End` |
 | Bullets | `Bullet_Light`, `Bullet_Dark` |
 | Grid | `Grid_Block_Light`, `Grid_Block_Dark` |
-| Slots | `Slot_0` through `Slot_4` |
 | Anchors | `RailStart`, `RailEnd`, `GridCenter`, `CameraTarget` (Empties) |
 
-The pig and bullet models, rail, grid blocks and slots must have an exportable mesh/curve on the object or in its descendants. Required names with Blender suffixes such as `.001` and leftover `Pig_XX`/`PigRunner`/`Grid_rXX_cYY` objects are reported, not silently accepted.
+The pig and bullet models, rail and grid blocks must have an exportable mesh/curve on the object or in its descendants. Required names with Blender suffixes such as `.001` and leftover `Pig_XX`/`PigRunner`/`Grid_rXX_cYY` objects are reported, not silently accepted.
 
-Each `PigColumn` needs `queue` (text of `D`/`L`, front first) and a positive `row_step`. `GridCenter` needs positive integers `rows`, `columns`, `checker` and a positive `step`. Slots need an integer `slot` matching their index. Existing colors and light/dark choices are not reset. `validate_assets(root)` returns missing names, duplicates, errors, per-asset renderable hierarchy counts and total export-object count. `require_assets(root)` raises on failures.
+Each `PigColumn` needs `queue` (text of `D`/`L`, front first) and a positive `row_step`. `GridCenter` needs positive integers `rows`, `columns`, `checker` and a positive `step`. Existing colors and light/dark choices are not reset. `validate_assets(root)` returns missing names, duplicates, errors, per-asset renderable hierarchy counts and total export-object count. `require_assets(root)` raises on failures.
 
 ## Create or complete a scene
 

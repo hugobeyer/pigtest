@@ -6,10 +6,9 @@ PIG_NAMES=('Pig_Light','Pig_Dark')
 BULLET_NAMES=('Bullet_Light','Bullet_Dark')
 BLOCK_NAMES=('Grid_Block_Light','Grid_Block_Dark')
 RAIL_NAMES=('Rail_Start','Rail_Main','Rail_End')
-SLOT_NAMES=tuple(f'Slot_{index}' for index in range(5))
 ANCHOR_NAMES=('RailStart','RailEnd','GridCenter','CameraTarget')
-REQUIRED_NAMES=(*PIG_COLUMN_NAMES,*PIG_NAMES,*BULLET_NAMES,*RAIL_NAMES,*BLOCK_NAMES,*SLOT_NAMES,*ANCHOR_NAMES)
-RENDERABLE_NAMES=(*PIG_NAMES,*BULLET_NAMES,*RAIL_NAMES,*BLOCK_NAMES,*SLOT_NAMES)
+REQUIRED_NAMES=(*PIG_COLUMN_NAMES,*PIG_NAMES,*BULLET_NAMES,*RAIL_NAMES,*BLOCK_NAMES,*ANCHOR_NAMES)
+RENDERABLE_NAMES=(*PIG_NAMES,*BULLET_NAMES,*RAIL_NAMES,*BLOCK_NAMES)
 OBSOLETE=re.compile(r'^(Pig_\d+|Pig_\d+_\d+|PigRunner|Grid_r\d+_c\d+|Trail_Light|Trail_Dark)$')
 RENDERABLE_TYPES={'MESH','CURVE'}
 
@@ -65,9 +64,6 @@ def validate_assets(root):
     for key in ('rows','columns','checker'):
       if not positive(center,key,int): errors.append(f'GridCenter requires a positive integer {key}')
     if not positive(center,'step',(int,float)): errors.append('GridCenter requires a positive step')
-  for index,name in enumerate(SLOT_NAMES):
-    obj=by_name.get(name)
-    if obj is not None and obj.get('slot')!=index: errors.append(f'{name}: expected slot={index}')
   for name in ANCHOR_NAMES:
     if name in by_name and by_name[name].type!='EMPTY': errors.append(f'{name} must be an Empty')
   return {'missing':missing,'duplicates':duplicates,'errors':errors,'renderable_counts':renderable_counts,'object_count':len(objects)}
