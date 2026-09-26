@@ -60,7 +60,7 @@ function fire(run){
   if(run.hits%FX.combo.every===0){
     const words=FX.combo.words.filter(word=>word!==lastWord);
     lastWord=words[Math.floor(Math.random()*words.length)];
-    popup(scene,lastWord,run.runner.position);
+    popup(lastWord,run.runner.position);
   }
 }
 

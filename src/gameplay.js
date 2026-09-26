@@ -6,6 +6,7 @@ import {initRunners, launchRunner, runStats, runs, updateRunners} from './runner
 import {updateShots} from './shots.js';
 import {bump, tween, updateTweens} from './tweens.js';
 import {emit, initParticles, updateParticles} from './fx/particles.js';
+import {initPopups} from './fx/popups.js';
 import {initShake, shake, updateShake} from './fx/shake.js';
 import {initRing} from './fx/ring.js';
 import {showWin} from './win.js';
@@ -20,6 +21,7 @@ export function initGameplay(scene,assets){
   center=assets.gridCenter.getWorldPosition(new THREE.Vector3());
   initParticles(scene,assets.blocks);
   initShake(assets.camera);
+  initPopups(assets.camera);
   initRing();
   const grid=createGrid(scene,assets.gridCenter,assets.blocks);
   totalBlocks=remainingCells();

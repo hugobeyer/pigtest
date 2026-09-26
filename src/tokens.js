@@ -6,8 +6,9 @@ export const PATH={sideOffset:1.38,verticalOffset:2.38,cornerRadius:1.10,laneGap
 export const PIGS={ammo:20,visibleRows:3,railCapacity:5};
 export const FRAME={maxDelta:.033};
 export const WIN={
-  delay:1.1,title:'LEVEL CLEAR',hint:'Tap to play again',
+  delay:1.1,title:'level_clear',hint:'Tap to play again',
   bumpIn:.55,swing:2.4,swingAngle:3,rowStagger:.12,countDuration:.8,
+  text:{label:20,value:26,hint:16},
   stats:[['blocks','Blocks'],['time','Time'],['pigs','Pigs used'],['shots','Shots'],['bestCombo','Best combo']]
 };
 
@@ -19,7 +20,7 @@ export const ANIM={
   queueGrow:{duration:.16},
   vanish:{rise:3.2,duration:.6}
 };
-export const LABEL={height:.8,lift:.35,capacityOffset:[0,-1.06,.28],backOpacity:.45,canvas:[256,128],baseline:4,font:'900 96px "Arial Black", Arial, sans-serif',fill:'#fff',stroke:'#1d1f2e',strokeWidth:18};
+export const LABEL={height:.8,lift:.35,capacityOffset:[0,-1.06,.28],backOpacity:.45,canvas:[256,128],tracking:-4};
 export const SHADING={terminator:0,softness:.6,darkColor:'#9a9ab4',...look.shading};
 export const ENVIRONMENT={terminator:-.1,softness:.7,darkColor:'#8aa08a',...look.environment};
 export const GROUND={name:'Ground_Plane',offset:[0,0],scenery:.6,characters:0,...look.ground};
@@ -40,5 +41,5 @@ export const FX={
   counterPunch:{amount:.35,duration:.16},
   idleBob:{height:.14,speed:5},
   shake:{amplitude:.05,duration:.15},
-  combo:{every:12,words:['NICE!','SWEET!','COOL!','WOW!','YES!','COMBO!','GREAT!','AWESOME!'],height:1.1,aspect:4,lift:1.2,rise:1.6,duration:.8}
+  combo:{every:12,words:['nice','sweet','cool','wow','yes','combo','great','awesome'],width:.62,lift:1.2,duration:1.4,sweep:.55}
 };
