@@ -12,7 +12,7 @@
     "shadowOpacity": 0.35,
     "shadowColor": "#1e4a2c"
   },
-  "ground": { "radius": [9, 15], "inner": 0.3, "outer": 1.2, "middle": 1.08, "edge": 0.72 },
+  "ground": { "radius": [9, 15], "inner": 0.3, "outer": 1.2, "middle": "#86d05c", "edge": "#4f9636" },
   "hemisphere": { "sky": "#fff6e6", "ground": "#5f8f45", "intensity": 2.2 },
   "shadow": { "bias": -0.00035, "normalBias": 0.025, "radius": 4 },
   "background": "#6fbf4a"
