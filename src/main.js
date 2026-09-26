@@ -2,10 +2,12 @@ import './style.css';
 import * as THREE from 'three';
 import {loadAssets} from './assets.js';
 import {initGameplay, tap, tapTargets, updateGameplay} from './gameplay.js';
-import {FRAME, LIGHTS, RENDER} from './tokens.js';
+import {FOG, FRAME, LIGHTS, RENDER} from './tokens.js';
 
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(RENDER.background);
+const fog=new THREE.Fog(FOG.color,FOG.near,FOG.far);
+scene.fog=FOG.enabled ? fog : null;
 
 const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,RENDER.maxPixelRatio));
@@ -81,5 +83,5 @@ loadAssets(new URL('../assets/primitive_scene.glb',import.meta.url).href).then(a
   enableInput();
   last=performance.now();
   renderer.setAnimationLoop(frame);
-  if(import.meta.env.DEV)import('./debug.js').then(({debug})=>debug({scene,ambient,key,blender:{world:!!assets.world}}));
+  if(import.meta.env.DEV)import('./debug.js').then(({debug})=>debug({scene,fog,ambient,key,blender:{world:!!assets.world}}));
 },error=>console.error('Blender GLB failed to load.',error));

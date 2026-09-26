@@ -1,16 +1,18 @@
 import GUI from 'lil-gui';
 import look from './look.json';
 import {catcher} from './environment.js';
-import {ENVIRONMENT, LIGHTS, SHADING} from './tokens.js';
+import {ENVIRONMENT, FOG, GROUND, LIGHTS, SHADING} from './tokens.js';
 import {uniforms as vignette} from './ground.js';
 import {sheenColor, uniforms as shade} from './shading.js';
 
-export function debug({scene,ambient,key,blender}){
+export function debug({scene,fog,ambient,key,blender}){
   const state=structuredClone(look);
   const curve=({terminator,softness,darkColor})=>({terminator,softness,darkColor});
   state.shading={...curve(SHADING),...state.shading};
   state.environment={...curve(ENVIRONMENT),...state.environment};
   for(const group of [state.shading,state.environment]){delete group.wrap; delete group.power;}
+  state.ground={offset:[...GROUND.offset],...state.ground};
+  state.fog=structuredClone(FOG);
   state.shadow={shadowMapSize:LIGHTS.key.shadowMapSize,...state.shadow};
   const on={sss:true,rim:true,outline:true,sheen:true,vignette:true};
   const {shading:s,environment:e,ground:g,hemisphere:h}=state;
@@ -23,7 +25,7 @@ export function debug({scene,ambient,key,blender}){
     shade.uOutlineColor.value.set(s.outline.color); shade.uOutlineFrom.value=s.outline.from; shade.uOutlineStrength.value=on.outline ? s.outline.strength : 0;
     shade.uSheenStrength.value=on.sheen ? e.sheen.strength : 0; shade.uSheenPower.value=e.sheen.power; sheenColor(e.sheen,shade.uSheenColor.value); shade.uSheenAlbedo.value=e.sheen.albedo;
     catcher.color.set(e.shadowColor); catcher.opacity=e.shadowOpacity;
-    vignette.uRadius.value.fromArray(g.radius); vignette.uInner.value=g.inner; vignette.uOuter.value=g.outer;
+    vignette.uOffset.value.fromArray(g.offset); vignette.uRadius.value.fromArray(g.radius); vignette.uInner.value=g.inner; vignette.uOuter.value=g.outer;
     vignette.uMiddle.value.set(g.middle); vignette.uEdge.value.set(on.vignette ? g.edge : g.middle);
     ambient.groundColor.set(h.ground);
     if(blender.world){ambient.color.set(live.sky); ambient.intensity=live.skyIntensity;}
@@ -33,6 +35,7 @@ export function debug({scene,ambient,key,blender}){
     Object.assign(key.shadow,shadow);
     if(key.shadow.mapSize.x!==shadowMapSize){key.shadow.map?.dispose(); key.shadow.map=null; key.shadow.mapSize.set(shadowMapSize,shadowMapSize);}
     scene.background.set(state.background);
+    fog.color.set(state.fog.color); fog.near=state.fog.near; fog.far=state.fog.far; scene.fog=state.fog.enabled ? fog : null;
   };
 
   const gui=new GUI({title:'Look  (G to hide)',width:420});
@@ -67,6 +70,8 @@ export function debug({scene,ambient,key,blender}){
 
   const ground=gui.addFolder('Ground');
   ground.add(on,'vignette').name('vignette on');
+  ground.add(g.offset,0,-20,20,.1).name('center offset across');
+  ground.add(g.offset,1,-20,20,.1).name('center offset up/down');
   ground.add(g.radius,0,1,40,.1).name('radius across');
   ground.add(g.radius,1,1,40,.1).name('radius up/down');
   ground.add(g,'inner',0,2,.01);
@@ -84,6 +89,12 @@ export function debug({scene,ambient,key,blender}){
   light.add(state.shadow,'normalBias',0,.2,.001).name('shadow normal bias');
   light.add(state.shadow,'bias',-.005,.005,.00005).name('shadow bias');
   light.addColor(state,'background');
+
+  const fogFolder=gui.addFolder('Fog (farther = foggier, top of screen)');
+  fogFolder.add(state.fog,'enabled').name('fog on');
+  fogFolder.addColor(state.fog,'color').name('fog color');
+  fogFolder.add(state.fog,'near',0,200,.5).name('starts at distance');
+  fogFolder.add(state.fog,'far',0,250,.5).name('full fog at distance');
 
   const fromBlender=gui.addFolder('From Blender (live only, set in Blender)');
   fromBlender.addColor(live,'sun').name('sun color');
