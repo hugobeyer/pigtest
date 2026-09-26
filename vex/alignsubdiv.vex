@@ -1,0 +1,810 @@
+// RECTANGULAR FRACTURE ALIGNMENT BIAS - DETAIL WRANGLE (SDF-OPTIMIZED)
+// Enhanced with strata mode, profile erosion, noise, and edge subdivision
+//
+// INPUTS (all SDF volumes — negative inside, positive outside):
+//   0: (empty or existing geo to clear)
+//   1: Surface SDF — the shape to fill with blocks (VDB From Polygons)
+//   2: Influence SDF — regions where blocks stay bigger (optional)
+//      e.g. columns, supports, structural elements
+//
+// Both inputs should be signed distance fields.
+// Create with: VDB From Polygons → enable "Distance VDB" (SDF mode)
+//
+// FILL INTERIOR: clips blocks to the SDF shape (inside = keep, outside = cull)
+// EROSION: additionally weathers/erodes inward from the surface (on top of fill)
+// CORE uses Input 1 directly: deeper inside (more negative SDF) = bigger blocks.
+// INFLUENCE uses Input 2: inside this volume = restricted subdivision.
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GEOMETRY CLEAR
+// ─────────────────────────────────────────────────────────────────────────────
+int existing_pts[] = expandpointgroup(0, "*");
+foreach(int pt; existing_pts) {
+    removepoint(0, pt);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PARAMETERS (with defaults — script works even without spare parms)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Core subdivision
+int   iterations         = chi("iterations");
+if(iterations == 0)      iterations = 4;
+
+// Split randomness: 0.0 = always split in half, 1.0 = maximum asymmetry
+float split_randomness   = chf("split_randomness");
+if(split_randomness == 0) split_randomness = 0.4;
+
+float vertical_alignment = chf("vertical_alignment");
+float horizontal_line    = chf("horizontal_line");
+float alignment_grad_x   = chf("alignment_grad_x");
+float alignment_grad_y   = chf("alignment_grad_y");
+float alignment_grad_z   = chf("alignment_grad_z");
+float line_grad_x        = chf("line_grad_x");
+float line_grad_y        = chf("line_grad_y");
+float line_grad_z        = chf("line_grad_z");
+float gradient_strength  = chf("gradient_strength");
+
+float max_aspect_ratio   = chf("max_aspect_ratio");
+if(max_aspect_ratio == 0) max_aspect_ratio = 3.0;
+
+float min_world_size     = chf("min_world_size");
+if(min_world_size == 0)  min_world_size = 0.5;
+
+float size_threshold     = chf("size_threshold");
+
+int   seed_val           = chi("seed");
+if(seed_val == 0)        seed_val = 1234;
+
+// Strata mode
+int   strata_mode          = chi("strata_mode");
+float strata_blend         = chf("strata_blend");
+if(strata_blend == 0)      strata_blend = 0.5;
+float strata_bottom_scale  = chf("strata_bottom_scale");
+if(strata_bottom_scale == 0) strata_bottom_scale = 0.5;
+float strata_top_flatness  = chf("strata_top_flatness");
+if(strata_top_flatness == 0) strata_top_flatness = 1.0;
+
+// Fill interior — clip blocks to the SDF shape
+int   fill_interior        = chi("fill_interior");
+if(fill_interior == 0)     fill_interior = 1;  // default: on
+
+// Erosion — additional weathering on top of fill
+int   erosion_enable       = chi("erosion_enable");
+float erosion_depth        = chf("erosion_depth");
+if(erosion_depth == 0)     erosion_depth = 1.0;
+float erosion_height_bias  = chf("erosion_height_bias");
+float erosion_noise_amp    = chf("erosion_noise_amp");
+float erosion_noise_freq   = chf("erosion_noise_freq");
+if(erosion_noise_freq == 0) erosion_noise_freq = 1.5;
+float erosion_noise_offset = chf("erosion_noise_offset");
+float edge_detail_dist     = chf("edge_detail_dist");
+if(edge_detail_dist == 0)  edge_detail_dist = 1.0;
+float edge_detail_scale    = chf("edge_detail_scale");
+if(edge_detail_scale == 0) edge_detail_scale = 0.5;
+int   edge_extra_iters     = chi("edge_extra_iters");
+
+// Core — bigger blocks in deep interior or inside Input 2 volume
+//   Input 1: SDF depth > core_threshold = core
+//   Input 2: inside at all (SDF < 0) = core
+//   Core boxes freeze at core_max_level and are protected from culling
+int   core_enable        = chi("core_enable");
+float core_threshold     = chf("core_threshold");
+if(core_threshold == 0)  core_threshold = 2.0;
+int   core_max_level     = chi("core_max_level");
+if(core_max_level == 0)  core_max_level = 1;
+
+// Size variation
+float size_variation       = chf("size_variation");
+
+// Diagonal rotation: randomly tilt each box for a less grid-locked look
+float diagonal_amount      = chf("diagonal_amount");
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INPUT BOUNDS
+// ─────────────────────────────────────────────────────────────────────────────
+vector bbox_min, bbox_max;
+if(npoints(0) > 0) {
+    getbbox(0, bbox_min, bbox_max);
+} else {
+    bbox_min = set(-5, -5, -5);
+    bbox_max = set( 5,  5,  5);
+}
+vector bbox_size = bbox_max - bbox_min;
+float  inv_bbox_x = 1.0 / (bbox_size.x + 0.0001);
+float  inv_bbox_y = 1.0 / (bbox_size.y + 0.0001);
+float  inv_bbox_z = 1.0 / (bbox_size.z + 0.0001);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DETECT SDF VOLUME INPUTS (VDBs are primitives)
+// ─────────────────────────────────────────────────────────────────────────────
+int has_sdf1 = (nprimitives(1) > 0) ? 1 : 0;  // surface volume
+int has_sdf2 = (nprimitives(2) > 0) ? 1 : 0;  // influence volume
+
+// Sign multipliers: flip for density/fog volumes (positive inside)
+// SDF convention: negative inside, positive outside
+// Density convention: positive inside, 0 outside  →  invert to match SDF
+int   surface_invert   = chi("surface_invert");
+int   influence_invert = chi("influence_invert");
+float sdf1_sign = (surface_invert == 1) ? -1.0 : 1.0;
+float sdf2_sign = (influence_invert == 1) ? -1.0 : 1.0;
+
+// Debug
+int debug_mode = chi("debug_mode");
+if(debug_mode == 1) {
+    printf("[DEBUG] Input 1 primitives: %d, Input 2 primitives: %d\n", nprimitives(1), nprimitives(2));
+    printf("[DEBUG] surface_invert: %d, influence_invert: %d\n", surface_invert, influence_invert);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BOX ARRAYS
+// ─────────────────────────────────────────────────────────────────────────────
+vector box_mins[];
+vector box_maxs[];
+int    box_levels[];
+
+resize(box_mins,  1);
+resize(box_maxs,  1);
+resize(box_levels, 1);
+
+box_mins[0]   = bbox_min;
+box_maxs[0]   = bbox_max;
+box_levels[0] = 0;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUBDIVISION LOOP
+// ─────────────────────────────────────────────────────────────────────────────
+int total_iters = iterations + edge_extra_iters;
+
+for(int iter = 0; iter < total_iters; iter++) {
+
+    int cur_count = len(box_mins);
+
+    vector new_box_mins[];
+    vector new_box_maxs[];
+    int    new_box_levels[];
+    resize(new_box_mins,  cur_count * 2);
+    resize(new_box_maxs,  cur_count * 2);
+    resize(new_box_levels, cur_count * 2);
+    int new_count = 0;
+
+    for(int b = 0; b < cur_count; b++) {
+
+        vector box_min_cur   = box_mins[b];
+        vector box_max_cur   = box_maxs[b];
+        int    box_level     = box_levels[b];
+        vector box_size      = box_max_cur - box_min_cur;
+        vector box_center    = (box_min_cur + box_max_cur) * 0.5;
+
+        // ── Surface SDF sample ──
+        float sdf_val = 1e6;
+        float dist_to_surface = 1e6;
+        int   is_near_edge = 0;
+
+        if(has_sdf1 == 1) {
+            sdf_val = volumesample(1, 0, box_center) * sdf1_sign;
+            dist_to_surface = abs(sdf_val);
+            if(erosion_enable == 1 && dist_to_surface < edge_detail_dist) {
+                is_near_edge = 1;
+            }
+        }
+
+        // ── Core detection (Input 1 depth + Input 2 volume) ──
+        // Core = deep inside Input 1 OR inside Input 2 at all
+        int   is_core = 0;
+        float core_strength = 0.0;
+
+        if(core_enable == 1) {
+            // Source 1: Input 1 SDF depth
+            if(has_sdf1 == 1) {
+                float depth = -sdf_val;  // positive when inside
+                if(depth > 0.0) {
+                    core_strength = clamp(depth / max(core_threshold, 0.01), 0.0, 1.0);
+                }
+            }
+
+            // Source 2: Input 2 SDF (inside at all = core)
+            if(has_sdf2 == 1) {
+                float inf_sdf = volumesample(2, 0, box_center) * sdf2_sign;
+                if(inf_sdf < 0.0) {
+                    core_strength = max(core_strength, 1.0);
+                }
+            }
+
+            // Freeze subdivision at max level
+            if(core_strength > 0.5 && box_level >= core_max_level) {
+                is_core = 1;
+            }
+        }
+
+        if(is_core == 1) {
+            new_box_mins[new_count]   = box_min_cur;
+            new_box_maxs[new_count]   = box_max_cur;
+            new_box_levels[new_count] = box_level;
+            new_count++;
+            continue;
+        }
+
+        // ── Size checks ──
+        // min_world_size is an ABSOLUTE hard floor — never go below this
+        int too_small = 0;
+        if(min_world_size > 0.01) {
+            float min_box_dim = min(box_size.x, min(box_size.y, box_size.z));
+            if(min_box_dim < min_world_size) too_small = 1;
+        }
+
+        // size_threshold is a relative check (fraction of bbox)
+        // edge_detail_scale can relax this for edge boxes, but NOT min_world_size
+        if(too_small == 0 && size_threshold > 0.01) {
+            float max_box_dim  = max(box_size.x, max(box_size.y, box_size.z));
+            float max_bbox_dim = max(bbox_size.x, max(bbox_size.y, bbox_size.z));
+            float rel = max_box_dim / max_bbox_dim;
+            float eff_thresh = size_threshold;
+            if(is_near_edge == 1) eff_thresh = size_threshold * clamp(edge_detail_scale, 0.01, 1.0);
+            if(rel < eff_thresh) too_small = 1;
+        }
+
+        // Extra iterations: only split edge boxes
+        if(iter >= iterations && is_near_edge == 0) {
+            new_box_mins[new_count]   = box_min_cur;
+            new_box_maxs[new_count]   = box_max_cur;
+            new_box_levels[new_count] = box_level;
+            new_count++;
+            continue;
+        }
+
+        if(too_small == 1) {
+            new_box_mins[new_count]   = box_min_cur;
+            new_box_maxs[new_count]   = box_max_cur;
+            new_box_levels[new_count] = box_level;
+            new_count++;
+            continue;
+        }
+
+        // ── Alignment bias ──
+        float norm_x = (box_center.x - bbox_min.x) * inv_bbox_x;
+        float norm_y = (box_center.y - bbox_min.y) * inv_bbox_y;
+        float norm_z = (box_center.z - bbox_min.z) * inv_bbox_z;
+
+        float align_xi = 1.0 + alignment_grad_x * (norm_x - 0.5) * 2.0;
+        float align_yi = 1.0 + alignment_grad_y * (norm_y - 0.5) * 2.0;
+        float align_zi = 1.0 + alignment_grad_z * (norm_z - 0.5) * 2.0;
+        float combined_align = (align_xi + align_yi + align_zi) / 3.0;
+
+        float line_xi = 1.0 + line_grad_x * (norm_x - 0.5) * 2.0;
+        float line_yi = 1.0 + line_grad_y * (norm_y - 0.5) * 2.0;
+        float line_zi = 1.0 + line_grad_z * (norm_z - 0.5) * 2.0;
+        float combined_line = (line_xi + line_yi + line_zi) / 3.0;
+
+        float fv = vertical_alignment * (1.0 + (combined_align - 1.0) * gradient_strength);
+        float fh = horizontal_line    * (1.0 + (combined_line  - 1.0) * gradient_strength);
+
+        float pos_vert_bias  = clamp(fv, 0.0, 5.0);
+        float pos_horiz_bias = clamp(fh, 0.0, 5.0);
+
+        // ── Strata bias ──
+        float s_vert_bonus    = 0.0;
+        float s_horiz_penalty = 0.0;
+        float s_size_scale    = 1.0;
+        float s_split_boost   = 0.0;
+
+        if(strata_mode == 1) {
+            float t = clamp(norm_y / max(strata_blend, 0.001), 0.0, 1.0);
+            t = t * t * (3.0 - 2.0 * t);
+            s_vert_bonus    = t * strata_top_flatness;
+            s_horiz_penalty = t * 1.5;
+            float bottom_t = 1.0 - t;
+            s_size_scale = 1.0 - bottom_t * (1.0 - clamp(strata_bottom_scale, 0.05, 1.0));
+            s_split_boost = bottom_t * 0.3;
+        }
+
+        float final_vert_bias  = pos_vert_bias  + s_vert_bonus;
+        float final_horiz_bias = max(0.0, pos_horiz_bias - s_horiz_penalty);
+
+        // Split probability
+        float total_alignment   = final_vert_bias + final_horiz_bias;
+        float split_probability = 0.5 + total_alignment * 0.1 + s_split_boost;
+        if(is_near_edge == 1) split_probability += 0.3;
+
+        // Core reduces split probability (bigger blocks)
+        if(core_strength > 0.0) {
+            split_probability -= core_strength * 0.5;
+        }
+
+        if(size_variation > 0.001) {
+            float var_rand = random(seed_val + b * 7777 + iter * 77770);
+            float var_offset = (var_rand - 0.5) * 2.0 * size_variation;
+            split_probability += var_offset * 0.4;
+        }
+
+        float split_chance = random(seed_val + b * 1000 + iter * 10000);
+        if(split_chance > split_probability) {
+            new_box_mins[new_count]   = box_min_cur;
+            new_box_maxs[new_count]   = box_max_cur;
+            new_box_levels[new_count] = box_level;
+            new_count++;
+            continue;
+        }
+
+        // ── Choose split axis ──
+        int split_axis = 0;
+        float min_dim = min(box_size.x, min(box_size.y, box_size.z));
+        float max_dim = max(box_size.x, max(box_size.y, box_size.z));
+        int   force_aspect = 0;
+        if(min_dim > 0 && max_dim / min_dim > max_aspect_ratio) {
+            force_aspect = 1;
+            if(box_size.x >= box_size.y && box_size.x >= box_size.z) split_axis = 0;
+            else if(box_size.y >= box_size.z) split_axis = 1;
+            else split_axis = 2;
+        }
+
+        if(force_aspect == 0) {
+            float base_prob = 1.0;
+            float y_prob = base_prob + final_vert_bias;
+            float x_prob = base_prob + final_horiz_bias;
+            float z_prob = base_prob + final_horiz_bias;
+
+            float size_bonus = 0.3;
+            x_prob += box_size.x * size_bonus;
+            y_prob += box_size.y * size_bonus;
+            z_prob += box_size.z * size_bonus;
+
+            float total_prob = x_prob + y_prob + z_prob;
+            x_prob /= total_prob;
+            y_prob /= total_prob;
+
+            float rand_val = random(seed_val + b * 2000 + iter * 20000);
+            if(rand_val < x_prob) split_axis = 0;
+            else if(rand_val < x_prob + y_prob) split_axis = 1;
+            else split_axis = 2;
+        }
+
+        // ── Split ratio ──
+        // split_randomness controls how far from 0.5 the cut can land
+        float eff_randomness = split_randomness * s_size_scale;
+
+        if(size_variation > 0.001) {
+            eff_randomness += size_variation * 0.3;
+        }
+        eff_randomness = clamp(eff_randomness, 0.0, 0.8);
+
+        float rand_offset = (random(seed_val + b * 3000 + iter * 30000) - 0.5) * eff_randomness;
+        float split_ratio = clamp(0.5 + rand_offset, 0.1, 0.9);
+
+        // ── Create child boxes ──
+        vector box1_min = box_min_cur;
+        vector box1_max = box_max_cur;
+        vector box2_min = box_min_cur;
+        vector box2_max = box_max_cur;
+
+        if(split_axis == 0) {
+            float sc = box_min_cur.x + box_size.x * split_ratio;
+            box1_max.x = sc;
+            box2_min.x = sc;
+        } else if(split_axis == 1) {
+            float sc = box_min_cur.y + box_size.y * split_ratio;
+            box1_max.y = sc;
+            box2_min.y = sc;
+        } else {
+            float sc = box_min_cur.z + box_size.z * split_ratio;
+            box1_max.z = sc;
+            box2_min.z = sc;
+        }
+
+        new_box_mins[new_count]   = box1_min;
+        new_box_maxs[new_count]   = box1_max;
+        new_box_levels[new_count] = box_level + 1;
+        new_count++;
+
+        new_box_mins[new_count]   = box2_min;
+        new_box_maxs[new_count]   = box2_max;
+        new_box_levels[new_count] = box_level + 1;
+        new_count++;
+    }
+
+    // Trim to actual count
+    resize(new_box_mins,  new_count);
+    resize(new_box_maxs,  new_count);
+    resize(new_box_levels, new_count);
+
+    box_mins   = new_box_mins;
+    box_maxs   = new_box_maxs;
+    box_levels = new_box_levels;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRE-COMPUTE PER-BOX DATA (single pass, all volumesample)
+// ─────────────────────────────────────────────────────────────────────────────
+int num_boxes = len(box_mins);
+
+// Surface SDF: raw value and unsigned distance
+float box_sdf_val[];
+float box_surf_dist[];
+resize(box_sdf_val,   num_boxes);
+resize(box_surf_dist, num_boxes);
+
+// Influence SDF
+float box_inf_depth[];
+resize(box_inf_depth, num_boxes);
+
+// Normalized position
+float box_norm_x[];
+float box_norm_y[];
+float box_norm_z[];
+resize(box_norm_x, num_boxes);
+resize(box_norm_y, num_boxes);
+resize(box_norm_z, num_boxes);
+
+// Cached visual bias
+float box_vis_vert[];
+float box_vis_horiz[];
+resize(box_vis_vert,  num_boxes);
+resize(box_vis_horiz, num_boxes);
+
+// Cached flags
+int   box_is_core[];
+float box_core_strength[];
+int   box_near_edge[];
+resize(box_is_core,        num_boxes);
+resize(box_core_strength,  num_boxes);
+resize(box_near_edge,      num_boxes);
+
+for(int b = 0; b < num_boxes; b++) {
+    vector bc = (box_mins[b] + box_maxs[b]) * 0.5;
+
+    // Normalized position
+    float nx = (bc.x - bbox_min.x) * inv_bbox_x;
+    float ny = (bc.y - bbox_min.y) * inv_bbox_y;
+    float nz = (bc.z - bbox_min.z) * inv_bbox_z;
+    box_norm_x[b] = nx;
+    box_norm_y[b] = ny;
+    box_norm_z[b] = nz;
+
+    // Surface SDF
+    float sv = 1e6;
+    if(has_sdf1 == 1) {
+        sv = volumesample(1, 0, bc) * sdf1_sign;
+    }
+    box_sdf_val[b]   = sv;
+    box_surf_dist[b] = abs(sv);
+
+    // Edge proximity
+    box_near_edge[b] = (erosion_enable == 1 && abs(sv) < edge_detail_dist) ? 1 : 0;
+
+    // Influence SDF (Input 2) depth inside
+    float inf_d = 0.0;
+    if(core_enable == 1 && has_sdf2 == 1) {
+        float inf_sdf = volumesample(2, 0, bc) * sdf2_sign;
+        inf_d = max(-inf_sdf, 0.0);  // positive when inside
+    }
+    box_inf_depth[b] = inf_d;
+
+    // Core flags: deep inside Input 1 OR inside Input 2
+    box_is_core[b] = 0;
+    box_core_strength[b] = 0.0;
+    if(core_enable == 1) {
+        float c_str = 0.0;
+        // Source 1: Input 1 SDF depth
+        if(has_sdf1 == 1) {
+            float depth = -sv;
+            if(depth > 0.0) c_str = clamp(depth / max(core_threshold, 0.01), 0.0, 1.0);
+        }
+        // Source 2: Input 2 SDF
+        if(inf_d > 0.0) c_str = max(c_str, 1.0);
+
+        box_core_strength[b] = c_str;
+        if(c_str > 0.5) box_is_core[b] = 1;
+    }
+
+    // Visual alignment bias (computed once)
+    float v_align_xi = 1.0 + alignment_grad_x * (nx - 0.5) * 2.0;
+    float v_align_yi = 1.0 + alignment_grad_y * (ny - 0.5) * 2.0;
+    float v_align_zi = 1.0 + alignment_grad_z * (nz - 0.5) * 2.0;
+    float v_combined_align = (v_align_xi + v_align_yi + v_align_zi) / 3.0;
+
+    float v_line_xi = 1.0 + line_grad_x * (nx - 0.5) * 2.0;
+    float v_line_yi = 1.0 + line_grad_y * (ny - 0.5) * 2.0;
+    float v_line_zi = 1.0 + line_grad_z * (nz - 0.5) * 2.0;
+    float v_combined_line = (v_line_xi + v_line_yi + v_line_zi) / 3.0;
+
+    box_vis_vert[b]  = clamp(vertical_alignment * (1.0 + (v_combined_align - 1.0) * gradient_strength), 0.0, 5.0);
+    box_vis_horiz[b] = clamp(horizontal_line    * (1.0 + (v_combined_line  - 1.0) * gradient_strength), 0.0, 5.0);
+}
+
+// Find max edge distance for normalization
+float max_edge_dist = 0.0001;
+for(int b = 0; b < num_boxes; b++) {
+    if(box_surf_dist[b] < 1e5 && box_surf_dist[b] > max_edge_dist) {
+        max_edge_dist = box_surf_dist[b];
+    }
+}
+
+// Normalization divisors (precomputed once)
+float inv_num_boxes    = 1.0 / float(max(num_boxes - 1, 1));
+float inv_total_iters  = 1.0 / float(max(total_iters, 1));
+float inv_max_edge     = 1.0 / max_edge_dist;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CULL: FILL INTERIOR + EROSION
+//   fill_interior: clean SDF boundary (inside = keep, outside = cull)
+//   erosion:       additionally weather inward from the surface
+// ─────────────────────────────────────────────────────────────────────────────
+int box_keep[];
+resize(box_keep, num_boxes);
+for(int bk = 0; bk < num_boxes; bk++) {
+    box_keep[bk] = 1;
+}
+
+if((fill_interior == 1 || erosion_enable == 1) && has_sdf1 == 1) {
+
+    for(int b = 0; b < num_boxes; b++) {
+
+        vector bc = (box_mins[b] + box_maxs[b]) * 0.5;
+        float  dist = box_surf_dist[b];
+
+        // ── Core protection: core boxes are never culled ──
+        if(core_enable == 1 && box_is_core[b] == 1) {
+            box_keep[b] = 1;
+            continue;
+        }
+
+        // ── Inside/Outside via SDF sign ──
+        float center_sdf = box_sdf_val[b];  // already sign-corrected
+        int   center_outside = (center_sdf > 0.0) ? 1 : 0;
+
+        float outside_ratio;
+
+        float box_diag = length(box_maxs[b] - box_mins[b]);
+        if(dist > box_diag * 0.75) {
+            // Well away from surface — trust center test
+            outside_ratio = float(center_outside);
+        } else {
+            // Near surface — sample corners for robustness
+            vector bmin = box_mins[b];
+            vector bmax = box_maxs[b];
+
+            int outside_count = center_outside;
+            int total_tests   = 1;
+
+            vector corners[];
+            resize(corners, 8);
+            corners[0] = set(bmin.x, bmin.y, bmin.z);
+            corners[1] = set(bmax.x, bmin.y, bmin.z);
+            corners[2] = set(bmax.x, bmax.y, bmin.z);
+            corners[3] = set(bmin.x, bmax.y, bmin.z);
+            corners[4] = set(bmin.x, bmin.y, bmax.z);
+            corners[5] = set(bmax.x, bmin.y, bmax.z);
+            corners[6] = set(bmax.x, bmax.y, bmax.z);
+            corners[7] = set(bmin.x, bmax.y, bmax.z);
+
+            for(int c = 0; c < 8; c++) {
+                float corner_sdf = volumesample(1, 0, corners[c]) * sdf1_sign;
+                if(corner_sdf > 0.0) outside_count += 1;
+                total_tests += 1;
+            }
+
+            outside_ratio = float(outside_count) / float(total_tests);
+        }
+
+        // ── FILL: cull boxes that are mostly outside the SDF ──
+        if(fill_interior == 1) {
+            if(outside_ratio > 0.6) {
+                box_keep[b] = 0;
+                continue;
+            }
+        }
+
+        // ── EROSION: additionally weather inward from surface ──
+        if(erosion_enable == 1) {
+            float ny = box_norm_y[b];
+            float height_erosion = erosion_depth + ny * erosion_height_bias;
+
+            vector noise_pos = bc * erosion_noise_freq + set(erosion_noise_offset, 0, erosion_noise_offset);
+            float noise_val = noise(noise_pos);
+            noise_val = (noise_val - 0.5) * 2.0 * erosion_noise_amp;
+
+            float final_erosion = height_erosion + noise_val;
+
+            // Partially outside + near erosion boundary
+            if(outside_ratio > 0.3 && dist < final_erosion * 0.5) {
+                box_keep[b] = 0;
+                continue;
+            }
+
+            // Inside but within erosion distance of surface
+            if(dist < final_erosion) {
+                box_keep[b] = 0;
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EMIT GEOMETRY (all cached data, no recomputation)
+// ─────────────────────────────────────────────────────────────────────────────
+int total_emitted = 0;
+int total_culled  = 0;
+
+float tolerance = 0.001;
+
+string face_names[] = array("back", "front", "bottom", "top", "left", "right");
+
+for(int b = 0; b < num_boxes; b++) {
+
+    if(box_keep[b] == 0) {
+        total_culled++;
+        continue;
+    }
+
+    vector bx_min = box_mins[b];
+    vector bx_max = box_maxs[b];
+    total_emitted++;
+
+    // 8 corners
+    int pt1 = addpoint(0, set(bx_min.x, bx_min.y, bx_min.z));
+    int pt2 = addpoint(0, set(bx_max.x, bx_min.y, bx_min.z));
+    int pt3 = addpoint(0, set(bx_max.x, bx_max.y, bx_min.z));
+    int pt4 = addpoint(0, set(bx_min.x, bx_max.y, bx_min.z));
+    int pt5 = addpoint(0, set(bx_min.x, bx_min.y, bx_max.z));
+    int pt6 = addpoint(0, set(bx_max.x, bx_min.y, bx_max.z));
+    int pt7 = addpoint(0, set(bx_max.x, bx_max.y, bx_max.z));
+    int pt8 = addpoint(0, set(bx_min.x, bx_max.y, bx_max.z));
+
+    vector bc = (bx_min + bx_max) * 0.5;
+
+    // ── Diagonal rotation (random per-box tilt) ──
+    if(diagonal_amount > 0.01) {
+
+        // Random axis on unit sphere
+        float r1 = random(seed_val + b * 6661);
+        float r2 = random(seed_val + b * 6662);
+        float r3 = random(seed_val + b * 6663);
+        vector rand_axis = normalize(set(r1 - 0.5, r2 - 0.5, r3 - 0.5));
+        if(length(rand_axis) < 0.001) rand_axis = set(0, 1, 0);
+
+        // Random angle scaled by diagonal_amount (degrees)
+        float r4 = random(seed_val + b * 6664);
+        float angle_deg = (r4 - 0.5) * 2.0 * diagonal_amount;
+        float angle_rad = radians(angle_deg);
+
+        vector4 diag_q = quaternion(angle_rad, rand_axis);
+
+        int diag_pts[] = array(pt1, pt2, pt3, pt4, pt5, pt6, pt7, pt8);
+        for(int dp = 0; dp < 8; dp++) {
+            vector pos = point(0, "P", diag_pts[dp]);
+            vector offset = pos - bc;
+            offset = qrotate(diag_q, offset);
+            setpointattrib(0, "P", diag_pts[dp], bc + offset);
+        }
+    }
+    
+    // Scale box slightly so faces don't exactly overlap (Optional, but helps with boolean or rendering)
+    // float sc = 0.98;
+    // int pts[] = array(pt1, pt2, pt3, pt4, pt5, pt6, pt7, pt8);
+    // for(int pt_i: pts) {
+    //     vector pos = point(0, "P", pt_i);
+    //     setpointattrib(0, "P", pt_i, bc + (pos - bc) * sc);
+    // }
+
+    // 6 faces
+    int prim_back = addprim(0, "poly");
+    addvertex(0, prim_back, pt1); addvertex(0, prim_back, pt2);
+    addvertex(0, prim_back, pt3); addvertex(0, prim_back, pt4);
+
+    int prim_front = addprim(0, "poly");
+    addvertex(0, prim_front, pt5); addvertex(0, prim_front, pt8);
+    addvertex(0, prim_front, pt7); addvertex(0, prim_front, pt6);
+
+    int prim_bottom = addprim(0, "poly");
+    addvertex(0, prim_bottom, pt1); addvertex(0, prim_bottom, pt5);
+    addvertex(0, prim_bottom, pt6); addvertex(0, prim_bottom, pt2);
+
+    int prim_top = addprim(0, "poly");
+    addvertex(0, prim_top, pt4); addvertex(0, prim_top, pt3);
+    addvertex(0, prim_top, pt7); addvertex(0, prim_top, pt8);
+
+    int prim_left = addprim(0, "poly");
+    addvertex(0, prim_left, pt1); addvertex(0, prim_left, pt4);
+    addvertex(0, prim_left, pt8); addvertex(0, prim_left, pt5);
+
+    int prim_right = addprim(0, "poly");
+    addvertex(0, prim_right, pt2); addvertex(0, prim_right, pt6);
+    addvertex(0, prim_right, pt7); addvertex(0, prim_right, pt3);
+
+    int box_prims[] = array(prim_back, prim_front, prim_bottom, prim_top, prim_left, prim_right);
+
+    // Use cached values
+    float vis_vert_bias    = box_vis_vert[b];
+    float vis_horiz_bias   = box_vis_horiz[b];
+    float norm_y_vis       = box_norm_y[b];
+    float edge_dist        = box_surf_dist[b];
+    int   near_edge        = box_near_edge[b];
+    int   is_core_box      = box_is_core[b];
+    float core_prox         = box_core_strength[b];
+
+    // Pre-compute color once per box
+    vector color;
+    if(is_core_box == 1) {
+        // Core boxes: dark teal, brighter with strength
+        color = set(0.12 + core_prox * 0.15,
+                    0.22 + core_prox * 0.1,
+                    0.25 + core_prox * 0.15);
+    } else if(near_edge == 1) {
+        float edge_t = 1.0 - clamp(edge_dist / max(edge_detail_dist, 0.01), 0.0, 1.0);
+        color = set(0.7 + edge_t * 0.3,
+                    0.3 + edge_t * 0.2,
+                    0.1 + edge_t * 0.1);
+    } else {
+        float vn = clamp(vis_vert_bias  / 2.0, 0.0, 1.0);
+        float hn = clamp(vis_horiz_bias / 2.0, 0.0, 1.0);
+        float strata_tint = 0.5;
+        if(strata_mode == 1) strata_tint = norm_y_vis;
+        color = set(0.4 + vn * 0.5 + (1.0 - strata_tint) * 0.2,
+                    0.4 + (vn + hn) * 0.2,
+                    0.4 + hn * 0.5 + strata_tint * 0.2);
+    }
+
+    int box_level = box_levels[b];
+
+    for(int i = 0; i < 6; i++) {
+        int prim = box_prims[i];
+
+        // All attributes normalized to 0-1
+        setprimattrib(0, "box_id",             prim, float(b) * inv_num_boxes);
+        setprimattrib(0, "subdivision_level",  prim, float(box_level) * inv_total_iters);
+        setprimattrib(0, "face_type",          prim, face_names[i]);
+        setprimattrib(0, "vertical_bias",      prim, vis_vert_bias / 5.0);
+        setprimattrib(0, "horizontal_bias",    prim, vis_horiz_bias / 5.0);
+        setprimattrib(0, "strata_norm_y",      prim, norm_y_vis);
+        setprimattrib(0, "edge_distance",      prim, clamp(edge_dist * inv_max_edge, 0.0, 1.0));
+        setprimattrib(0, "near_edge",          prim, near_edge);
+        setprimattrib(0, "is_core",            prim, is_core_box);
+        setprimattrib(0, "core_strength",      prim, core_prox);
+
+        // Face-specific: outside detection
+        int    is_outside   = 0;
+        string surface_type = "inside";
+
+        if(i == 0 && abs(bx_min.z - bbox_min.z) < tolerance) { is_outside = 1; surface_type = "outside"; }
+        if(i == 1 && abs(bx_max.z - bbox_max.z) < tolerance) { is_outside = 1; surface_type = "outside"; }
+        if(i == 2 && abs(bx_min.y - bbox_min.y) < tolerance) { is_outside = 1; surface_type = "outside"; }
+        if(i == 3 && abs(bx_max.y - bbox_max.y) < tolerance) { is_outside = 1; surface_type = "outside"; }
+        if(i == 4 && abs(bx_min.x - bbox_min.x) < tolerance) { is_outside = 1; surface_type = "outside"; }
+        if(i == 5 && abs(bx_max.x - bbox_max.x) < tolerance) { is_outside = 1; surface_type = "outside"; }
+
+        setprimattrib(0, "is_outside",   prim, is_outside);
+        setprimattrib(0, "surface_type", prim, surface_type);
+
+        // Color override for outside faces
+        if(is_outside == 1 && is_core_box == 0 && near_edge == 0) {
+            float vn = vis_vert_bias  / 2.0;
+            float hn = vis_horiz_bias / 2.0;
+            setprimattrib(0, "Cd", prim, set(0.2 + vn * 0.3, 0.2 + (vn + hn) * 0.1, 0.2 + hn * 0.3));
+        } else {
+            setprimattrib(0, "Cd", prim, color);
+        }
+
+        // Groups
+        if(is_core_box == 1)      setprimgroup(0, "core_boxes",      prim, 1);
+        if(near_edge == 1)        setprimgroup(0, "edge_faces",      prim, 1);
+        if(is_outside == 1)       setprimgroup(0, "outside_faces",   prim, 1);
+        else                      setprimgroup(0, "inside_faces",    prim, 1);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DETAIL SUMMARY ATTRIBUTES
+// ─────────────────────────────────────────────────────────────────────────────
+adddetailattrib(0, "total_boxes",        num_boxes);
+adddetailattrib(0, "total_emitted",      total_emitted);
+adddetailattrib(0, "total_culled",       total_culled);
+adddetailattrib(0, "total_faces",        total_emitted * 6);
+adddetailattrib(0, "vertical_alignment", vertical_alignment);
+adddetailattrib(0, "horizontal_line",    horizontal_line);
+adddetailattrib(0, "gradient_strength",  gradient_strength);
+adddetailattrib(0, "strata_mode",        strata_mode);
+adddetailattrib(0, "fill_interior",      fill_interior);
+adddetailattrib(0, "erosion_enable",     erosion_enable);
+adddetailattrib(0, "core_enable",        core_enable);
+adddetailattrib(0, "size_variation",     size_variation);
+adddetailattrib(0, "fracture_type",      "rectangular_alignment_bias");
