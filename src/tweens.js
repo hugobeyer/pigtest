@@ -22,12 +22,21 @@ export function grow(object,{duration}){
   tween(duration,k=>object.scale.copy(scale).multiplyScalar(easeOut(k)));
 }
 
-export function vanish(object,{rise,duration},done){
-  const z=object.position.z, scale=object.scale.clone();
-  tween(duration,k=>{
-    object.position.z=z+rise*k;
-    object.scale.copy(scale).multiplyScalar(1-k*k);
-  },done);
+export const backOut=k=>1+2.7*(k-1)**3+1.7*(k-1)**2;
+
+export function vanish(object,{inflate,puff,duration,distance,rise,reach,wobble,wobbles,spin,tumble,squash,inflateJiggles,deflate,shrinkAt,popJiggle,popJiggleSpeed,popJiggleTime},{target,pop,done}){
+  const {x,y,z}=object.position, scale=object.scale.clone(), turn=object.rotation.z;
+  const angle=Math.random()*Math.PI*2, dx=Math.cos(angle), dy=Math.sin(angle), side=Math.random()<.5 ? -1 : 1, wave=wobbles*Math.PI*2;
+  const [fx,fy,fz]=target ? [(target.x-x)*reach,(target.y-y)*reach,(target.z-z)*reach] : [dx*distance,dy*distance,rise];
+  tween(inflate,k=>{
+    const g=1+puff*backOut(k), q=Math.sin(k*Math.PI*2*inflateJiggles)*squash*(1-k);
+    object.scale.set(scale.x*(g+q),scale.y*(g+q),scale.z*(g-q));
+  },()=>{pop(); tween(duration,k=>{
+    const t=k*k, w=Math.sin(k*wave)*wobble*side*(.3+k), s=(1+puff)*(1-deflate*k)*Math.min((1-k)/(1-shrinkAt),1), q=Math.sin(k*wave*2)*squash+Math.sin(k*popJiggleSpeed)*squash*popJiggle*Math.max(1-k/popJiggleTime,0);
+    object.position.set(x+fx*t-dy*w,y+fy*t+dx*w,z+fz*t);
+    object.rotation.set(Math.sin(k*wave*.7)*tumble,Math.sin(k*wave*.5)*tumble,turn+side*spin*t);
+    object.scale.set(scale.x*s*(1+q),scale.y*s*(1+q),scale.z*s*(1-q));
+  },done);});
 }
 
 export function updateTweens(dt){

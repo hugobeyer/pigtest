@@ -2,11 +2,12 @@ import GUI from 'lil-gui';
 import look from './look.json';
 import {catcher} from './environment.js';
 import {FOG_MODES, uniforms as fogBlend} from './fog.js';
-import {ENVIRONMENT, FOG, GROUND, LIGHTS, SHADING} from './tokens.js';
+import {sparkle} from './fx/sparkles.js';
+import {ENVIRONMENT, FOG, GROUND, LIGHTS, SHADING, SPARKLES} from './tokens.js';
 import {uniforms as vignette} from './ground.js';
 import {sheenColor, uniforms as shade} from './shading.js';
 
-export function debug({scene,fog,ambient,key,blender}){
+export function debug({scene,fog,ambient,key,blender,center}){
   const state=structuredClone(look);
   const curve=({terminator,softness,darkColor})=>({terminator,softness,darkColor});
   state.shading={...curve(SHADING),...state.shading};
@@ -15,6 +16,7 @@ export function debug({scene,fog,ambient,key,blender}){
   state.ground={offset:[...GROUND.offset],scenery:GROUND.scenery,characters:GROUND.characters,...state.ground};
   state.fog=structuredClone(FOG);
   state.shadow={shadowMapSize:LIGHTS.key.shadowMapSize,...state.shadow};
+  state.sparkles=SPARKLES;
   const on={sss:true,rim:true,outline:true,sheen:true,vignette:true};
   const {shading:s,environment:e,ground:g,hemisphere:h}=state;
   const live={sun:'#'+key.color.getHexString(),sunIntensity:key.intensity,sky:'#'+ambient.color.getHexString(),skyIntensity:ambient.intensity};
@@ -100,6 +102,25 @@ export function debug({scene,fog,ambient,key,blender}){
   fogFolder.addColor(state.fog,'color').name('fog color');
   fogFolder.add(state.fog,'near',0,200,.5).name('starts at distance');
   fogFolder.add(state.fog,'far',0,250,.5).name('full fog at distance');
+
+  const sparkles=gui.addFolder('Sparkles');
+  for(const [name,p] of Object.entries(state.sparkles)){
+    const preset=sparkles.addFolder(name).close();
+    preset.add({test:()=>sparkle(center,name)},'test').name('▶ test at grid center');
+    preset.add(p,'frames').name('sprites, random pick (e.g. 6,7)');
+    preset.add(p,'count',1,120,1);
+    preset.add(p,'ring').name('even ring');
+    preset.add(p,'align').name('point along motion');
+    preset.add(p,'speed',0,30,.1).name('spread speed');
+    preset.add(p,'up',0,30,.1).name('up speed');
+    preset.add(p,'gravity',-40,10,.1);
+    preset.add(p,'drag',0,10,.1);
+    preset.add(p,'life',.1,4,.01).name('life (s)');
+    preset.add(p,'size',.05,4,.01);
+    preset.add(p,'spin',0,20,.1);
+    preset.add(p,'tilt',0,1,.01).name('random tilt');
+  }
+  sparkles.close();
 
   const fromBlender=gui.addFolder('From Blender (live only, set in Blender)');
   fromBlender.addColor(live,'sun').name('sun color');

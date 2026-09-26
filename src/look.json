@@ -1,34 +1,34 @@
 {
   "shading": {
-    "terminator": 0.01,
-    "softness": 0.18,
-    "darkColor": "#0f1b34",
+    "terminator": 0.14,
+    "softness": 0.41,
+    "darkColor": "#76979e",
     "sss": {
-      "strength": 0.64,
-      "width": 0.66
+      "strength": 1,
+      "width": 1
     },
     "rim": {
-      "color": "#6dd459",
-      "strength": 0.53,
-      "power": 5.1
+      "color": "#bdd5b8",
+      "strength": 1.5,
+      "power": 5.3
     },
     "outline": {
-      "color": "#598132",
-      "from": 0.37,
-      "strength": 0.14
+      "color": "#94ba2c",
+      "from": 0.68,
+      "strength": 0.38
     }
   },
   "environment": {
-    "terminator": -0.71,
+    "terminator": 0.22,
     "softness": 0.67,
     "darkColor": "#7eaea0",
     "lit": true,
     "sheen": {
-      "strength": 0.25,
-      "power": 3,
-      "hue": 27,
-      "saturation": 0.9,
-      "albedo": 0.89
+      "strength": 0.15,
+      "power": 1,
+      "hue": 36,
+      "saturation": 0.51,
+      "albedo": 1
     },
     "shadowOpacity": 0.8,
     "shadowColor": "#082a3a"
@@ -36,22 +36,22 @@
   "ground": {
     "offset": [
       0,
-      12.3
+      4.8
     ],
     "scenery": 1,
     "characters": 0.61,
     "radius": [
       5.1,
-      16.9
+      14.7
     ],
     "inner": 0.7,
-    "outer": 2.71,
+    "outer": 2.12,
     "middle": "#84c832",
-    "edge": "#909d62"
+    "edge": "#547366"
   },
   "hemisphere": {
     "sky": "#fff6e6",
-    "ground": "#b4590e",
+    "ground": "#a5988d",
     "intensity": 2.2
   },
   "shadow": {
@@ -67,5 +67,77 @@
     "color": "#4300a8",
     "near": 38.5,
     "far": 218
+  },
+  "sparkles": {
+    "levelClear": {
+      "align": false,
+      "frames": "0",
+      "count": 60,
+      "speed": 10,
+      "up": 14,
+      "gravity": -16,
+      "drag": 1.2,
+      "life": 1.6,
+      "size": 1.1,
+      "spin": 4,
+      "tilt": 1,
+      "ring": false
+    },
+    "tap": {
+      "align": false,
+      "frames": "2",
+      "count": 8,
+      "speed": 5,
+      "up": 0.5,
+      "gravity": 0,
+      "drag": 6,
+      "life": 0.45,
+      "size": 0.45,
+      "spin": 3,
+      "tilt": 1,
+      "ring": true
+    },
+    "block": {
+      "align": false,
+      "frames": "7",
+      "count": 2,
+      "speed": 2.5,
+      "up": 5,
+      "gravity": -18,
+      "drag": 1,
+      "life": 0.45,
+      "size": 0.4,
+      "spin": 0,
+      "tilt": 0.15,
+      "ring": false
+    },
+    "combo": {
+      "align": false,
+      "frames": "1",
+      "count": 9,
+      "speed": 13.8,
+      "up": 1.5,
+      "gravity": -7,
+      "drag": 5.8,
+      "life": 1.8,
+      "size": 0.91,
+      "spin": 2.2,
+      "tilt": 0.44,
+      "ring": false
+    },
+    "pop": {
+      "align": true,
+      "frames": "6",
+      "count": 8,
+      "speed": 14,
+      "up": 0,
+      "gravity": 0,
+      "drag": 9,
+      "life": 0.4,
+      "size": 1.1,
+      "spin": 0,
+      "tilt": 0.08,
+      "ring": true
+    }
   }
 }

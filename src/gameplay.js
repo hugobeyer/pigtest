@@ -9,7 +9,9 @@ import {emit, initParticles, updateParticles} from './fx/particles.js';
 import {initPopups} from './fx/popups.js';
 import {initShake, shake, updateShake} from './fx/shake.js';
 import {initRing} from './fx/ring.js';
+import {initSparkles, sparkle, updateSparkles} from './fx/sparkles.js';
 import {showWin} from './win.js';
+import {play} from './sfx.js';
 import {createLabel} from './labels.js';
 import {FX, LABEL, PIGS, WIN} from './tokens.js';
 
@@ -23,16 +25,18 @@ export function initGameplay(scene,assets){
   initShake(assets.camera);
   initPopups(assets.camera);
   initRing();
+  initSparkles(scene);
   const grid=createGrid(scene,assets.gridCenter,assets.blocks);
   totalBlocks=remainingCells();
-  initRunners(scene,pigTemplates,assets.bullets,createPath(grid,assets.anchors));
+  initRunners(scene,pigTemplates,assets.bullets,createPath(grid,assets.anchors),assets.camera);
   createPigs(scene,assets.columns,pigTemplates);
   capacityLabel=createLabel(scene);
   capacityLabel.position.copy(assets.anchors.RailStart.getWorldPosition(new THREE.Vector3())).add(new THREE.Vector3(...LABEL.capacityOffset));
 }
 
 export function tap(object){
-  if(won || runs.length>=PIGS.railCapacity)return false;
+  if(won)return false;
+  if(runs.length>=PIGS.railCapacity){play('full'); return true;}
   const pig=takePig(object);
   if(!pig)return false;
   pigsUsed++;
@@ -43,6 +47,8 @@ export function tap(object){
 function celebrate(){
   emit(center,true,FX.confetti);
   emit(center,false,FX.confetti);
+  sparkle(center,'levelClear');
+  play('clear');
   shake();
   tween(WIN.delay,null,()=>showWin({blocks:totalBlocks,time:Math.round(time),pigs:pigsUsed,...runStats}));
 }
@@ -54,8 +60,9 @@ export function updateGameplay(dt){
   updateGrid(dt);
   updateTweens(dt);
   updateParticles(dt);
+  updateSparkles(dt);
   updateShake(dt);
-  updatePigs(time);
+  updatePigs(time,!won && runs.length<PIGS.railCapacity);
   if(!won && remainingCells()===0){
     won=true;
     celebrate();

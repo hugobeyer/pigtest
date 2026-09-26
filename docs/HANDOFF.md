@@ -56,6 +56,8 @@ Other Blender facts:
 | `fog.js` | Distance fog with blend modes |
 | `labels.js` | Numbers/text drawn from the baked font sheet |
 | `fx/popups.js` | Combo word images with pop/wobble/shine/float animation |
+| `fx/sparkles.js` | Sparkle-sheet particles (level clear, tap, block hit, combo, runner done) |
+| `sfx.js` | Sound effects: random take per event from `assets/sfx/<event>_<n>.mp3` (ElevenLabs, trimmed/normalized from `source_files/sfx`), pitch jitter, volumes in `SFX` (`tokens.js`). Also loops `assets/music/farm_fun_groove.mp3` (mono 64 kbps from `source_files/tune`), starting with a fade-in on the first tap |
 | `win.js` | Win screen (LEVEL CLEAR image + stats from font sheet) |
 | `debug.js` | Live **Look panel** (dev only) |
 | `tokens.js` | Gameplay tuning (speeds, ammo, animations, combo words…) |
@@ -100,16 +102,11 @@ Other Blender facts:
   | small sparkle | plus | small plus |
   | 3-drop burst | 2-drop burst | swoosh |
 
-  **Not used yet.**
+  Used by `fx/sparkles.js`: one instanced billboard draw call. All values live in `tokens.js` only: presets in `SPARKLES` (levelClear, tap, block, combo, pop; one sheet cell each), shared settings (max, jitter, fade, per-cell `frameScale`) in `FX.sparkles`. Defaults are there; the Look panel's **Sparkles** folder (with test buttons) saves overrides to `look.json`, which win over `tokens.js`. `frames` is a string of sheet cells, 0–8, left to right and top to bottom.
 
 ## 6. Next steps
 
-1. **Particle emitter using `sparkles.webp`**: one instanced draw call, presets tunable in the Look panel.
-   - level clear: big burst of stars and sparkles
-   - pig tap / wake: small ring
-   - block destroyed: dots and bursts
-   - combo word: swooshes behind the word
-   - runner done: soft puff
+1. ~~**Particle emitter using `sparkles.webp`**~~: done. Tune the presets by eye. The sheet has no dot or puff frame, so "dots" and "puff" use small sparkles and pluses.
 2. **Restyle the win card**: still the dark box. It should match the wood/cream look.
 3. **Swap remaining Houdini art in Blender**:
    - rail mesh as `Rail_Main` or any name

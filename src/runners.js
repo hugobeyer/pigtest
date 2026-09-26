@@ -6,19 +6,23 @@ import {fireShot} from './shots.js';
 import {bump, vanish} from './tweens.js';
 import {emit} from './fx/particles.js';
 import {popup} from './fx/popups.js';
+import {sparkle} from './fx/sparkles.js';
+import {play} from './sfx.js';
 import {ANIM, FX, LABEL, MOTION, SHOT} from './tokens.js';
 
-let scene, path, bullets, labelLift, lastWord=null;
+let scene, path, bullets, pigHeight, labelLift, eye, lastWord=null;
 export const runs=[];
 export const runStats={shots:0,bestCombo:0};
 const mouthLocal=new THREE.Vector3(...SHOT.mouth);
 
-export function initRunners(targetScene,templates,bulletTemplates,runnerPath){
+export function initRunners(targetScene,templates,bulletTemplates,runnerPath,camera){
   scene=targetScene;
+  eye=camera.getWorldPosition(new THREE.Vector3());
   bullets=bulletTemplates;
   path=runnerPath;
   const box=new THREE.Box3().setFromObject(templates.dark,true);
-  labelLift=box.max.z-box.min.z+LABEL.lift;
+  pigHeight=box.max.z-box.min.z;
+  labelLift=pigHeight+LABEL.lift;
 }
 
 function spawn(template){
@@ -42,7 +46,7 @@ export function launchRunner({template,ammo,isLight}){
     from:path.entry.clone(),to:path.entry.clone(),
     stepT:1,stepDuration:0,
     fromRot:path.nodes[0].travelFace,toRot:path.nodes[0].travelFace,
-    targetCell:null,activeNode:null,turnT:0,engaged:false
+    targetCell:null,activeNode:null,turnT:0,engaged:false,t:0,lastShot:-1,calm:1
   });
 }
 
@@ -51,13 +55,15 @@ function fire(run){
   run.targetCell=null;
   if(!cell || !cell.alive)return;
   fireShot(scene,run.runner.localToWorld(mouthLocal.clone()),cell,run.bullet);
+  play('shot');
   run.label.userData.set(String(--run.ammo));
   bump(run.pop,ANIM.shotBump);
+  run.lastShot=run.t;
   bump(run.label,FX.numberPunch);
   run.hits=(run.hits??0)+1;
   runStats.shots++;
   runStats.bestCombo=Math.max(runStats.bestCombo,run.hits);
-  if(run.hits%FX.combo.every===0){
+  if(runStats.shots%FX.combo.every===0){
     const words=FX.combo.words.filter(word=>word!==lastWord);
     lastWord=words[Math.floor(Math.random()*words.length)];
     popup(lastWord,run.runner.position);
@@ -88,8 +94,18 @@ function beginStep(run){
 function advance(run){
   run.nodeIndex++;
   if(run.ammo<=0 || run.nodeIndex>=path.nodes.length){
-    emit(run.runner.position,run.isLight,FX.death);
-    vanish(run.runner,ANIM.vanish,()=>scene.remove(run.runner));
+    run.label.visible=false;
+    vanish(run.runner,ANIM.vanish,{
+      target:Math.random()<ANIM.vanish.toCamera ? eye : null,
+      pop:()=>{
+        const center=run.runner.position.clone().setZ(run.runner.position.z+pigHeight*.5);
+        emit(center,run.isLight,FX.death);
+        sparkle(center,'pop');
+        play('pop');
+        play('fly');
+      },
+      done:()=>scene.remove(run.runner)
+    });
     return true;
   }
   beginStep(run);
@@ -139,5 +155,14 @@ function updateRun(run,dt){
 }
 
 export function updateRunners(dt){
-  for(let i=runs.length-1;i>=0;i--)if(updateRun(runs[i],dt))runs.splice(i,1);
+  const {height,speed,tilt,hold,settle}=FX.runnerBob;
+  for(let i=runs.length-1;i>=0;i--){
+    const run=runs[i];
+    if(updateRun(run,dt)){runs.splice(i,1); continue;}
+    run.t+=dt;
+    run.calm=Math.min(Math.max(run.calm+(run.t-run.lastShot<hold ? -dt : dt)/settle,0),1);
+    const t=run.t*speed, a=run.calm;
+    run.pop.position.z=height*a*(.5+.5*Math.sin(t));
+    run.pop.rotation.set(Math.cos(t*.5)*tilt*a,Math.sin(t*.75)*tilt*a,0);
+  }
 }
