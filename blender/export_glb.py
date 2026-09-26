@@ -80,6 +80,11 @@ def export_glb(path=EXPORT_PATH):
     temporary.collection.objects.link(export_root)
     export_root['authored_up_axis']='Z'
     export_root['threejs_import_rotation_x']=IMPORT_ROOT_ROTATION_X
+    world=source_scene.world
+    if world:
+      background=world.node_tree.nodes.get('Background') if world.use_nodes and world.node_tree else None
+      export_root['world_color']=list(background.inputs['Color'].default_value[:3] if background else world.color)
+      export_root['world_strength']=background.inputs['Strength'].default_value if background else 1.0
     for obj in sources:
       matrix,mesh,materials=snapshots[obj]
       copy=bpy.data.objects.new('ExportCopy',mesh) if obj.type=='CURVE' else obj.copy()

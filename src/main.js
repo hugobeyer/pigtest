@@ -24,7 +24,8 @@ function resize(){
 }
 
 const {hemisphere,key:keyLight}=LIGHTS;
-scene.add(new THREE.HemisphereLight(hemisphere.sky,hemisphere.ground,hemisphere.intensity));
+const ambient=new THREE.HemisphereLight(hemisphere.sky,hemisphere.ground,hemisphere.intensity);
+scene.add(ambient);
 const key=new THREE.DirectionalLight(keyLight.color,keyLight.intensity);
 key.position.set(...keyLight.position);
 key.target.position.set(...keyLight.target);
@@ -62,6 +63,10 @@ function frame(now){
 }
 
 loadAssets(new URL('../assets/primitive_scene.glb',import.meta.url).href).then(assets=>{
+  if(assets.world){
+    ambient.color.copy(assets.world.color);
+    ambient.intensity=assets.world.intensity;
+  }
   if(assets.key){
     key.color.copy(assets.key.color);
     key.intensity=assets.key.intensity;

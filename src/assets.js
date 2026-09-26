@@ -37,6 +37,8 @@ export async function loadAssets(url){
     if(object.isLight)lights.push(object);
   });
   const sun=lights.find(light=>light.isDirectionalLight);
+  const {world_color:worldColor,world_strength:worldStrength}=root.getObjectByName('SceneRoot')?.userData ?? {};
+  const world=worldColor && {color:new THREE.Color().setRGB(...worldColor,THREE.LinearSRGBColorSpace),intensity:worldStrength};
   const key=sun && {color:sun.color.clone(),intensity:sun.intensity/WATTS_TO_LUX,direction:new THREE.Vector3(0,0,-1).transformDirection(sun.matrixWorld)};
   lights.forEach(light=>light.parent.remove(light));
   prepareEnvironment(root);
@@ -50,7 +52,7 @@ export async function loadAssets(url){
     return object;
   });
   return {
-    root,camera,key,
+    root,camera,key,world,
     pigs:{light:pigLight,dark:pigDark},
     bullets:{light:bulletLight,dark:bulletDark},
     blocks:{light,dark},
