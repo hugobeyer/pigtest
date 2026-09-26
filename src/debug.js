@@ -1,19 +1,22 @@
 import GUI from 'lil-gui';
 import look from './look.json';
 import {catcher} from './environment.js';
+import {ENVIRONMENT} from './tokens.js';
 import {uniforms as vignette} from './ground.js';
-import {uniforms as shade} from './shading.js';
+import {sheenColor, uniforms as shade} from './shading.js';
 
 export function debug({scene,ambient,key,blender}){
-  const state=structuredClone(look), on={sss:true,rim:true,outline:true,sheen:true,vignette:true};
+  const state=structuredClone(look);
+  state.environment={wrap:ENVIRONMENT.wrap,power:ENVIRONMENT.power,...state.environment};
+  const on={sss:true,rim:true,outline:true,sheen:true,vignette:true};
   const {shading:s,environment:e,ground:g,hemisphere:h}=state;
   const live={sun:'#'+key.color.getHexString(),sunIntensity:key.intensity,sky:'#'+ambient.color.getHexString(),skyIntensity:ambient.intensity};
   const apply=()=>{
-    shade.uWrap.value=s.wrap; shade.uPower.value=s.power;
+    shade.uWrap.value=s.wrap; shade.uPower.value=s.power; shade.uSceneryWrap.value=e.wrap; shade.uSceneryPower.value=e.power;
     shade.uSssStrength.value=on.sss ? s.sss.strength : 0; shade.uSssWidth.value=s.sss.width;
     shade.uRimColor.value.set(s.rim.color); shade.uRimStrength.value=on.rim ? s.rim.strength : 0; shade.uRimPower.value=s.rim.power;
     shade.uOutlineColor.value.set(s.outline.color); shade.uOutlineFrom.value=s.outline.from; shade.uOutlineStrength.value=on.outline ? s.outline.strength : 0;
-    shade.uSheenStrength.value=on.sheen ? e.sheen.strength : 0; shade.uSheenPower.value=e.sheen.power; shade.uSheenSaturation.value=e.sheen.saturation;
+    shade.uSheenStrength.value=on.sheen ? e.sheen.strength : 0; shade.uSheenPower.value=e.sheen.power; sheenColor(e.sheen,shade.uSheenColor.value); shade.uSheenAlbedo.value=e.sheen.albedo;
     catcher.color.set(e.shadowColor); catcher.opacity=e.shadowOpacity;
     vignette.uRadius.value.fromArray(g.radius); vignette.uInner.value=g.inner; vignette.uOuter.value=g.outer;
     vignette.uMiddle.value.set(g.middle); vignette.uEdge.value.set(on.vignette ? g.edge : g.middle);
@@ -27,7 +30,7 @@ export function debug({scene,ambient,key,blender}){
 
   const gui=new GUI({title:'Look  (G to hide)'});
   const character=gui.addFolder('Pigs, blocks, rail');
-  character.add(s,'wrap',0,1,.01);
+  character.add(s,'wrap',0,1,.01).name('wrap (lower = softer)');
   character.add(s,'power',.5,4,.01);
   character.add(on,'sss').name('SSS on');
   character.add(s.sss,'strength',0,1,.01).name('SSS strength');
@@ -43,10 +46,14 @@ export function debug({scene,ambient,key,blender}){
 
   const scenery=gui.addFolder('Scenery');
   scenery.add(e,'lit').name('lit (save, then reloads)');
+  scenery.add(e,'wrap',0,1,.01).name('wrap (lower = softer)');
+  scenery.add(e,'power',.5,4,.01).name('power');
   scenery.add(on,'sheen').name('sheen on');
   scenery.add(e.sheen,'strength',0,1,.01).name('sheen strength');
   scenery.add(e.sheen,'power',1,16,.1).name('sheen power');
+  scenery.add(e.sheen,'hue',0,360,1).name('sheen hue');
   scenery.add(e.sheen,'saturation',0,1,.01).name('sheen saturation');
+  scenery.add(e.sheen,'albedo',0,1,.01).name('sheen object color');
 
   const ground=gui.addFolder('Ground');
   ground.add(on,'vignette').name('vignette on');

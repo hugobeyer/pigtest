@@ -21,7 +21,7 @@ export const ANIM={
 };
 export const LABEL={height:.8,lift:.35,capacityGap:.55,backOpacity:.45,canvas:[256,128],baseline:4,font:'900 96px "Arial Black", Arial, sans-serif',fill:'#fff',stroke:'#1d1f2e',strokeWidth:18};
 export const SHADING=look.shading;
-export const ENVIRONMENT=look.environment;
+export const ENVIRONMENT={wrap:.35,power:1.3,...look.environment};
 export const GROUND={name:'Ground_Plane',...look.ground};
 export const RENDER={background:look.background,maxPixelRatio:2};
 export const LIGHTS={
