@@ -19,20 +19,26 @@
     }
   },
   "environment": {
-    "terminator": 0.03,
-    "softness": 0.23,
-    "darkColor": "#aac8cf",
-    "detail": 1.05,
+    "terminator": 0.0800000000000001,
+    "softness": 0.44,
+    "darkColor": "#65c8c1",
+    "detail": 0.6,
     "lit": true,
     "sheen": {
-      "strength": 0.08,
-      "power": 5.9,
-      "hue": 37,
-      "saturation": 1,
-      "albedo": 0.23
+      "aniso": 0.65,
+      "bend": 0.63,
+      "axisAzimuth": 44,
+      "axisElevation": -38,
+      "mask": 0.78,
+      "maskPower": 1.45,
+      "strength": 0.25,
+      "power": 5.5,
+      "hue": 46,
+      "saturation": 0.87,
+      "albedo": 0.73
     },
-    "shadowOpacity": 0.52,
-    "shadowColor": "#082a3a"
+    "shadowOpacity": 0.79,
+    "shadowColor": "#1d2c3a"
   },
   "ground": {
     "offset": [
@@ -50,27 +56,34 @@
     ],
     "inner": 0.63,
     "outer": 1.65,
-    "middle": "#92dd36",
-    "edge": "#4d783b"
+    "middle": "#99df43",
+    "edge": "#1d6d38"
   },
   "hemisphere": {
-    "sky": "#656a86",
-    "ground": "#597578",
-    "intensity": 0.5
+    "sky": "#304954",
+    "ground": "#164d6f",
+    "intensity": 0.34
   },
   "shadow": {
-    "shadowMapSize": 2048,
+    "shadowMapSize": 4096,
     "bias": -0.0028,
     "normalBias": 0.034,
-    "radius": 1.9
+    "radius": 1.1
   },
   "background": "#51544f",
   "fog": {
     "enabled": true,
     "mode": "normal",
-    "color": "#4300a8",
-    "near": 50,
-    "far": 125
+    "color": "#0d9bbf",
+    "near": 24.5,
+    "far": 176.5,
+    "depthBias": 0.32,
+    "height": {
+      "bottom": 3.1,
+      "top": -4.6,
+      "bias": 0.69,
+      "mix": 1
+    }
   },
   "sparkles": {
     "levelClear": {
@@ -175,9 +188,9 @@
     "exposure": 1
   },
   "key": {
-    "color": "#ffffff",
-    "intensity": 3.5,
-    "azimuth": 15.2,
-    "elevation": 72.1
+    "color": "#f9f8f0",
+    "intensity": 2.82,
+    "azimuth": -48.5,
+    "elevation": 46
   }
 }

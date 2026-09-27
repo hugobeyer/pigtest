@@ -10,7 +10,8 @@
     "railCapacity": 5,
     "ammo": 20,
     "rowGap": 1.35,
-    "hitScale": 1.6
+    "hitScale": 1.6,
+    "hitHeight": 0.6
   },
   "ANIM": {
     "tapOut": {
@@ -42,6 +43,9 @@
     }
   },
   "FX": {
+    "hover": {
+      "sound": 0.3
+    },
     "runnerBob": {
       "height": 0.31,
       "speed": 6.5,
