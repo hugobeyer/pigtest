@@ -84,6 +84,7 @@ function fire(run) {
   run.label.userData.set(String(--run.ammo));
   bump(run.pop, ANIM.shotBump);
   run.lastShot = run.t;
+  run.recoil = 1;
   bump(run.label, FX.numberPunch);
   run.hits = (run.hits ?? 0) + 1;
   runStats.shots++;
@@ -183,7 +184,8 @@ function updateRun(run, dt) {
 }
 
 export function updateRunners(dt) {
-  const { height, speed, tilt, hold, settle } = FX.runnerBob;
+  const { height, speed, tilt, hold, settle, shooting } = FX.runnerBob,
+    { distance, kick, decay } = FX.recoil;
   for (let i = runs.length - 1; i >= 0; i--) {
     const run = runs[i];
     if (updateRun(run, dt)) {
@@ -193,9 +195,11 @@ export function updateRunners(dt) {
     run.t += dt;
     if (run.rainbow > 0) run.rainbow -= dt;
     run.calm = Math.min(Math.max(run.calm + (run.t - run.lastShot < hold ? -dt : dt) / settle, 0), 1);
+    run.recoil = (run.recoil ?? 0) * Math.exp(-decay * dt);
     const t = run.t * speed,
-      a = run.calm;
-    run.pop.position.z = height * a * (0.5 + 0.5 * Math.sin(t));
-    run.pop.rotation.set(Math.cos(t * 0.5) * tilt * a, Math.sin(t * 0.75) * tilt * a, 0);
+      a = shooting + (1 - shooting) * run.calm,
+      r = run.recoil;
+    run.pop.position.set(0, -distance * r, height * a * (0.5 + 0.5 * Math.sin(t)));
+    run.pop.rotation.set(Math.cos(t * 0.5) * tilt * a + kick * r, Math.sin(t * 0.75) * tilt * a, 0);
   }
 }

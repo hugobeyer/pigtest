@@ -34,6 +34,10 @@ const sections = [
       ['ANIM.shotBump.amount', 0, 0.6, 0.01, 'shot bump'],
       ['FX.runnerBob.height', 0, 0.5, 0.01, 'bob height'],
       ['FX.runnerBob.speed', 0, 30, 0.1, 'bob speed'],
+      ['FX.runnerBob.shooting', 0, 1, 0.01, 'bob while shooting'],
+      ['FX.recoil.distance', 0, 0.6, 0.01, 'recoil push'],
+      ['FX.recoil.kick', 0, 1, 0.01, 'recoil tilt'],
+      ['FX.recoil.decay', 1, 40, 0.5, 'recoil recover'],
       ['FX.numberPunch.amount', 0, 1, 0.01, 'ammo number punch']
     ]
   ],
