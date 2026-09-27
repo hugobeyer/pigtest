@@ -21,6 +21,7 @@ export const uniforms = {
   uDetail: { value: tile },
   uDetailTile: { value: GROUND.detailTile },
   uHeightContrast: { value: GROUND.heightContrast },
+  uVignetteHeight: { value: GROUND.vignetteHeight },
   uHeightWidth: { value: GROUND.heightWidth },
   uBreakTile: { value: GROUND.breakTile },
   uBreakAmount: { value: GROUND.breakAmount }
@@ -44,7 +45,7 @@ export function vignette(ground, center) {
       shader.fragmentShader =
         `varying vec2 vGround;
 uniform vec2 uCenter, uOffset, uRadius;
-uniform float uInner, uOuter, uDetailTile, uHeightContrast, uHeightWidth, uBreakTile, uBreakAmount;
+uniform float uInner, uOuter, uDetailTile, uHeightContrast, uVignetteHeight, uHeightWidth, uBreakTile, uBreakAmount;
 uniform vec3 uMiddle, uEdge;
 uniform sampler2D uDetail;
 ` +
@@ -59,7 +60,7 @@ float breakLuma = dot( texture2D( uDetail, mat2( 0.8, -0.6, 0.6, 0.8 ) * vGround
 float height = clamp( 0.5 + ( dot( detailRaw, lumaWeights ) / lumaMean - 1.0 + breakLuma * uBreakAmount ) * uHeightContrast, 0.0, 1.0 );
 float w = max( uHeightWidth, 1e-3 );
 float reveal = smoothstep( height - w, height + w, mix( -w, 1.0 + w, ramp ) );
-outgoingLight *= mix( uMiddle, uEdge, ramp ) * mix( vec3( 1.0 ), detailRaw / detailMean, reveal );
+outgoingLight *= mix( uMiddle, uEdge, mix( ramp, reveal, uVignetteHeight ) ) * mix( vec3( 1.0 ), detailRaw / detailMean, reveal );
 #include <opaque_fragment>`
         );
       blendFog(shader);

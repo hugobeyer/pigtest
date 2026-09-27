@@ -33,6 +33,7 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, center
     characters: GROUND.characters,
     detailTile: GROUND.detailTile,
     heightContrast: GROUND.heightContrast,
+    vignetteHeight: GROUND.vignetteHeight,
     heightWidth: GROUND.heightWidth,
     breakTile: GROUND.breakTile,
     breakAmount: GROUND.breakAmount,
@@ -82,6 +83,7 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, center
     vignette.uOuter.value = g.outer;
     vignette.uDetailTile.value = g.detailTile;
     vignette.uHeightContrast.value = g.heightContrast;
+    vignette.uVignetteHeight.value = g.vignetteHeight;
     vignette.uHeightWidth.value = g.heightWidth;
     vignette.uBreakTile.value = g.breakTile;
     vignette.uBreakAmount.value = g.breakAmount;
@@ -164,6 +166,7 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, center
   ground.add(g, 'outer', 0, 3, 0.01);
   ground.add(g, 'detailTile', 0.5, 40, 0.1).name('texture tile size');
   ground.add(g, 'heightContrast', 0, 10, 0.1).name('texture luma contrast');
+  ground.add(g, 'vignetteHeight', 0, 1, 0.01).name('vignette follows texture');
   ground.add(g, 'heightWidth', 0.01, 1, 0.01).name('texture reveal softness');
   ground.add(g, 'breakAmount', 0, 1, 0.01).name('break-up strength');
   ground.add(g, 'breakTile', 1, 80, 0.5).name('break-up scale');
