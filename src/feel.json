@@ -1,1 +1,104 @@
-{}
+{
+  "MOTION": {
+    "speed": 10.7,
+    "aimTime": 0.028
+  },
+  "SHOT": {
+    "speed": 12
+  },
+  "PIGS": {
+    "railCapacity": 5,
+    "ammo": 20,
+    "rowGap": 1.35,
+    "hitScale": 1.6
+  },
+  "ANIM": {
+    "tapOut": {
+      "amount": 0.3,
+      "bump": 0.03,
+      "shrink": 0.08
+    },
+    "queueSlide": {
+      "duration": 0.16
+    },
+    "queueGrow": {
+      "duration": 0.16
+    },
+    "refuse": {
+      "angle": 0.35
+    },
+    "enterBump": {
+      "amount": 0.11
+    },
+    "shotBump": {
+      "amount": 0.19
+    },
+    "vanish": {
+      "inflate": 0.29,
+      "puff": 0.4,
+      "duration": 1,
+      "distance": 6,
+      "toCamera": 0.6
+    }
+  },
+  "FX": {
+    "runnerBob": {
+      "height": 0.08,
+      "speed": 15.1
+    },
+    "numberPunch": {
+      "amount": 0.18
+    },
+    "idleBob": {
+      "height": 0.43
+    },
+    "queueSway": {
+      "tilt": 0.095
+    },
+    "idleHint": {
+      "after": 6.5,
+      "every": 7.2,
+      "huh": {
+        "hold": 1
+      }
+    },
+    "blockPop": {
+      "amount": 0.22,
+      "time": 0.06
+    },
+    "blockFlash": {
+      "strength": 1.4
+    },
+    "ghost": {
+      "tall": 1.5,
+      "tallMax": 5.7,
+      "tallAt": 20,
+      "life": 0.2,
+      "glow": 5
+    },
+    "ramp": {
+      "step": 0.12
+    },
+    "trail": {
+      "length": 1.8
+    },
+    "shake": {
+      "amplitude": 0.05
+    },
+    "combo": {
+      "every": 30
+    }
+  },
+  "ADVENTURE": {
+    "chain": {
+      "delay": 0.12,
+      "pitch": 0.08
+    },
+    "rainbow": {
+      "duration": 3
+    },
+    "wipe": {
+      "sweep": 0.03
+    }
+  }
+}

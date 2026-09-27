@@ -77,6 +77,26 @@ class PRIMITIVE_OT_build(bpy.types.Operator):
     return {'FINISHED'}
 
 
+class PRIMITIVE_OT_update_props(bpy.types.Operator):
+  bl_idname='primitive.update_props'
+  bl_label='Update Props from GLB'
+  bl_description='Swap each Props_Library mesh with the matching one from source_files/export/props.glb; objects, names and materials stay'
+
+  @classmethod
+  def poll(cls, context): return context.mode=='OBJECT' and 'Props_Library' in bpy.data.collections
+
+  def execute(self, context):
+    try:
+      updated,added,missing=run_module('update_props','update_props')
+    except Exception as error:
+      traceback.print_exc()
+      self.report({'ERROR'},str(error))
+      return {'CANCELLED'}
+    if missing: print('Not in props.glb (kept):',', '.join(missing))
+    self.report({'WARNING'} if missing else {'INFO'},f'Updated {len(updated)}, added {len(added)}'+(f', {len(missing)} not in GLB (kept)' if missing else '')+'; save props.blend')
+    return {'FINISHED'}
+
+
 class PRIMITIVE_OT_export(bpy.types.Operator):
   bl_idname='primitive.export_glb'
   bl_label='Export GLB'
@@ -164,13 +184,14 @@ class PRIMITIVE_PT_assets(bpy.types.Panel):
     layout.operator('primitive.build_scene',icon='MESH_CUBE')
     layout.separator()
     layout.operator('primitive.export_glb',icon='EXPORT')
+    layout.operator('primitive.update_props',icon='FILE_REFRESH')
     layout.separator()
     layout.operator('primitive.run_and_play',icon='PLAY')
     layout.operator('primitive.stop_vite',icon='CANCEL')
     layout.label(text='Save the .blend after editing or preparing')
 
 
-classes=(PRIMITIVE_OT_pull,PRIMITIVE_OT_build,PRIMITIVE_OT_export,PRIMITIVE_OT_play,PRIMITIVE_OT_stop,PRIMITIVE_PT_assets)
+classes=(PRIMITIVE_OT_pull,PRIMITIVE_OT_build,PRIMITIVE_OT_update_props,PRIMITIVE_OT_export,PRIMITIVE_OT_play,PRIMITIVE_OT_stop,PRIMITIVE_PT_assets)
 
 
 def register():

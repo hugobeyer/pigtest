@@ -1,131 +1,189 @@
-# Pig playable — handoff
+# Pig playable: handoff
 
-Status of the three.js playable ad, the Houdini → Blender → GLB art pipeline, and what's next. All work is on `main` in `hugobeyer/pigtest`.
+Where the three.js playable, the Houdini → Blender → GLB pipeline, and the job-test deliverable stand, as of 2026-09-27.
+
+- **Repo:** `hugobeyer/pigtest`.
+- **Working branch:** `adventure`. It is ahead of `main`; see §11.
+- **The job brief** is `C:\Users\hugob\Documents\Sett_Test\Home Assignment – Generalist Technical Artist.pdf`.
 
 ## 1. How the project fits together
 
 ```
 Houdini (props.hiplc / export.hiplc)
-  └─ named geometry + textures  ─►  Blender (source_files/scene.blend, props.blend)
-                                        └─ Primitive panel → Export GLB  ─►  assets/primitive_scene.glb
-                                                                                 └─ three.js game (src/)
+  └─ named geometry + textures ─► source_files/export/*.glb, source_files/textures/
+       └─ Blender (source_files/props.blend ─ linked into ─► scene.blend)
+            └─ Primitive panel → Export GLB ─► assets/primitive_scene.glb
+                 └─ three.js game (src/), npm install / npm run dev
 ```
 
-- **Houdini** makes the art. `houdini/setup_export.py` (paste into the Python Source Editor) adds a `blender_names` wrangle and an export node to `props`, `pig_white`, `pig_black`, `block`, `rail` and `slots`. It sets `path` (becomes the Blender object name) and `shop_materialpath` (material name). It does not save or export anything on its own.
-- **Blender** composes the scene. Run `blender/scene_ui.py` once, then use the **Primitive** tab (N panel): *Build Missing Assets* and *Export GLB*.
-- **The game** loads `assets/primitive_scene.glb`. Run with `npm install` then `npm run dev`.
+- **Houdini:** `houdini/setup_export.py` adds a `blender_names` wrangle and export nodes. `path` becomes the object name and `shop_materialpath` the material name.
+- **Blender:** run `blender/scene_ui.py` once, then use the **Primitive** tab (N panel):
+  - Pull Latest
+  - Build Missing Assets
+  - **Update Props from GLB** (new)
+  - Export GLB
+  - Run Vite & Play / Stop Vite
 
-## 2. Blender scene rules (the "asset contract")
+## 2. Blender rules
 
-Checked by `blender/asset_contract.py` on export. Objects must live in the **`Gameplay`** collection, except scenery, which goes in a top-level **`Environment`** collection.
+The asset contract is checked by `blender/asset_contract.py`:
 
 | Required object | Type | Notes |
 |---|---|---|
-| `Pig_Light`, `Pig_Dark` | Empty or mesh, with the pig mesh inside | Pig body is a child (e.g. `Pig_Light_Body`). Parent with **Ctrl+P → Object (Without Inverse)** or the offset breaks in game. |
+| `Pig_Light`, `Pig_Dark` | Empty or mesh | Pig body is a child. Parent with **Ctrl+P → Object (Without Inverse)**. |
 | `Bullet_Light`, `Bullet_Dark` | Mesh | |
-| `Grid_Block_Light`, `Grid_Block_Dark` | Mesh | Instanced 26×26 times. Keep low poly, ~0.3×0.3 footprint. |
-| `PigColumn_0..3` | Empty | Custom props `queue` (D/L text) and `row_step`. |
-| `RailStart`, `RailEnd`, `GridCenter`, `CameraTarget` | Empty | In `GameplayAnchors`. **RailStart/RailEnd drive the runner path.** |
-| Camera | Perspective | Game uses it directly. |
+| `Grid_Block_Light`, `Grid_Block_Dark` | Mesh | Instanced for every cell. |
+| `PigColumn_0..3` | Empty | Custom props `queue` (D/L) and `row_step`. Its position is the front pig. |
+| `RailStart`, `RailEnd`, `GridCenter`, `CameraTarget` | Empty | `GridCenter` has `rows`, `columns`, `step`, `checker`. RailStart/RailEnd drive the runner path. |
+| Camera | Perspective | Used directly by the game. |
 
-**No longer required** (removed this session): `Slot_0..4`, `Rail_Start`, `Rail_Main`, `Rail_End`. The rail and slots are optional art with any name.
+- **Custom props:** `export_asset` off (skip export), `cast_shadow` / `receive_shadow` off (these inherit to children).
+- **Lights:** the sun (`KeyLight`) and World drive the game's sun and ambient light. Other lights are ignored.
+- **Normal maps:** OpenGL convention (green up), image node set to Non-Color. The props map was checked and is fine.
 
-Useful custom properties on any object:
+### Props: updating from Houdini (important)
 
-| Property | Effect |
-|---|---|
-| `export_asset` = off | Object is not exported (used for `Rail_Guide`, the old curve kept as a visual guide) |
-| `cast_shadow` = off | Doesn't cast shadows (inherits to children) |
-| `receive_shadow` = off | Doesn't receive shadows (inherits to children) |
-
-Other Blender facts:
-- **Sun (`KeyLight`)**: its rotation, strength and colour drive the game's sun (strength 1:1).
-- **World**: colour and strength drive the game's ambient sky light.
-- Other Blender lights are ignored.
-- **Props** live in `props.blend`, linked into `scene.blend` with a library override (**Selected & Content**). Copies made with Alt+D go in `Environment`.
-- **Normal maps** use the OpenGL convention (green up), and the image node must be set to **Non-Color**.
+- `props.blend` holds one flat collection, `Props_Library`: 27 meshes (`Clump_00` … `Tree_01`) at the origin, all using the material `/mat/Env_Props`.
+- `scene.blend` links it with a **library override** (Selected & Content). Copies made with Alt+D live in `Environment`.
+- **Never delete and re-import props.** It changes the override hierarchy, and Blender 5.2 crashes on load in `lib_override_library_resync`. That happened this session. The recovery was a forced resync (Outliner → Library Overrides → Troubleshoot → Resync Enforce).
+- **Correct way:** open `props.blend` → **Update Props from GLB** → save → open `scene.blend`.
+  - The button (`blender/update_props.py`) reads `source_files/export/props.glb`.
+  - For matching names it swaps each object's mesh in place, so the object, name and material stay.
+  - It adds new props, keeps (and lists in the console) props missing from the GLB, and removes duplicate materials and images.
+  - Tested on copies: 27/27 updated, no `.001` duplicates, and a linked scene opened fine.
 
 ## 3. The game (src/)
 
 | File | What it does |
 |---|---|
-| `assets.js` | Loads the GLB; reads sun/World from it; applies shaders; marks `Ground_Plane` as ground |
-| `shading.js` | Custom lit shader built on the Blender PBR material (see §4) |
-| `environment.js` | Scenery helpers, green shadow catcher |
-| `ground.js` | Unlit ground with vignette colour ramp |
-| `fog.js` | Distance fog with blend modes |
-| `labels.js` | Numbers/text drawn from the baked font sheet |
-| `fx/popups.js` | Combo word images with pop/wobble/shine/float animation |
-| `fx/sparkles.js` | Sparkle-sheet particles (level clear, tap, block hit, combo, runner done) |
-| `sfx.js` | Sound effects: random take per event from `assets/sfx/<event>_<n>.mp3` (ElevenLabs, trimmed/normalized from `source_files/sfx`), pitch jitter, volumes in `SFX` (`tokens.js`). Also loops `assets/music/farm_fun_groove.mp3` (mono 64 kbps from `source_files/tune`), starting with a fade-in on the first tap |
-| `win.js` | Win screen: hanging sign ("LEVEL CLEAR!") + wood frame with stats, brown-tinted font sheet text |
-| `intro.js` | Start banner ("TAP THE PIGS!"), dismissed on first tap |
-| `debug.js` | Live **Look panel** (dev only) |
-| `tokens.js` | Gameplay tuning (speeds, ammo, animations, combo words…) |
-| `look.json` | All look values; written by the Look panel's Save button |
+| `main.js` | Renderer, lights, tone mapping, input raycast, frame loop, pause when the tab is hidden |
+| `gameplay.js` | Menu → start/teardown of a level (`stage` group), tap rules, win/fail, restart |
+| `menu.js` | Main menu (Classic / Adventure) on the wood panels |
+| `adventure.js` | Adventure rules: chains, golden blocks (rainbow pig), line wipes, via `hooks.destroyed` in `grid.js` |
+| `grid.js` | Instanced blocks, front-block targeting, hit pop + per-block emissive flash, glowing flare "ghosts" |
+| `path.js` | Rail nodes. Adventure boards are smaller, but the path always follows the full rail. |
+| `runners.js` | Pig on the rail: move → aim → fire → vanish (balloon pop), idle bob, rainbow state |
+| `pigs.js` | Queue columns, tap (bump + shrink + rim glow), refuse shake for unavailable pigs, idle sway, "huh!" + `!`/`?` hint, wide invisible hit boxes |
+| `shots.js` | Bullets + ribbon trails; on impact, block sparkle + sound + destroy |
+| `tweens.js` | Tweens, bumps, balloon `vanish` |
+| `fx/` | `sparkles` (atlas billboards), `particles` (block debris), `trail` (camera-facing ribbon), `ramp` (viridis per-hit colour), `glow` (rim flash), `ring`, `popups` (combo words), `shake` |
+| `sfx.js` | Web Audio: random take + pitch per event, optional rate, music loop with fade-in |
+| `win.js`, `intro.js`, `labels.js` | End/start screens; text from the baked font sheet, optionally tinted brown |
+| `shading.js`, `ground.js`, `fog.js`, `environment.js` | Look (§4) |
+| `debug.js`, `tune.js` | Dev-only G panel (§9) |
+| `tokens.js` | All defaults; merges `look.json` and `feel.json` over them |
 
-## 4. Look / shading
+## 4. Look
 
-- **Characters** are `Pig_*`, `Bullet_*` and `Grid_Block_*`. They get:
-  - terminator position + softness + dark-side colour
-  - a fake SSS band tinted by the sky light
-  - a back rim light facing away from the sun
-  - a sine-band fake outline
-  - PBR specular from Blender roughness
-- **Scenery** (rail, slots, props) is lit, with its own terminator, softness and dark colour, plus a very soft, albedo-saturated **sheen** (hue, saturation, object-colour amount). No SSS, rim or outline.
-- **Ground** is unlit and gets its colour from the vignette ramp (centre colour → edge colour) with offset and radii. Your Blender texture is multiplied on top. Scenery and characters can follow the vignette by an amount.
-- **Fog** is distance fog. Blend mode (normal, overlay, soft light, screen, multiply) applies to scenery and ground; characters always use normal fog.
-- **Shadows**:
-  - every material casts from both sides (`shadowSide`), so open-bottom props work
-  - shadow map size is switchable in the panel (try 1024 for mobile)
-  - blur and bias are in the panel too
-- **Look panel** (`npm run dev`):
-  - **G** toggles it.
-  - **Save** writes `src/look.json`, and the page reloads with the new values.
-  - The *From Blender* folder is live preview only; set those values in Blender.
-  - ⚠️ Run `git pull` **before** pressing Save, and commit `look.json` right after. Merge conflicts in `look.json` have broken the game twice.
+- **Characters:** toon terminator, SSS band, back rim and sine outline. Grid blocks use a variant (`BLOCK_FLASH`) with per-instance emissive.
+- **Scenery:** its own terminator and a soft sheen, plus a **normal map detail** control that brings back bump shading lost to the toon ramp. All GLB textures get 8× anisotropic filtering (`RENDER.anisotropy`).
+- **Ground:** unlit vignette ramp, plus a **world-space tiling texture** (`assets/ground/ground_tile.webp`, from `source_files/textures/ground_base_color.png`). It uses only the texture's variation, not its colour, with its strength going from the centre value to the edge value. The "center offset across" control was removed and set to 0.
+- **Tone mapping** (none/neutral/agx/aces/reinhard/cineon) and exposure are in the panel. The default is none. UI sprites opt out.
+- **Fog:** distance fog with blend modes.
 
 ## 5. UI art
 
-- **Word art** (`assets/words/*.webp`, ~56 KB each): nice, sweet, cool, wow, yes, combo, great, awesome (plus level_clear, no longer used by the win screen but still bundled by the `words/*.webp` glob). Wood-sign style made with ChatGPT; transparent, trimmed, 1024 wide.
-  - Combo words pop up every 30 hits at 34% screen width (`FX.combo` in `tokens.js`).
-  - Animation curves are in `style.css` (`word-life`, `word-sweep`).
-- **Font sheet** (`assets/fonts/digits.webp` + `.json`, 90 KB): 0–9, `/`, A–Z, `!`, `?`.
-  - Baked from Lilita One (OFL license in `tools/fonts/`) with rounded corners, white fill, a 3D grey-blue edge and a drop shadow.
-  - Used by all in-game numbers and the win screen.
-  - Re-bake: edit the settings at the top of `tools/bake_digits.py`, then run `python3 tools/bake_digits.py` (needs `pip install pillow`).
-  - `LABEL.tracking` in `tokens.js` sets letter spacing.
-- **Sparkle sheet** (`assets/fx/sparkles.webp`, 3×3, 43 KB), wood style:
+- **Panels** (`assets/ui/`, cut from `source_files/ui/panels.webp`):
+  - `banner.webp`: start banner and menu buttons
+  - `hanging.webp`: win title
+  - `frame.webp`: stats card
+  - Text insets are in `style.css`; strings and sizes in `WIN`, `INTRO`, `MENU` (`tokens.js`). The "Pig pop!" title is a placeholder.
+- **Font sheet** (`assets/fonts/digits.*`): 0–9, `/`, A–Z, `!`, `?` (`?` added this session). Letter spacing now scales with text size. Re-bake with `tools/bake_digits.py`.
+- **FX atlas** (`assets/fx/sparkles.webp`, 6×4, built by `tools/build_fx_atlas.py`):
+  - cells 0–8: original sparkles
+  - cells 12–17: white rock shards
+  - cells 18–23: dark rock shards
+  - `frames` in a preset lists cells, comma separated.
+- **Word art:** `assets/words/*.webp`. `level_clear.webp` is unused but still bundled by the glob.
 
-  | | | |
+## 6. Feel and FX added this session
+
+- **Pig exit:** inflate → poof (splash ring + debris) → balloon flight with wobble, spin and squash. 30% of pigs fly at the camera.
+- **Runner idle bob; queue sway** (rows 2–3 sway less, `rows:[1,.45,.25]`). **Row gap** in columns is ×1.35 (`PIGS.rowGap`).
+- **Tap:** a 0.03 s bump, then shrink to 0 over 0.08 s, plus a warm rim glow. Tapping an unavailable pig plays a head-shake and an error boop.
+- **Idle hint:** after 4 s without a tap, a front pig does "huh!" (jump, freeze, slow recover) with a `!` or `?`.
+- **Shots:** bullet speed 12 (was 22). A 10-segment camera-facing ribbon trail that collapses into the target on impact.
+- **Viridis ramp:** each pig's streak walks purple → yellow and back. It colours the trail, the block flash and the flare.
+- **Block hit:** a 0.06 s bump with a flash, then a **tall glowing fresnel flare**. It is 3.5× tall at the first hit and grows to 10× by the pig's 20th hit (`FX.ghost`).
+- **Combo words:** now every 30 hits across all pigs; they were per pig, which never fired because a pig has 20 ammo. They whoosh in from a random side, bounce, and whoosh out.
+- **Sparkle presets** (`SPARKLES`): one sprite per effect by default, optional min/max count, and global `sizeScale`/`countScale`.
+
+## 7. Audio
+
+- **SFX** (`assets/sfx/`): 37 ElevenLabs takes trimmed and normalised from `source_files/sfx`. Events are tap, shot, hit, pop, fly, huh, combo, clear and full. Settings are in `SFX` in `tokens.js`.
+- **Music:** `assets/music/farm_fun_groove.mp3` (mono 64 kbps, 704 KB) loops after the first tap.
+- **Unlock:** audio unlocks on the first pointerdown in the capture phase.
+
+## 8. Modes
+
+- **Classic:** the deliverable, a faithful recreation of the reference video. It uses Blender's grid and queues. It has no fail screen; it stops silently if pigs run out, and that is still undecided.
+- **Adventure:** 5 levels in `ADVENTURE.levels`. The rules are in `adventure.js`, switched on by level flags. The design doc is `docs/ADVENTURE.md`.
+
+  | # | Board | Flags |
   |---|---|---|
-  | star | small star | sparkle |
-  | small sparkle | plus | small plus |
-  | 3-drop burst | 2-drop burst | swoosh |
+  | 1 | 12×12 checker | none |
+  | 2 | 12×12 checker | `chains` |
+  | 3 | 16×16 checker | `chains`, `golden:4` |
+  | 4 | 16×16 stripes | `chains`, `golden:3`, `wipe` |
+  | 5 | 20×20 checker | `chains`, `golden:3`, `wipe` |
 
-  Used by `fx/sparkles.js`: one instanced billboard draw call. All values live in `tokens.js` only: presets in `SPARKLES` (levelClear, tap, block, combo, pop, blockLight, blockDark), shared settings (max, jitter, fade, per-cell `frameScale`) in `FX.sparkles`. Defaults are there; the Look panel's **Sparkles** folder (with test buttons) saves overrides to `look.json`, which win over `tokens.js`. The sheet is a 6×4 atlas built by `tools/build_fx_atlas.py` from `source_files/fx` (original 3×3 sparkles as cells 0–8, block shards as 12–17 white and 18–23 dark). `frames` lists cells, comma separated, left to right and top to bottom.
+  - **Chains:** a finished 2×2 square pops the nearest block in each neighbouring square. Each step rises in pitch and colour, and each new depth shows one word.
+  - **Golden:** the pig that hits a golden block goes rainbow for 3 s and can shoot any colour. For now only its trails show it.
+  - **Wipe:** a cleared line pops every other block in the neighbouring lines.
+  - **Out of pigs → fail screen** (Retry / Menu).
+- **The boss was built and removed at the user's request.** Don't bring it back.
 
-## 6. Next steps
+## 9. Tuning panel (G, dev only, hidden by default)
 
-1. ~~**Particle emitter using `sparkles.webp`**~~: done. Tune the presets by eye. The sheet has no dot or puff frame, so "dots" and "puff" use small sparkles and pluses.
-2. ~~**Restyle the win card**~~: done. Win = hanging sign (title) + wood frame (stats), start = plank banner (`intro.js`). Art cut from `source_files/ui/panels.webp` into `assets/ui/`; text insets live in `style.css`, strings/sizes in `WIN`/`INTRO` (`tokens.js`).
-3. **Swap remaining Houdini art in Blender**:
-   - rail mesh as `Rail_Main` or any name
-   - grid blocks: Ctrl+L mesh swap onto `Grid_Block_*`
-   - pig textures and normal maps, then fix Link → Data on materials
-4. **Props normal map**: its green channel is flipped. Fix in Houdini `props/bake` after `convertnormal1`. Cosmetic; the pig bakes may need the same check.
-5. **Fog blend modes**: the user reported they don't look right. The code checks out; needs a visual test with fog near = 0, far = 60 to confirm.
-6. **Vignette**: consider screen-space (view-based) instead of world-space radii, so it's always a clean oval on screen.
-7. **Performance / size for ad networks**:
-   - Budget: JS ~650 KB (three.js), GLB ~2 MB, images ~0.7 MB.
-   - Consider shadow map 1024, pixel ratio 1.5, 1K JPG/WebP textures.
-   - Check the target network's size limit.
-8. **Three pig colours**: the concept has pink, white and black; the game only has light and dark. That's a gameplay change.
-9. **Houdini paths**: `.hiplc` files still reference `$HOME/Sett_Test/...`. Switch them to `$HIP`-relative paths.
+- **Look:** everything visual. It saves to `src/look.json`, which overrides `tokens.js`.
+- **Feel** (`tune.js`): gameplay sliders grouped as Pace, Tap & queue, Runner, Idle, Hits, Pig exit, Combo & chains.
+  - It saves to `src/feel.json`, which `tokens.js` deep-merges into MOTION/SHOT/PIGS/ANIM/FX/ADVENTURE.
+  - Also has **↻ restart level** and Copy JSON.
+  - Row gap, hit width and Classic ammo apply on restart.
+- **Test:** clear level, preview win screen, show intro.
+- The vite dev server's save endpoint handles `/__look` and `/__feel` (`vite.config.js`).
 
-## 7. Working conventions
+## 10. Job-test deliverable status
 
-- Everything goes on **`main`**, with no feature branches. Ask before pushing if the user is mid-edit.
-- Code style follows `Agents.md`: compact, no comments, match existing style.
-- The user tests in the browser; don't run or screenshot the game unless asked.
+- **The brief asks for:**
+  - two versions: primitive, and a Fish of Fortune reskin
+  - a README with v1/v2/v3 documented: what changed, why, and the exact values tuned
+  - `/ai_logs/*.txt`
+  - one zip: `/primitive_version`, `/styled_fof_version`, `/assets`, `/ai_logs`, `/README.md`
+- **Primitive version:** on the `primitive-version` branch.
+- **AI logs:** `../ai_logs/v1_primitive.txt`, `v2_feel.txt` and `v3_polish_claude_code.txt` are written. They are compacted prompts; the user decides what to send.
+- **Still to do:** the root README with v1/v2/v3 values (use `tokens.js` + `feel.json`), copying `main` into `/styled_fof_version`, filling `/assets`, and a fresh `npm install && npm run dev` test of both.
+- **Not in the brief:** ad-network needs (single-file build, size under 5 MB, CTA/MRAID). Optional polish only.
+
+## 11. Git state
+
+- `adventure` has all the code from this session (latest `b8d06ec`). `main` is behind; merge `adventure` → `main` when ready.
+- **Uncommitted on `adventure`:**
+  - `blender/update_props.py` (new) and `blender/scene_ui.py` (the Update Props button)
+  - `src/look.json`
+  - `assets/primitive_scene.glb`
+  - `source_files/props.blend`, `scene.blend`, `export/props.glb`
+  - `source_files/textures/props_basecolor.png`, `props_normal.png` (the new ones, restored)
+  - `houdini/export.hiplc`
+
+## 12. Next steps
+
+1. Commit the files above, then merge `adventure` into `main`.
+2. Update props through the new button, save `props.blend`, re-export the GLB.
+3. Adventure: stars and the level map. Balance level 5. Add a visual cue on the rainbow pig.
+4. Tuning pass in **G → Feel**, save `feel.json`, and use the values for the README's v2/v3.
+5. Decide whether Classic gets the out-of-pigs screen.
+6. Deliverable packaging (§10).
+7. Older open items:
+   - fog blend modes visual check
+   - screen-space vignette
+   - a third (pink) pig colour
+   - Houdini `$HIP`-relative paths
+
+## 13. Working conventions
+
+- Code style follows `Agents.md`: compact, no comments, match existing style, tokens in `tokens.js`.
+- The user tests in the browser. Don't run or screenshot the game unless asked. The build (`npm run build`) must pass after every change.
+- Runtime-only bugs slip past the build (shader typos, TDZ/name clashes like the G-panel one). Re-read new GLSL and new variable names carefully.
+- Commit only when asked.
 - Keep answers short and in steps; the user has ADHD.

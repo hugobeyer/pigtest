@@ -19,17 +19,17 @@
     }
   },
   "environment": {
-    "terminator": -0.5,
-    "softness": 0.51,
-    "darkColor": "#caccc2",
-    "detail": 3.7,
+    "terminator": 0.68,
+    "softness": 0.44,
+    "darkColor": "#a3b073",
+    "detail": 1.6,
     "lit": true,
     "sheen": {
-      "strength": 0.21,
-      "power": 6.1,
-      "hue": 31,
-      "saturation": 0.63,
-      "albedo": 0.77
+      "strength": 0.05,
+      "power": 1,
+      "hue": 25,
+      "saturation": 0.68,
+      "albedo": 1
     },
     "shadowOpacity": 0.52,
     "shadowColor": "#082a3a"

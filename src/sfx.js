@@ -5,12 +5,25 @@ const files=import.meta.glob('../assets/sfx/*.mp3',{eager:true,import:'default'}
 const context=new AudioContext();
 const master=context.createGain(), musicGain=context.createGain();
 const banks={}, last={};
-let unlocked=false, music=null, playing=false;
+let unlocked=false, music=null, playing=false, muted=false;
 master.gain.value=SFX.volume;
 master.connect(context.destination);
 musicGain.connect(master);
 addEventListener('pointerdown',()=>{unlocked=true; context.resume(); startMusic();},true);
 addEventListener('visibilitychange',()=>document.hidden ? context.suspend() : unlocked && context.resume());
+const button=document.createElement('button');
+button.id='mute';
+button.textContent='🔊';
+button.addEventListener('click',()=>toggleMute());
+document.body.appendChild(button);
+addEventListener('keydown',event=>{if((event.key==='m' || event.key==='M') && event.target.tagName!=='INPUT')toggleMute();});
+
+export function toggleMute(){
+  muted=!muted;
+  master.gain.setTargetAtTime(muted ? 0 : SFX.volume,context.currentTime,.03);
+  button.textContent=muted ? '🔇' : '🔊';
+}
+
 const load=url=>fetch(url).then(response=>response.arrayBuffer()).then(data=>context.decodeAudioData(data));
 
 for(const [path,url] of Object.entries(files)){
