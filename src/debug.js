@@ -1,4 +1,11 @@
 import GUI from 'lil-gui';
+
+const add = GUI.prototype.add;
+GUI.prototype.add = function (object, property, min, max, step) {
+  if (typeof min !== 'number' || typeof max !== 'number') return add.call(this, object, property, min, max, step);
+  const span = max - min;
+  return add.call(this, object, property, min < 0 ? min - span * 2 : min > 0 ? min / 4 : 0, max + span * 2, step);
+};
 import look from './look.json';
 import { catcher } from './environment.js';
 import { FOG_MODES, uniforms as fogBlend } from './fog.js';
