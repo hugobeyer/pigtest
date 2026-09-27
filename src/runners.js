@@ -9,7 +9,7 @@ import {emit} from './fx/particles.js';
 import {popup} from './fx/popups.js';
 import {sparkle} from './fx/sparkles.js';
 import {play} from './sfx.js';
-import {ANIM, FX, LABEL, MOTION, SHOT} from './tokens.js';
+import {ADVENTURE, ANIM, FX, LABEL, MOTION, SHOT} from './tokens.js';
 
 let scene, path, bullets, pigHeight, labelLift, eye, lastWord=null;
 export const runs=[];
@@ -58,7 +58,8 @@ function fire(run){
   const cell=run.targetCell;
   run.targetCell=null;
   if(!cell || !cell.alive)return;
-  fireShot(scene,run.runner.localToWorld(mouthLocal.clone()),cell,run.bullet,rampColor(run.hits??0),run.hits??0);
+  const color=run.rainbow>0 ? new THREE.Color().setHSL(run.t*ADVENTURE.rainbow.cycle%1,1,.6) : rampColor(run.hits??0);
+  fireShot(scene,run.runner.localToWorld(mouthLocal.clone()),cell,run.bullet,color,run.hits??0,run);
   play('shot');
   run.label.userData.set(String(--run.ammo));
   bump(run.pop,ANIM.shotBump);
@@ -119,7 +120,7 @@ function advance(run){
 function finishNode(run){
   const node=run.activeNode;
   if(node.canShoot){
-    const cell=validTarget(run.isLight,node);
+    const cell=validTarget(run.rainbow>0 ? null : run.isLight,node);
     if(cell){
       cell.reserved=true;
       run.targetCell=cell;
@@ -164,6 +165,7 @@ export function updateRunners(dt){
     const run=runs[i];
     if(updateRun(run,dt)){runs.splice(i,1); continue;}
     run.t+=dt;
+    if(run.rainbow>0)run.rainbow-=dt;
     run.calm=Math.min(Math.max(run.calm+(run.t-run.lastShot<hold ? -dt : dt)/settle,0),1);
     const t=run.t*speed, a=run.calm;
     run.pop.position.z=height*a*(.5+.5*Math.sin(t));

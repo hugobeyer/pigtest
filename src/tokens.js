@@ -1,9 +1,10 @@
 import look from './look.json';
+import feel from './feel.json';
 
 export const MOTION={speed:10.7,aimTime:.028,runnerLift:.395};
 export const SHOT={speed:12,minDuration:.045,targetZ:.6048,mouth:[0,.92,.67]};
 export const PATH={sideOffset:1.38,verticalOffset:2.38,cornerRadius:1.10,laneGap:.42,endOffset:.15,arcSteps:12};
-export const PIGS={ammo:20,columns:4,visibleRows:3,railCapacity:5};
+export const PIGS={ammo:20,hitScale:1.6,rowGap:1.35,columns:4,visibleRows:3,railCapacity:5};
 export const FRAME={maxDelta:.033};
 export const WIN={
   delay:1.1,title:'Level clear!',heading:'Great job!',hint:'Tap to play again',next:'Tap for next level',done:'Tap for menu',ink:'#7a3f12',
@@ -15,19 +16,26 @@ export const WIN={
 
 export const INTRO={text:'Tap the pigs!',level:'Level',top:'24%',size:.5};
 export const MENU={title:'Pig pop!',classic:'Classic',adventure:'Adventure',back:'Menu',size:.5};
-export const ADVENTURE={levels:[
-  {size:12,pattern:'checker',checker:2,queues:['DLD','LDL','DLD','LDL'],ammo:20},
-  {size:16,pattern:'stripes',checker:2,queues:['DLDL','LDLD','DLDL','LDLD'],ammo:20},
-  {size:16,pattern:'checker',checker:4,queues:['DLDL','LDLD','DLDL','LDLD'],ammo:20},
-  {size:26,pattern:'checker',checker:2,queues:['DLDLDLDLD','LDLDLDLDL','DLDLDLDLD','LDLDLDLDL'],ammo:20}
-]};
+export const ADVENTURE={
+  chain:{delay:.12,pitch:.08,tone:4,words:['nice','great','awesome']},
+  rainbow:{duration:3,gold:'#ffc233',pulse:6,cycle:3},
+  wipe:{sweep:.03},
+  levels:[
+    {size:12,pattern:'checker',checker:2,queues:['DLD','LDL','DLD','LDL'],ammo:20},
+    {size:12,pattern:'checker',checker:2,queues:['DLD','LDL','DLD','LDL'],ammo:20,chains:true},
+    {size:16,pattern:'checker',checker:2,queues:['DLDL','LDLD','DLDL','LDLD'],ammo:20,chains:true,golden:4},
+    {size:16,pattern:'stripes',checker:2,queues:['DLDL','LDLD','DLDL','LDLD'],ammo:20,chains:true,golden:3,wipe:true},
+    {size:20,pattern:'checker',checker:2,queues:['DLDLD','LDLDL','DLDLD','LDLDL'],ammo:20,chains:true,golden:3,wipe:true}
+  ]
+};
 
 export const ANIM={
-  tapBump:{amount:.15,duration:.08},
+  tapOut:{amount:.3,bump:.03,shrink:.08},
   enterBump:{amount:.25,duration:.12},
   shotBump:{amount:.12,duration:.06},
   queueSlide:{duration:.16},
   queueGrow:{duration:.16},
+  refuse:{duration:.4,angle:.35,shakes:3},
   vanish:{inflate:.2,puff:.45,duration:1.1,distance:14,rise:5,toCamera:.3,reach:.85,wobble:1.1,wobbles:3,spin:16,tumble:.6,squash:.2,inflateJiggles:1.5,deflate:.5,shrinkAt:.8,popJiggle:2,popJiggleSpeed:40,popJiggleTime:.25}
 };
 export const LABEL={height:.8,lift:.35,capacityOffset:[0,-1.06,.28],backOpacity:.45,canvas:[256,128],tracking:-4};
@@ -48,6 +56,7 @@ export const FX={
   confetti:{count:50,speed:10,up:16,life:1.4,size:.7},
   blockPop:{amount:.22,time:.06},
   ghost:{max:160,scale:1.5,tall:3.5,tallMax:10,tallAt:20,rise:.2,life:.35,snap:6,glow:5,power:1.8,core:.35},
+  tapGlow:{color:'#fff1c4',strength:3,power:1.5,duration:.12,grow:1.03},
   blockFlash:{color:'#b86bff',strength:1.4},
   ramp:{colors:['#440154','#3b528b','#21918c','#5ec962','#fde725'],step:.12},
   numberPunch:{amount:.4,duration:.12},
@@ -85,3 +94,11 @@ export const SPARKLES=Object.fromEntries(Object.entries(sparkles).map(([name,pre
   merged.sizeJitter??=FX.sparkles.sizeJitter;
   return [name,merged];
 }));
+
+function merge(target,source={}){
+  for(const [key,value] of Object.entries(source)){
+    if(value && typeof value==='object' && !Array.isArray(value))merge(target[key]??={},value);
+    else target[key]=value;
+  }
+}
+for(const [name,group] of Object.entries({MOTION,SHOT,PIGS,ANIM,FX,ADVENTURE}))merge(group,feel[name]);

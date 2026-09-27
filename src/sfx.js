@@ -32,13 +32,13 @@ function startMusic(){
   source.start();
 }
 
-export function play(name){
+export function play(name,rate=1){
   const bank=banks[name], {volume,pitch,gap}=SFX.sounds[name], now=context.currentTime;
   if(!bank || !unlocked || now-(last[name]??-gap)<gap)return;
   last[name]=now;
   const source=context.createBufferSource(), gain=context.createGain();
   source.buffer=bank[Math.floor(Math.random()*bank.length)];
-  source.playbackRate.value=1+(Math.random()*2-1)*pitch;
+  source.playbackRate.value=rate*(1+(Math.random()*2-1)*pitch);
   gain.gain.value=volume;
   source.connect(gain).connect(master);
   source.start();

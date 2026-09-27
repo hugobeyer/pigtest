@@ -3,18 +3,18 @@ import {destroyCell} from './grid.js';
 import {createTrail, updateTrail} from './fx/trail.js';
 import {sparkle} from './fx/sparkles.js';
 import {play} from './sfx.js';
-import {FX, SHOT} from './tokens.js';
+import {ADVENTURE, FX, SHOT} from './tokens.js';
 
 const shots=[], fading=[];
 
-export function fireShot(scene,from,cell,bulletTemplate,color,hits){
+export function fireShot(scene,from,cell,bulletTemplate,color,hits,run){
   const mesh=instantiate(bulletTemplate);
   const to=cell.position.clone();
   to.z=SHOT.targetZ;
   mesh.position.copy(from);
   const trail=createTrail(from,color);
   scene.add(mesh,trail);
-  shots.push({scene,mesh,trail,from,to,t:0,duration:Math.max(SHOT.minDuration,from.distanceTo(to)/SHOT.speed),cell,color,hits});
+  shots.push({scene,mesh,trail,from,to,t:0,duration:Math.max(SHOT.minDuration,from.distanceTo(to)/SHOT.speed),cell,color,hits,run});
 }
 
 export const activeShots=()=>shots.length;
@@ -35,6 +35,11 @@ export function updateShots(dt){
       sparkle(s.to,s.cell.isLight ? 'blockLight' : 'blockDark');
       play('hit');
       destroyCell(s.cell,s.color,s.hits);
+      if(s.cell.golden && !(s.run.rainbow>0)){
+        s.run.rainbow=ADVENTURE.rainbow.duration;
+        sparkle(s.to,'pop');
+        play('combo');
+      }
       s.scene.remove(s.mesh);
       fading.push({scene:s.scene,trail:s.trail,head:s.to,t:0});
       shots.splice(i,1);

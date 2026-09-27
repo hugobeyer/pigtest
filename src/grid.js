@@ -8,6 +8,7 @@ const popScale=new THREE.Vector3(), popMatrix=new THREE.Matrix4();
 const hidden=new THREE.Matrix4().makeScale(0,0,0);
 const flashDefault=new THREE.Color(FX.blockFlash.color), ghostColor=new THREE.Color(), black=new THREE.Color(0);
 const flashMaterials=new Map();
+export const hooks={};
 
 function flashMaterial(source){
   if(!flashMaterials.has(source)){
@@ -108,17 +109,23 @@ function frontCell(node){
 
 export function validTarget(isLight,node){
   const cell=frontCell(node);
-  if(!cell || cell.reserved || cell.isLight!==isLight)return null;
+  if(!cell || cell.reserved || (isLight!==null && cell.isLight!==isLight))return null;
   return cell;
 }
 
-export function destroyCell(cell,color=flashDefault,hits=0){
+export function destroyCell(cell,color=flashDefault,hits=0,depth=0){
   cell.reserved=false;
   if(!cell.alive)return;
   cell.alive=false;
   popping.push({cell,t:0,color,hits});
   remaining--;
   if(grid[cell.r].every(c=>!c.alive) || grid.every(row=>!row[cell.c].alive))shake();
+  hooks.destroyed?.(cell,depth);
+}
+
+export function glowCell(cell,color,amount){
+  cell.mesh.geometry.attributes.aFlash.setXYZ(cell.index,color.r*amount,color.g*amount,color.b*amount);
+  cell.mesh.geometry.attributes.aFlash.needsUpdate=true;
 }
 
 export function updateGrid(dt){
@@ -161,4 +168,7 @@ function updateGhosts(dt,from){
 }
 
 export const remainingCells=()=>remaining;
-export const destroyAll=()=>grid?.flat().forEach(cell=>destroyCell(cell));
+export const board=()=>grid;
+export function destroyAll(){
+  grid?.flat().forEach(cell=>destroyCell(cell));
+}

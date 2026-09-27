@@ -1,14 +1,17 @@
 import * as THREE from 'three';
 import {instantiate} from './assets.js';
 import {createLabel, disposeLabel} from './labels.js';
-import {backOut, bump, grow, slide, tween} from './tweens.js';
+import {backOut, grow, slide, tween} from './tweens.js';
 import {tapRing} from './fx/ring.js';
+import {rimFlash} from './fx/glow.js';
 import {sparkle} from './fx/sparkles.js';
 import {play} from './sfx.js';
 import {ANIM, FX, LABEL, PIGS} from './tokens.js';
 
 let scene, columns, templates, pigHeight, labelLift, now=0, waitStart=0, nextHint=0;
 export const tapTargets=[];
+const hitMaterial=new THREE.MeshBasicMaterial();
+let hitGeometry;
 
 function spawn(pig,position){
   if(!pig)return null;
@@ -17,6 +20,9 @@ function spawn(pig,position){
   const label=createLabel(object);
   label.position.z=labelLift;
   label.userData.set(String(pig.ammo));
+  const hit=new THREE.Mesh(hitGeometry,hitMaterial);
+  hit.visible=false;
+  object.add(hit);
   Object.assign(object.userData,{pig,label,clock:0,phase:Math.random()*Math.PI*2,rate:1+(Math.random()*2-1)*FX.queueSway.vary});
   scene.add(object);
   tapTargets.push(object);
@@ -42,11 +48,14 @@ export function createPigs(targetScene,columnObjects,pigTemplates,time,queues,am
   const box=new THREE.Box3().setFromObject(templates.dark,true);
   pigHeight=box.max.z-box.min.z;
   labelLift=pigHeight+LABEL.lift;
+  const size=box.getSize(new THREE.Vector3()).multiply(new THREE.Vector3(PIGS.hitScale,PIGS.hitScale,1)), center=box.getCenter(new THREE.Vector3()).sub(templates.dark.getWorldPosition(new THREE.Vector3()));
+  hitGeometry?.dispose();
+  hitGeometry=new THREE.BoxGeometry(size.x,size.y,size.z).translate(center.x,center.y,center.z);
   columns=columnObjects.map((columnObject,i)=>{
     const {row_step:rowStep}=columnObject.userData, queue=queues?.[i]??columnObject.userData.queue;
     if(!/^[DL]+$/.test(queue) || !(rowStep>0))throw new Error(`${columnObject.name}: requires queue (D/L) and positive row_step`);
     const front=columnObject.getWorldPosition(new THREE.Vector3());
-    const column={slots:Array.from({length:PIGS.visibleRows},(_,i)=>front.clone().setY(front.y-rowStep*i)),queue:[...queue].map(key=>({isLight:key==='L',ammo})),busy:false};
+    const column={slots:Array.from({length:PIGS.visibleRows},(_,i)=>front.clone().setY(front.y-rowStep*PIGS.rowGap*i)),queue:[...queue].map(key=>({isLight:key==='L',ammo})),busy:false};
     column.objects=column.slots.map(slot=>spawn(column.queue.shift(),slot));
     refresh(column);
     return column;
@@ -66,6 +75,10 @@ function advance(column){
 
 export const pigsLeft=()=>columns.reduce((sum,column)=>sum+column.queue.length+column.objects.filter(Boolean).length,0);
 
+export function refuse(object){
+  object.userData.refuse=now;
+}
+
 export function takePig(object){
   const column=columns.find(column=>column.objects[0]===object);
   if(!column || column.busy)return null;
@@ -73,12 +86,16 @@ export function takePig(object){
   waitStart=now;
   delete object.userData.huh;
   object.scale.setScalar(1);
-  bump(object,ANIM.tapBump);
   tapRing(scene,object.position,pigHeight);
+  rimFlash(object);
   play('tap');
   sparkle(object.position.clone().setZ(object.position.z+pigHeight),'tap');
   object.children[0].position.z=0;
-  tween(ANIM.tapBump.duration,null,()=>advance(column));
+  const {amount,bump,shrink}=ANIM.tapOut;
+  tween(bump+shrink,k=>{
+    const t=k*(bump+shrink);
+    object.scale.setScalar(t<bump ? 1+amount*t/bump : (1+amount)*(1-(t-bump)/shrink));
+  },()=>advance(column));
   return object.userData.pig;
 }
 
@@ -113,6 +130,11 @@ export function updatePigs(time,canTap){
     data.clock+=dt*flow;
     const t=data.clock*speed*data.rate+data.phase, a=rows[i]??rows.at(-1);
     object.rotation.set(Math.sin(t*.7)*tilt*a,Math.cos(t*.9)*tilt*a,Math.sin(t*.4)*tilt*a*1.5);
+    if(data.refuse!==undefined){
+      const {duration,angle,shakes}=ANIM.refuse, e=(time-data.refuse)/duration;
+      if(e>=1)delete data.refuse;
+      else object.rotation.z+=Math.sin(e*Math.PI*2*shakes)*angle*(1-e);
+    }
     if(i>0)object.children[0].position.z=height*a*(.5+.5*Math.sin(t));
     else if(!column.busy)object.children[0].position.z=FX.idleBob.height*Math.abs(Math.sin(data.clock*FX.idleBob.speed*data.rate+data.phase))+pose;
   });

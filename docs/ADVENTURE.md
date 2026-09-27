@@ -1,6 +1,6 @@
 # Adventure mode: game design
 
-The main menu offers two modes. **Classic** is the deliverable, unchanged: a faithful recreation of the reference video. **Adventure** is the extra: the same core loop, with levels, chains, power-ups and a boss.
+The main menu offers two modes. **Classic** is the deliverable, unchanged: a faithful recreation of the reference video. **Adventure** is the extra: the same core loop, with levels, chains and power-ups.
 
 ## Menu
 - Wood frame panel with two plank buttons: **CLASSIC** and **ADVENTURE**. The "TAP THE PIGS!" banner stays as the in-game hint.
@@ -40,11 +40,6 @@ Tap the front pig of a column. It runs the rail and shoots the **front** block o
 - Clearing a whole row or column sends a **shockwave** into the next line: every other block in it pops, with a sweep animation from one end to the other.
 - Word: LINE!
 
-### 6. Boss block (last level)
-- The centre 4×4 blocks are one **big crate** with an HP bar (sprite label, like the ammo count).
-- It's hit when it's the front block of a lane, and **any colour** can hit it. Each hit: bump, crack sparkles, HP down.
-- At 0 HP: explosion, slow-mo 0.6 s, camera push, then the win.
-
 ## Stars
 | Stars | Rule |
 |---|---|
@@ -54,51 +49,22 @@ Tap the front pig of a column. It runs the rail and shoots the **front** block o
 
 The win panel shows stars popping in one by one, then **NEXT** and **RETRY**.
 
-## Levels
-| # | Name | Board | Pigs × ammo | New thing |
-|---|---|---|---|---|
-| 1 | Warm up | 13×13 checker | 12 × 20 | tap, rail, colours |
-| 2 | Chain gang | 13×13 | 10 × 20 | chains |
-| 3 | Gold rush | 18×18 | 16 × 20 | 4 golden blocks |
-| 4 | Stripes | 18×18 horizontal stripes | 16 × 20 | line wipes shine on stripes |
-| 5 | Big crate | 26×26 + boss (HP 40) | 30 × 20 | boss |
-
-Patterns: `checker`, `stripes`, `rings`, plus an `ascii` option for hand-drawn shapes later.
-
-## Data (tokens.js)
-```js
-ADVENTURE:{
-  chain:{delay:.12,pitch:.08,grow:.15,words:{2:'nice',3:'great',4:'awesome'}},
-  rainbow:{duration:3,fireRate:2,glint:2},
-  wipe:{every:2,sweep:.4},
-  boss:{size:4,hp:40,slowmo:.6},
-  stars:[1,.7,.5],
-  levels:[{name:'Warm up',size:13,pattern:'checker',queues:['DLDL','LDLD','DLDL','LDLD'],ammo:20,golden:0,boss:false}, ...]
-}
-```
-
 ## Built so far (branch `adventure`)
-- **Menu:** Classic / Adventure, with the title on the hanging sign.
-- **In-place restart:** no page reload. Each level lives in its own `stage` group that is torn down and disposed.
-- **Adventure levels** in `ADVENTURE.levels` (`tokens.js`). Sizes must divide by `checker`.
+- **Menu** (Classic / Adventure) and **in-place restart**. Each level lives in its own `stage` group that is torn down and disposed.
+- **5 levels** in `ADVENTURE.levels` (`tokens.js`). Mechanics are switched on per level with flags.
 
-  | # | Board | Pigs × ammo |
+  | # | Board | Flags |
   |---|---|---|
-  | 1 | 12×12 checker | 12 × 20 |
-  | 2 | 16×16 stripes | 16 × 20 |
-  | 3 | 16×16 big checker (4) | 16 × 20 |
-  | 4 | 26×26 (Classic board) | 36 × 20 |
+  | 1 | 12×12 checker | none |
+  | 2 | 12×12 checker | `chains` |
+  | 3 | 16×16 checker | `chains`, `golden:4` |
+  | 4 | 16×16 stripes | `chains`, `golden:3`, `wipe` |
+  | 5 | 20×20 checker | `chains`, `golden:3`, `wipe` |
 
-- **Out of pigs → fail screen** (Retry / Menu), Adventure only. **Win → Next level / Play again / Menu.**
-- **Not yet:** stars, level map, chains, rainbow, line wipe, boss.
+- **Code:** rules live in `src/adventure.js`, hooked into `grid.js` (`hooks.destroyed`).
+- **Out of pigs → fail screen** (Adventure only). **Win → Next / Play again / Menu.**
+- **Not yet:** stars and the level map.
 
-## Build order (easiest first)
-1. **Menu + mode switch + in-place restart.** Rebuild the grid, pigs and rail without reloading the page. Everything else needs this.
-2. **Level data:** grid size, scale, pattern and queues from tokens instead of Blender custom props (Classic keeps Blender's).
-3. **Out-of-pigs fail + stars + level map.**
-4. **Chains.**
-5. **Rainbow pig.**
-6. **Line wipe.**
-7. **Boss.**
-
-Classic keeps working at every step. Adventure-only rules are gated by the level data, so Classic has none of them.
+## Next
+1. Stars and the level map.
+2. Tuning pass using the Feel panel (G → Feel), saved to `src/feel.json`.

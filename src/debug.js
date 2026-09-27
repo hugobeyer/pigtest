@@ -6,6 +6,7 @@ import {sparkle} from './fx/sparkles.js';
 import {showIntro} from './intro.js';
 import {showWin} from './win.js';
 import {destroyAll} from './grid.js';
+import {tunePanel} from './tune.js';
 import {ENVIRONMENT, FOG, GROUND, LIGHTS, RENDER, SHADING, SPARKLES} from './tokens.js';
 import {uniforms as vignette} from './ground.js';
 import {sheenColor, uniforms as shade} from './shading.js';
@@ -47,9 +48,10 @@ export function debug({scene,renderer,toneMappings,fog,ambient,key,blender,cente
     fogBlend.uFogMode.value=FOG_MODES.indexOf(state.fog.mode); fog.color.set(state.fog.color); fog.near=state.fog.near; fog.far=state.fog.far; scene.fog=state.fog.enabled ? fog : null;
   };
 
-  const gui=new GUI({title:'Look  (G to toggle)',width:420});
+  const gui=new GUI({title:'Tuning  (G to toggle)',width:420});
+  const lookPanel=gui.addFolder('Look');
   gui.domElement.style.setProperty('--name-width','48%');
-  const character=gui.addFolder('Pigs, blocks, bullets');
+  const character=lookPanel.addFolder('Characters');
   character.add(s,'terminator',-1,1,.01).name('shadow starts (lower = more lit)');
   character.add(s,'softness',.01,1,.01).name('edge softness');
   character.addColor(s,'darkColor').name('dark side color');
@@ -65,7 +67,7 @@ export function debug({scene,renderer,toneMappings,fog,ambient,key,blender,cente
   character.add(s.outline,'from',0,.95,.01).name('outline from');
   character.add(s.outline,'strength',0,1,.01).name('outline strength');
 
-  const scenery=gui.addFolder('Scenery');
+  const scenery=lookPanel.addFolder('Scenery');
   scenery.add(e,'lit').name('lit (save, then reloads)');
   scenery.add(e,'terminator',-1,1,.01).name('shadow starts (lower = more lit)');
   scenery.add(e,'softness',.01,1,.01).name('edge softness');
@@ -78,7 +80,7 @@ export function debug({scene,renderer,toneMappings,fog,ambient,key,blender,cente
   scenery.add(e.sheen,'saturation',0,1,.01).name('sheen saturation');
   scenery.add(e.sheen,'albedo',0,1,.01).name('sheen object color');
 
-  const ground=gui.addFolder('Ground');
+  const ground=lookPanel.addFolder('Ground');
   ground.add(on,'vignette').name('vignette on');
   ground.add(g,'scenery',0,1,.01).name('scenery follows vignette');
   ground.add(g,'characters',0,1,.01).name('pigs/blocks follow vignette');
@@ -95,7 +97,7 @@ export function debug({scene,renderer,toneMappings,fog,ambient,key,blender,cente
   ground.addColor(e,'shadowColor').name('shadow color');
   ground.add(e,'shadowOpacity',0,1,.01).name('shadow opacity');
 
-  const light=gui.addFolder('Light');
+  const light=lookPanel.addFolder('Light');
   light.addColor(h,'ground').name('ambient bounce');
   if(!blender.world){light.addColor(h,'sky').name('ambient sky'); light.add(h,'intensity',0,6,.01).name('ambient intensity');}
   light.add(state.shadow,'shadowMapSize',[512,1024,2048,4096]).name('shadow map size');
@@ -106,14 +108,14 @@ export function debug({scene,renderer,toneMappings,fog,ambient,key,blender,cente
   light.add(state.tone,'exposure',.2,3,.01);
   light.addColor(state,'background');
 
-  const fogFolder=gui.addFolder('Fog (farther = foggier, top of screen)');
+  const fogFolder=lookPanel.addFolder('Fog');
   fogFolder.add(state.fog,'enabled').name('fog on');
   fogFolder.add(state.fog,'mode',FOG_MODES).name('blend on scenery/ground');
   fogFolder.addColor(state.fog,'color').name('fog color');
   fogFolder.add(state.fog,'near',0,200,.5).name('starts at distance');
   fogFolder.add(state.fog,'far',0,250,.5).name('full fog at distance');
 
-  const sparkles=gui.addFolder('Sparkles');
+  const sparkles=lookPanel.addFolder('Sparkles');
   for(const [name,p] of Object.entries(state.sparkles)){
     const preset=sparkles.addFolder(name).close();
     preset.add({test:()=>sparkle(center,name)},'test').name('▶ test at grid center');
@@ -134,17 +136,20 @@ export function debug({scene,renderer,toneMappings,fog,ambient,key,blender,cente
   }
   sparkles.close();
 
-  const fromBlender=gui.addFolder('From Blender (live only, set in Blender)');
+  const fromBlender=lookPanel.addFolder('From Blender (live only, set in Blender)');
   fromBlender.addColor(live,'sun').name('sun color');
   fromBlender.add(live,'sunIntensity',0,8,.01).name('sun strength');
   if(blender.world){fromBlender.addColor(live,'sky').name('world color'); fromBlender.add(live,'skyIntensity',0,8,.01).name('world strength');}
   fromBlender.close();
 
-  gui.add({win:()=>showWin({blocks:676,time:42,pigs:12,shots:240,bestCombo:20})},'win').name('▶ preview win screen');
-  gui.add({intro:()=>showIntro()},'intro').name('▶ show intro');
-  gui.add({clear:destroyAll},'clear').name('▶ clear level');
-  gui.add({save:()=>fetch('/__look',{method:'POST',body:JSON.stringify(state)})},'save').name('Save to look.json');
-  gui.add({copy:()=>navigator.clipboard.writeText(JSON.stringify(state,null,2))},'copy').name('Copy JSON');
+  lookPanel.add({save:()=>fetch('/__look',{method:'POST',body:JSON.stringify(state)})},'save').name('Save to look.json');
+  lookPanel.add({copy:()=>navigator.clipboard.writeText(JSON.stringify(state,null,2))},'copy').name('Copy JSON');
+  lookPanel.close();
+  tunePanel(gui.addFolder('Feel'));
+  const test=gui.addFolder('Test');
+  test.add({clear:destroyAll},'clear').name('▶ clear level');
+  test.add({win:()=>showWin({blocks:676,time:42,pigs:12,shots:240,bestCombo:20})},'win').name('▶ preview win screen');
+  test.add({intro:()=>showIntro()},'intro').name('▶ show intro');
   gui.onChange(apply);
 
   let shown=false;

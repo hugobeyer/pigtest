@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import {createGrid, remainingCells, updateGrid} from './grid.js';
+import {setupAdventure, updateAdventure} from './adventure.js';
 import {createPath} from './path.js';
-import {createPigs, pigsLeft, takePig, tapTargets, updatePigs} from './pigs.js';
+import {createPigs, pigsLeft, refuse, takePig, tapTargets, updatePigs} from './pigs.js';
 import {initRunners, launchRunner, runStats, runs, updateRunners} from './runners.js';
 import {activeShots, clearShots, updateShots} from './shots.js';
 import {bump, clearTweens, tween, updateTweens} from './tweens.js';
@@ -71,6 +72,7 @@ function start(index){
   const base=assets.gridCenter.userData, layout=level ? layoutFor(base,level) : base;
   const grid=createGrid(stage,assets.gridCenter,assets.blocks,layout);
   totalBlocks=remainingCells();
+  setupAdventure(level,layout);
   const rail={right:center.x+(base.columns-1)*.5*base.step,top:center.y+(base.rows-1)*.5*base.step};
   initRunners(stage,assets.pigs,assets.bullets,createPath(grid,assets.anchors,rail),assets.camera);
   createPigs(stage,assets.columns,assets.pigs,time,level?.queues,level?.ammo);
@@ -82,11 +84,19 @@ function start(index){
   showIntro(level ? `${INTRO.level} ${index+1}` : INTRO.text);
 }
 
+export function restartLevel(){
+  if(stage)start(level ? levelIndex : null);
+}
+
 export function tap(object){
   if(!stage || won || lost)return false;
   if(runs.length>=PIGS.railCapacity){play('full'); return true;}
   const pig=takePig(object);
-  if(!pig)return false;
+  if(!pig){
+    refuse(object);
+    play('full');
+    return true;
+  }
   pigsUsed++;
   launchRunner({template:pig.isLight ? assets.pigs.light : assets.pigs.dark,ammo:pig.ammo,isLight:pig.isLight});
   return true;
@@ -128,6 +138,7 @@ export function updateGameplay(dt){
   updateShake(dt);
   if(!stage)return;
   updatePigs(time,!won && !lost && runs.length<PIGS.railCapacity);
+  if(level)updateAdventure(time);
   if(!won && !lost && remainingCells()===0){
     won=true;
     celebrate();
