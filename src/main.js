@@ -44,6 +44,8 @@ function resize() {
     top: '50%',
     transform: 'translate(-50%,-50%)'
   });
+  document.documentElement.style.setProperty('--view-top', `${(innerHeight - h) / 2}px`);
+  document.documentElement.style.setProperty('--view-right', `${(innerWidth - w) / 2}px`);
 }
 
 const { hemisphere, key: keyLight } = LIGHTS;
