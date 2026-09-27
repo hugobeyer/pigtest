@@ -45,7 +45,7 @@ export function vanish(
     popJiggleSpeed,
     popJiggleTime
   },
-  { target, pop, done }
+  { target, pop, done, inflating, flying }
 ) {
   const { x, y, z } = object.position,
     scale = object.scale.clone(),
@@ -64,6 +64,7 @@ export function vanish(
       const g = 1 + puff * backOut(k),
         q = Math.sin(k * Math.PI * 2 * inflateJiggles) * squash * (1 - k);
       object.scale.set(scale.x * (g + q), scale.y * (g + q), scale.z * (g - q));
+      inflating?.(k);
     },
     () => {
       pop();
@@ -77,6 +78,7 @@ export function vanish(
           object.position.set(x + fx * t - dy * w, y + fy * t + dx * w, z + fz * t);
           object.rotation.set(Math.sin(k * wave * 0.7) * tumble, Math.sin(k * wave * 0.5) * tumble, turn + side * spin * t);
           object.scale.set(scale.x * s * (1 + q), scale.y * s * (1 + q), scale.z * s * (1 - q));
+          flying?.(k);
         },
         done
       );

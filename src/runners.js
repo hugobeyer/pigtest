@@ -23,7 +23,11 @@ export const runs = [];
 export const runStats = { shots: 0, bestCombo: 0 };
 const heatColor = new THREE.Color(),
   tint = new THREE.Color(),
-  glow = new THREE.Color();
+  glow = new THREE.Color(),
+  burnTint = new THREE.Color(),
+  burnGlow = new THREE.Color(),
+  white = new THREE.Color(1, 1, 1),
+  black = new THREE.Color(0, 0, 0);
 const mouthLocal = new THREE.Vector3(...SHOT.mouth);
 
 export function initRunners(targetScene, templates, bulletTemplates, runnerPath, camera) {
@@ -67,6 +71,8 @@ export function launchRunner({ template, ammo, isLight }) {
     bullet: isLight ? bullets.light : bullets.dark,
     ammo,
     maxAmmo: ammo,
+    heatTint: new THREE.Color(1, 1, 1),
+    heatGlow: new THREE.Color(0, 0, 0),
     isLight,
     nodeIndex: 0,
     phase: 'move',
@@ -109,16 +115,36 @@ function fire(run) {
   }
 }
 
-function heat(run) {
-  const { color, max, emissive } = FX.heat,
-    k = Math.min(run.hits / run.maxAmmo, 1) * max;
-  heatColor.set(color);
-  tint.setRGB(1, 1, 1).lerp(heatColor, k);
-  glow.copy(heatColor).multiplyScalar(emissive * k);
+function paint(run, tint, glow) {
   for (const material of run.materials) {
     material.color.copy(material.userData.baseColor).multiply(tint);
     if (material.emissive) material.emissive.copy(material.userData.baseEmissive).add(glow);
   }
+}
+
+function heat(run) {
+  const { color, max, emissive } = FX.heat,
+    k = Math.min(run.hits / run.maxAmmo, 1) * max;
+  heatColor.set(color);
+  run.heatTint.setRGB(1, 1, 1).lerp(heatColor, k);
+  run.heatGlow.copy(heatColor).multiplyScalar(emissive * k);
+  paint(run, run.heatTint, run.heatGlow);
+}
+
+function burn(run, k, cooling) {
+  const { color, tint: amount, emissive, cool } = FX.burn;
+  heatColor.set(color);
+  burnTint.setRGB(1, 1, 1).lerp(heatColor, amount);
+  burnGlow.copy(heatColor).multiplyScalar(emissive);
+  if (cooling) {
+    const e = Math.min(k / cool, 1);
+    tint.copy(burnTint).lerp(white, e * e * (3 - 2 * e));
+    glow.copy(burnGlow).lerp(black, e * e * (3 - 2 * e));
+  } else {
+    tint.copy(run.heatTint).lerp(burnTint, k * k);
+    glow.copy(run.heatGlow).lerp(burnGlow, k * k);
+  }
+  paint(run, tint, glow);
 }
 
 function angleLerp(a, b, t) {
@@ -148,6 +174,8 @@ function advance(run) {
     run.label.visible = false;
     vanish(run.runner, ANIM.vanish, {
       target: Math.random() < ANIM.vanish.toCamera ? eye : null,
+      inflating: k => burn(run, k, false),
+      flying: k => burn(run, k, true),
       pop: () => {
         const center = run.runner.position.clone().setZ(run.runner.position.z + pigHeight * 0.5);
         emit(center, run.isLight, FX.death);
