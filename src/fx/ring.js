@@ -14,6 +14,7 @@ export function initRing(){
 export function tapRing(scene,position,height){
   const {size,from,to,duration,lift}=FX.tapRing;
   const ring=new THREE.Mesh(geometry,material.clone());
+  ring.userData.ownsMaterial=true;
   ring.position.copy(position);
   ring.position.z+=height+lift;
   scene.add(ring);

@@ -2,26 +2,40 @@ import * as THREE from 'three';
 import {materialOf} from '../assets.js';
 import {FX} from '../tokens.js';
 
-const materials=new Map();
-const axis=new THREE.Vector3(0,1,0);
-let geometry;
+const materials=new Map(), eye=new THREE.Vector3(), tangent=new THREE.Vector3(), side=new THREE.Vector3(), view=new THREE.Vector3();
 
-function ribbon(){
-  const {headWidth,tailWidth}=FX.trail;
-  const g=new THREE.BufferGeometry();
-  g.setAttribute('position',new THREE.Float32BufferAttribute([-tailWidth*.5,0,0, tailWidth*.5,0,0, -headWidth*.5,1,0, headWidth*.5,1,0],3));
-  g.setAttribute('color',new THREE.Float32BufferAttribute([1,1,1,0, 1,1,1,0, 1,1,1,1, 1,1,1,1],4));
-  g.setIndex([0,2,1, 1,2,3]);
-  return g;
-}
+export const initTrails=camera=>camera.getWorldPosition(eye);
 
-export function createTrail(template,from,to){
-  geometry??=ribbon();
+export function createTrail(template,from){
+  const {segments}=FX.trail, count=segments+1, colors=new Float32Array(count*8), index=[];
+  for(let i=0;i<count;i++){const a=1-i/segments; colors.set([1,1,1,a,1,1,1,a],i*8);}
+  for(let i=0;i<segments;i++)index.push(i*2,i*2+2,i*2+1, i*2+1,i*2+2,i*2+3);
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(count*6),3).setUsage(THREE.DynamicDrawUsage));
+  geometry.setAttribute('color',new THREE.BufferAttribute(colors,4));
+  geometry.setIndex(index);
   const source=materialOf(template);
   if(!materials.has(source))materials.set(source,new THREE.MeshBasicMaterial({color:source.color,vertexColors:true,transparent:true,opacity:FX.trail.opacity,depthWrite:false,side:THREE.DoubleSide}));
   const trail=new THREE.Mesh(geometry,materials.get(source));
-  trail.quaternion.setFromUnitVectors(axis,to.clone().sub(from).normalize());
-  trail.position.copy(from);
-  trail.scale.y=0;
+  trail.frustumCulled=false;
+  trail.userData.ownsGeometry=true;
+  trail.userData.points=Array.from({length:count},()=>from.clone());
   return trail;
+}
+
+export function updateTrail(trail,head,length){
+  const {points}=trail.userData, {headWidth,tailWidth}=FX.trail, positions=trail.geometry.attributes.position, last=points.length-1, step=length/last;
+  points[0].copy(head);
+  for(let i=1;i<=last;i++){
+    const d=points[i].distanceTo(points[i-1]);
+    if(d>step)points[i].lerp(points[i-1],1-step/d);
+  }
+  for(let i=0;i<=last;i++){
+    const p=points[i], half=(headWidth+(tailWidth-headWidth)*i/last)*.5;
+    tangent.subVectors(points[Math.max(i-1,0)],points[Math.min(i+1,last)]);
+    side.crossVectors(tangent,view.subVectors(eye,p)).normalize().multiplyScalar(half);
+    positions.setXYZ(i*2,p.x+side.x,p.y+side.y,p.z+side.z);
+    positions.setXYZ(i*2+1,p.x-side.x,p.y-side.y,p.z-side.z);
+  }
+  positions.needsUpdate=true;
 }

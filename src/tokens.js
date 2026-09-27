@@ -1,18 +1,26 @@
 import look from './look.json';
 
 export const MOTION={speed:10.7,aimTime:.028,runnerLift:.395};
-export const SHOT={speed:22.0,minDuration:.045,targetZ:.6048,mouth:[0,.92,.67]};
+export const SHOT={speed:12,minDuration:.045,targetZ:.6048,mouth:[0,.92,.67]};
 export const PATH={sideOffset:1.38,verticalOffset:2.38,cornerRadius:1.10,laneGap:.42,endOffset:.15,arcSteps:12};
 export const PIGS={ammo:20,columns:4,visibleRows:3,railCapacity:5};
 export const FRAME={maxDelta:.033};
 export const WIN={
-  delay:1.1,title:'Level clear!',heading:'Great job!',hint:'Tap to play again',ink:'#7a3f12',
+  delay:1.1,title:'Level clear!',heading:'Great job!',hint:'Tap to play again',next:'Tap for next level',done:'Tap for menu',ink:'#7a3f12',
+  fail:{delay:.8,title:'Out of pigs!',heading:'So close!',hint:'Tap to retry',rows:[['left','Blocks left'],['time','Time'],['pigs','Pigs used']]},
   bumpIn:.55,swing:2.4,swingAngle:3,rowStagger:.12,countDuration:.8,
   text:{sign:.55,plank:.5,label:.62,value:.78},
   stats:[['blocks','Blocks'],['time','Time'],['pigs','Pigs used'],['shots','Shots'],['bestCombo','Best combo']]
 };
 
-export const INTRO={text:'Tap the pigs!',top:'24%',size:.5};
+export const INTRO={text:'Tap the pigs!',level:'Level',top:'24%',size:.5};
+export const MENU={title:'Pig pop!',classic:'Classic',adventure:'Adventure',back:'Menu',size:.5};
+export const ADVENTURE={heightFollow:.3,levels:[
+  {size:12,pattern:'checker',checker:2,queues:['DLD','LDL','DLD','LDL'],ammo:20},
+  {size:16,pattern:'stripes',checker:2,queues:['DLDL','LDLD','DLDL','LDLD'],ammo:20},
+  {size:16,pattern:'checker',checker:4,queues:['DLDL','LDLD','DLDL','LDLD'],ammo:20},
+  {size:26,pattern:'checker',checker:2,queues:['DLDLDLDLD','LDLDLDLDL','DLDLDLDLD','LDLDLDLDL'],ammo:20}
+]};
 
 export const ANIM={
   tapBump:{amount:.15,duration:.08},
@@ -34,7 +42,7 @@ export const LIGHTS={
 };
 export const FX={
   particles:{max:160,gravity:-22,spin:9},
-  trail:{length:1.8,headWidth:.4,tailWidth:0,opacity:.85},
+  trail:{length:1.8,segments:10,headWidth:.4,tailWidth:0,opacity:.85,fade:.12},
   tapRing:{size:1.6,from:.6,to:1.4,duration:.35,lift:.05},
   death:{count:10,speed:4.5,up:8,life:.6,size:.6},
   confetti:{count:50,speed:10,up:16,life:1.4,size:.7},

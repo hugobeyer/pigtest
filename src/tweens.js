@@ -39,6 +39,12 @@ export function vanish(object,{inflate,puff,duration,distance,rise,reach,wobble,
   },done);});
 }
 
+export function clearTweens(){
+  tweens.length=0;
+  for(const [object,b] of bumps)object.scale.copy(b.base);
+  bumps.clear();
+}
+
 export function updateTweens(dt){
   for(let i=tweens.length-1;i>=0;i--){
     const t=tweens[i];

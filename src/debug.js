@@ -5,6 +5,7 @@ import {FOG_MODES, uniforms as fogBlend} from './fog.js';
 import {sparkle} from './fx/sparkles.js';
 import {showIntro} from './intro.js';
 import {showWin} from './win.js';
+import {destroyAll} from './grid.js';
 import {ENVIRONMENT, FOG, GROUND, LIGHTS, RENDER, SHADING, SPARKLES} from './tokens.js';
 import {uniforms as vignette} from './ground.js';
 import {sheenColor, uniforms as shade} from './shading.js';
@@ -140,7 +141,8 @@ export function debug({scene,renderer,toneMappings,fog,ambient,key,blender,cente
   fromBlender.close();
 
   gui.add({win:()=>showWin({blocks:676,time:42,pigs:12,shots:240,bestCombo:20})},'win').name('▶ preview win screen');
-  gui.add({intro:showIntro},'intro').name('▶ show intro');
+  gui.add({intro:()=>showIntro()},'intro').name('▶ show intro');
+  gui.add({clear:destroyAll},'clear').name('▶ clear level');
   gui.add({save:()=>fetch('/__look',{method:'POST',body:JSON.stringify(state)})},'save').name('Save to look.json');
   gui.add({copy:()=>navigator.clipboard.writeText(JSON.stringify(state,null,2))},'copy').name('Copy JSON');
   gui.onChange(apply);

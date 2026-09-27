@@ -1,49 +1,99 @@
 import * as THREE from 'three';
 import {createGrid, remainingCells, updateGrid} from './grid.js';
 import {createPath} from './path.js';
-import {createPigs, takePig, tapTargets, updatePigs} from './pigs.js';
+import {createPigs, pigsLeft, takePig, tapTargets, updatePigs} from './pigs.js';
 import {initRunners, launchRunner, runStats, runs, updateRunners} from './runners.js';
-import {updateShots} from './shots.js';
-import {bump, tween, updateTweens} from './tweens.js';
+import {activeShots, clearShots, updateShots} from './shots.js';
+import {bump, clearTweens, tween, updateTweens} from './tweens.js';
 import {emit, initParticles, updateParticles} from './fx/particles.js';
 import {initPopups} from './fx/popups.js';
 import {initShake, shake, updateShake} from './fx/shake.js';
 import {initRing} from './fx/ring.js';
+import {initTrails} from './fx/trail.js';
 import {initSparkles, sparkle, updateSparkles} from './fx/sparkles.js';
 import {showWin} from './win.js';
 import {showIntro} from './intro.js';
+import {showMenu} from './menu.js';
 import {play} from './sfx.js';
 import {createLabel} from './labels.js';
-import {FX, LABEL, PIGS, WIN} from './tokens.js';
+import {ADVENTURE, FX, INTRO, LABEL, PIGS, WIN} from './tokens.js';
 
-let capacityLabel, capacityText, pigTemplates, center, totalBlocks, won=false, time=0, pigsUsed=0;
+let scene, assets, stage=null, level=null, levelIndex=0, capacityLabel, capacityText, center, totalBlocks, won=false, lost=false, time=0, startTime=0, pigsUsed=0;
 export {tapTargets};
 
-export function initGameplay(scene,assets){
-  pigTemplates=assets.pigs;
+export function initGameplay(targetScene,loaded){
+  scene=targetScene;
+  assets=loaded;
   center=assets.gridCenter.getWorldPosition(new THREE.Vector3());
   initParticles(scene,assets.blocks);
   initShake(assets.camera);
   initPopups(assets.camera);
   initRing();
+  initTrails(assets.camera);
   initSparkles(scene);
-  const grid=createGrid(scene,assets.gridCenter,assets.blocks);
-  totalBlocks=remainingCells();
-  initRunners(scene,pigTemplates,assets.bullets,createPath(grid,assets.anchors),assets.camera);
-  createPigs(scene,assets.columns,pigTemplates);
   capacityLabel=createLabel(scene);
   capacityLabel.position.copy(assets.anchors.RailStart.getWorldPosition(new THREE.Vector3())).add(new THREE.Vector3(...LABEL.capacityOffset));
-  showIntro();
+  menu();
+}
+
+function menu(){
+  teardown();
+  showMenu({classic:()=>start(null),adventure:()=>start(0)});
+}
+
+function teardown(){
+  clearTweens();
+  clearShots();
+  tapTargets.length=0;
+  capacityLabel.visible=false;
+  document.querySelectorAll('.popup,#intro,#win').forEach(element=>element.remove());
+  if(!stage)return;
+  scene.remove(stage);
+  stage.traverse(o=>{
+    if(o.isInstancedMesh)o.dispose();
+    else if(o.isSprite){o.material.map.dispose(); o.material.dispose();}
+    else if(o.userData.ownsGeometry)o.geometry.dispose();
+    else if(o.userData.ownsMaterial)o.material.dispose();
+  });
+  stage=null;
+}
+
+function layoutFor(base,{size,pattern,checker}){
+  const step=base.step*base.columns/size, scale=step/base.step;
+  return {rows:size,columns:size,step,checker,pattern,scale,height:1+(scale-1)*ADVENTURE.heightFollow};
+}
+
+function start(index){
+  teardown();
+  levelIndex=index;
+  level=index===null ? null : ADVENTURE.levels[index];
+  stage=new THREE.Group();
+  scene.add(stage);
+  const base=assets.gridCenter.userData, layout=level ? layoutFor(base,level) : base;
+  const grid=createGrid(stage,assets.gridCenter,assets.blocks,layout);
+  totalBlocks=remainingCells();
+  initRunners(stage,assets.pigs,assets.bullets,createPath(grid,assets.anchors,(layout.step-base.step)/2),assets.camera);
+  createPigs(stage,assets.columns,assets.pigs,time,level?.queues,level?.ammo);
+  won=lost=false;
+  pigsUsed=0;
+  startTime=time;
+  capacityText=null;
+  capacityLabel.visible=true;
+  showIntro(level ? `${INTRO.level} ${index+1}` : INTRO.text);
 }
 
 export function tap(object){
-  if(won)return false;
+  if(!stage || won || lost)return false;
   if(runs.length>=PIGS.railCapacity){play('full'); return true;}
   const pig=takePig(object);
   if(!pig)return false;
   pigsUsed++;
-  launchRunner({template:pig.isLight ? pigTemplates.light : pigTemplates.dark,ammo:pig.ammo,isLight:pig.isLight});
+  launchRunner({template:pig.isLight ? assets.pigs.light : assets.pigs.dark,ammo:pig.ammo,isLight:pig.isLight});
   return true;
+}
+
+function stats(){
+  return {blocks:totalBlocks,left:remainingCells(),time:Math.round(time-startTime),pigs:pigsUsed,...runStats};
 }
 
 function celebrate(){
@@ -52,22 +102,39 @@ function celebrate(){
   sparkle(center,'levelClear');
   play('clear');
   shake();
-  tween(WIN.delay,null,()=>showWin({blocks:totalBlocks,time:Math.round(time),pigs:pigsUsed,...runStats}));
+  const last=level && levelIndex===ADVENTURE.levels.length-1;
+  tween(WIN.delay,null,()=>showWin(stats(),{
+    hint:!level ? WIN.hint : last ? WIN.done : WIN.next,
+    onTap:!level ? ()=>start(null) : last ? menu : ()=>start(levelIndex+1),
+    onMenu:menu
+  }));
+}
+
+function fail(){
+  play('full');
+  tween(WIN.fail.delay,null,()=>showWin(stats(),{...WIN.fail,onTap:()=>start(level ? levelIndex : null),onMenu:menu}));
 }
 
 export function updateGameplay(dt){
   time+=dt;
-  updateRunners(dt);
-  updateShots(dt);
-  updateGrid(dt);
+  if(stage){
+    updateRunners(dt);
+    updateShots(dt);
+    updateGrid(dt);
+  }
   updateTweens(dt);
   updateParticles(dt);
   updateSparkles(dt);
   updateShake(dt);
-  updatePigs(time,!won && runs.length<PIGS.railCapacity);
-  if(!won && remainingCells()===0){
+  if(!stage)return;
+  updatePigs(time,!won && !lost && runs.length<PIGS.railCapacity);
+  if(!won && !lost && remainingCells()===0){
     won=true;
     celebrate();
+  }
+  if(level && !won && !lost && !runs.length && !activeShots() && !pigsLeft()){
+    lost=true;
+    fail();
   }
   const text=`${PIGS.railCapacity-runs.length}/${PIGS.railCapacity}`;
   if(text!==capacityText){

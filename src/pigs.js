@@ -33,17 +33,20 @@ function refresh(column){
   column.objects.forEach((object,i)=>{if(object)object.userData.label.material.opacity=i===0 ? 1 : LABEL.backOpacity;});
 }
 
-export function createPigs(targetScene,columnObjects,pigTemplates){
+export function createPigs(targetScene,columnObjects,pigTemplates,time,queues,ammo=PIGS.ammo){
   scene=targetScene;
+  tapTargets.length=0;
+  now=waitStart=time;
+  nextHint=0;
   templates=pigTemplates;
   const box=new THREE.Box3().setFromObject(templates.dark,true);
   pigHeight=box.max.z-box.min.z;
   labelLift=pigHeight+LABEL.lift;
-  columns=columnObjects.map(columnObject=>{
-    const {queue,row_step:rowStep}=columnObject.userData;
+  columns=columnObjects.map((columnObject,i)=>{
+    const {row_step:rowStep}=columnObject.userData, queue=queues?.[i]??columnObject.userData.queue;
     if(!/^[DL]+$/.test(queue) || !(rowStep>0))throw new Error(`${columnObject.name}: requires queue (D/L) and positive row_step`);
     const front=columnObject.getWorldPosition(new THREE.Vector3());
-    const column={slots:Array.from({length:PIGS.visibleRows},(_,i)=>front.clone().setY(front.y-rowStep*i)),queue:[...queue].map(key=>({isLight:key==='L',ammo:PIGS.ammo})),busy:false};
+    const column={slots:Array.from({length:PIGS.visibleRows},(_,i)=>front.clone().setY(front.y-rowStep*i)),queue:[...queue].map(key=>({isLight:key==='L',ammo})),busy:false};
     column.objects=column.slots.map(slot=>spawn(column.queue.shift(),slot));
     refresh(column);
     return column;
@@ -60,6 +63,8 @@ function advance(column){
   refresh(column);
   tween(ANIM.queueSlide.duration,null,()=>column.busy=false);
 }
+
+export const pigsLeft=()=>columns.reduce((sum,column)=>sum+column.queue.length+column.objects.filter(Boolean).length,0);
 
 export function takePig(object){
   const column=columns.find(column=>column.objects[0]===object);

@@ -7,23 +7,24 @@ const popping=[];
 const popScale=new THREE.Vector3(), popMatrix=new THREE.Matrix4();
 const hidden=new THREE.Matrix4().makeScale(0,0,0);
 
-export function createGrid(scene,center,blocks){
-  const {rows,columns,step,checker}=center.userData;
+export function createGrid(scene,center,blocks,layout=center.userData){
+  const {rows,columns,step,checker,pattern='checker',scale=1,height=1}=layout;
   if(![rows,columns,step,checker].every(value=>value>0))throw new Error('GridCenter requires rows, columns, step and checker');
   const origin=center.getWorldPosition(new THREE.Vector3());
   grid=Array.from({length:rows},(_,r)=>Array.from({length:columns},(_,c)=>({
-    r,c,isLight:((Math.floor(r/checker)+Math.floor(c/checker))&1)===0,alive:true,reserved:false,
+    r,c,isLight:((Math.floor(r/checker)+(pattern==='stripes' ? 0 : Math.floor(c/checker)))&1)===0,alive:true,reserved:false,
     position:new THREE.Vector3(origin.x+(c-(columns-1)*.5)*step,origin.y+((rows-1)*.5-r)*step,origin.z)
   })));
   const cells=grid.flat();
   remaining=cells.length;
+  popping.length=0;
   for(const [key,isLight] of [['light',true],['dark',false]]){
     let template=null;
     blocks[key].traverse(o=>{if(!template && o.isMesh)template=o;});
     const members=cells.filter(cell=>cell.isLight===isLight);
     const mesh=new THREE.InstancedMesh(template.geometry,template.material,members.length);
     mesh.castShadow=mesh.receiveShadow=true;
-    const matrix=template.matrixWorld.clone();
+    const matrix=new THREE.Matrix4().makeScale(scale,scale,height).multiply(template.matrixWorld.clone().setPosition(0,0,0));
     members.forEach((cell,index)=>{
       mesh.setMatrixAt(index,matrix.setPosition(cell.position));
       Object.assign(cell,{mesh,index,matrix:matrix.clone()});
@@ -81,3 +82,4 @@ export function updateGrid(dt){
 }
 
 export const remainingCells=()=>remaining;
+export const destroyAll=()=>grid?.flat().forEach(destroyCell);

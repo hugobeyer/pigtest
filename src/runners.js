@@ -17,6 +17,9 @@ const mouthLocal=new THREE.Vector3(...SHOT.mouth);
 
 export function initRunners(targetScene,templates,bulletTemplates,runnerPath,camera){
   scene=targetScene;
+  runs.length=0;
+  Object.assign(runStats,{shots:0,bestCombo:0});
+  lastWord=null;
   eye=camera.getWorldPosition(new THREE.Vector3());
   bullets=bulletTemplates;
   path=runnerPath;
