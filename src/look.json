@@ -1,35 +1,35 @@
 {
   "shading": {
-    "terminator": 0.14,
-    "softness": 0.47,
-    "darkColor": "#33616c",
+    "terminator": 0.26,
+    "softness": 0.23,
+    "darkColor": "#dfe684",
     "sss": {
-      "strength": 0.14,
-      "width": 0.4
+      "strength": 0.99,
+      "width": 0.83
     },
     "rim": {
-      "color": "#bdd5b8",
+      "color": "#225418",
       "strength": 1.5,
-      "power": 5.3
+      "power": 1.55
     },
     "outline": {
-      "color": "#94ba2c",
-      "from": 0.68,
-      "strength": 0.38
+      "color": "#92a168",
+      "from": 0.69,
+      "strength": 0.59
     }
   },
   "environment": {
-    "terminator": 0.68,
-    "softness": 0.44,
-    "darkColor": "#a3b073",
-    "detail": 1.6,
+    "terminator": 0.03,
+    "softness": 0.23,
+    "darkColor": "#aac8cf",
+    "detail": 1.05,
     "lit": true,
     "sheen": {
-      "strength": 0.05,
-      "power": 1,
-      "hue": 25,
-      "saturation": 0.68,
-      "albedo": 1
+      "strength": 0.08,
+      "power": 5.9,
+      "hue": 37,
+      "saturation": 1,
+      "albedo": 0.23
     },
     "shadowOpacity": 0.52,
     "shadowColor": "#082a3a"
