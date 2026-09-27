@@ -52,15 +52,15 @@ uniform sampler2D uDetail;
 ` +
         shader.fragmentShader.replace(
           '#include <opaque_fragment>',
-          `vec2 breakUv = mat2( 0.8, -0.6, 0.6, 0.8 ) * vGround / uBreakTile;
-float breakLuma = dot( texture2D( uDetail, breakUv ).rgb, vec3( 0.2126, 0.7152, 0.0722 ) ) / max( dot( textureLod( uDetail, vec2( 0.5 ), 16.0 ).rgb, vec3( 0.2126, 0.7152, 0.0722 ) ), 1e-3 );
-float ramp = smoothstep( min( uInner, uOuter ), max( uInner, uOuter ) + 1e-3, length( ( vGround - uCenter - uOffset ) / uRadius ) + ( breakLuma - 1.0 ) * uBreakAmount );
+          `float ramp = smoothstep( min( uInner, uOuter ), max( uInner, uOuter ) + 1e-3, length( ( vGround - uCenter - uOffset ) / uRadius ) );
+float lumaMean = max( dot( textureLod( uDetail, vec2( 0.5 ), 16.0 ).rgb, vec3( 0.2126, 0.7152, 0.0722 ) ), 1e-3 );
 vec3 detailRaw = texture2D( uDetail, vGround / uDetailTile ).rgb;
-float height = dot( detailRaw, vec3( 0.2126, 0.7152, 0.0722 ) ) / max( dot( textureLod( uDetail, vec2( 0.5 ), 16.0 ).rgb, vec3( 0.2126, 0.7152, 0.0722 ) ) * 2.0, 1e-3 );
+float breakLuma = dot( texture2D( uDetail, mat2( 0.8, -0.6, 0.6, 0.8 ) * vGround / uBreakTile ).rgb, vec3( 0.2126, 0.7152, 0.0722 ) ) / lumaMean;
+float height = dot( detailRaw, vec3( 0.2126, 0.7152, 0.0722 ) ) / lumaMean * 0.5 + ( breakLuma - 1.0 ) * uBreakAmount;
 float w = max( uHeightWidth, 1e-3 );
-ramp = mix( ramp, smoothstep( height - w, height + w, mix( -w, 1.0 + w, ramp ) ), uHeightBlend );
+float detailRamp = mix( ramp, smoothstep( height - w, height + w, mix( -w, 1.0 + w, ramp ) ), uHeightBlend );
 vec3 detail = detailRaw / max( textureLod( uDetail, vec2( 0.5 ), 16.0 ).rgb, vec3( 1e-3 ) );
-outgoingLight *= mix( uMiddle, uEdge, ramp ) * max( mix( vec3( 1.0 ), detail, mix( uDetailCenter, uDetailEdge, ramp ) ), vec3( 0.0 ) );
+outgoingLight *= mix( uMiddle, uEdge, ramp ) * max( mix( vec3( 1.0 ), detail, mix( uDetailCenter, uDetailEdge, detailRamp ) ), vec3( 0.0 ) );
 #include <opaque_fragment>`
         );
       blendFog(shader);
