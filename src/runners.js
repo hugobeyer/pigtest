@@ -116,9 +116,13 @@ function fire(run) {
 }
 
 function paint(run, tint, glow) {
+  const { power, core } = FX.heat;
   for (const material of run.materials) {
-    material.color.copy(material.userData.baseColor).multiply(tint);
-    if (material.emissive) material.emissive.copy(material.userData.baseEmissive).add(glow);
+    const heat = material.userData.heat;
+    heat.uHeatTint.value.copy(tint);
+    heat.uHeatGlow.value.copy(glow);
+    heat.uHeatPower.value = power;
+    heat.uHeatCore.value = core;
   }
 }
 

@@ -64,7 +64,7 @@ export const FX={
   idleBob:{height:.14,speed:5},
   queueSway:{height:.06,speed:2.4,tilt:.07,vary:.35,rows:[1,.45,.25]},
   runnerBob:{height:.1,speed:9,tilt:.06,hold:.25,settle:.2,shooting:.6},
-  heat:{color:'#ff4a2e',max:.7,emissive:.25},
+  heat:{color:'#ff4a2e',max:.7,emissive:.25,power:2,core:.15},
   burn:{color:'#ffd23a',tint:.5,emissive:1.4,cool:.6},
   recoil:{distance:.18,kick:.35,decay:14},
   idleHint:{after:4,every:2.5,jitter:.4,marks:'!?',size:1.9,lift:.75,duration:1.1,popIn:.2,fadeOut:.25,wobble:.25,wobbles:3,huh:{rise:.12,hold:.7,recover:1.2,jump:.3,stretch:.15}},

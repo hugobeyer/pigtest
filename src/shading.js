@@ -72,6 +72,10 @@ uniform float uInner, uOuter, uSceneryVignette, uCharacterVignette;
 uniform vec3 uMiddle, uEdge;
 uniform float uTerminator, uSoftness, uSceneryTerminator, uScenerySoftness, uSceneryDetail, uSssStrength, uSssWidth, uSheenStrength, uSheenPower, uSheenAlbedo, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
 uniform vec3 uDarkColor, uSceneryDarkColor, uRimColor, uOutlineColor, uSheenColor;
+#ifdef HEAT
+uniform vec3 uHeatTint, uHeatGlow;
+uniform float uHeatPower, uHeatCore;
+#endif
 ` +
     shader.fragmentShader
       .replace(
@@ -125,6 +129,10 @@ float facing = 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) );
 #if NUM_DIR_LIGHTS > 0
 outgoingLight += uRimColor * uRimStrength * saturate( 0.5 - 0.5 * dot( normal, directionalLights[ 0 ].direction ) ) * pow( facing, uRimPower );
 #endif
+#ifdef HEAT
+float heatMask = mix( uHeatCore, 1.0, pow( facing, uHeatPower ) );
+outgoingLight = outgoingLight * mix( vec3( 1.0 ), uHeatTint, heatMask ) + uHeatGlow * heatMask;
+#endif
 outgoingLight = mix( outgoingLight, uOutlineColor, uOutlineStrength * sin( saturate( ( facing - uOutlineFrom ) / ( 1.0 - uOutlineFrom ) ) * PI ) );
 #endif
 float vignetted = smoothstep( min( uInner, uOuter ), max( uInner, uOuter ) + 1e-3, length( ( vVignette - uCenter - uOffset ) / uRadius ) );
@@ -157,11 +165,14 @@ function toon(source, character) {
 
 export function ownMaterial(source) {
   const material = source.clone();
-  material.defines = { ...source.defines };
-  material.onBeforeCompile = source.onBeforeCompile;
-  material.customProgramCacheKey = source.customProgramCacheKey;
-  material.userData.baseColor = source.color.clone();
-  material.userData.baseEmissive = source.emissive?.clone();
+  const heat = { uHeatTint: { value: new THREE.Color(1, 1, 1) }, uHeatGlow: { value: new THREE.Color(0, 0, 0) }, uHeatPower: { value: 2 }, uHeatCore: { value: 0 } };
+  material.defines = { ...source.defines, HEAT: '' };
+  material.onBeforeCompile = shader => {
+    patch(shader);
+    Object.assign(shader.uniforms, heat);
+  };
+  material.customProgramCacheKey = () => source.customProgramCacheKey() + '-heat';
+  material.userData.heat = heat;
   return material;
 }
 

@@ -40,6 +40,8 @@ const sections = [
       ['FX.recoil.decay', 1, 40, 0.5, 'recoil recover'],
       ['FX.heat.max', 0, 1, 0.01, 'heat redness'],
       ['FX.heat.emissive', 0, 1, 0.01, 'heat glow'],
+      ['FX.heat.power', 0.2, 6, 0.05, 'heat fresnel power'],
+      ['FX.heat.core', 0, 1, 0.01, 'heat on center'],
       ['FX.burn.emissive', 0, 4, 0.05, 'burn glow'],
       ['FX.burn.tint', 0, 1, 0.01, 'burn yellow'],
       ['FX.burn.cool', 0.05, 1, 0.01, 'burn cool-down'],
