@@ -2,18 +2,36 @@ import * as THREE from 'three';
 import { FOG } from './tokens.js';
 
 export const FOG_MODES = ['normal', 'overlay', 'soft light', 'screen', 'multiply'];
-export const uniforms = { uFogMode: { value: FOG_MODES.indexOf(FOG.mode) } };
+export const uniforms = {
+  uFogMode: { value: FOG_MODES.indexOf(FOG.mode) },
+  uFogBottom: { value: FOG.height.bottom },
+  uFogTop: { value: FOG.height.top },
+  uFogCurve: { value: FOG.height.curve },
+  uFogHeightMix: { value: FOG.height.mix }
+};
 const line = '\tgl_FragColor.rgb = mix( gl_FragColor.rgb, fogColor, fogFactor );';
 
 export function blendFog(shader) {
   Object.assign(shader.uniforms, uniforms);
+  shader.vertexShader =
+    'varying float vFogHeight;\n' +
+    shader.vertexShader.replace(
+      '#include <fog_vertex>',
+      `#include <fog_vertex>
+#ifdef USE_INSTANCING
+vFogHeight = ( modelMatrix * instanceMatrix * vec4( transformed, 1.0 ) ).z;
+#else
+vFogHeight = ( modelMatrix * vec4( transformed, 1.0 ) ).z;
+#endif`
+    );
   shader.fragmentShader =
-    'uniform float uFogMode;\n' +
+    'uniform float uFogMode, uFogBottom, uFogTop, uFogCurve, uFogHeightMix;\nvarying float vFogHeight;\n' +
     shader.fragmentShader.replace(
       '#include <fog_fragment>',
       THREE.ShaderChunk.fog_fragment.replace(
         line,
-        `\t#ifndef FOG_MODE
+        `\tfogFactor *= mix( 1.0, pow( 1.0 - smoothstep( min( uFogBottom, uFogTop ), max( uFogBottom, uFogTop ) + 1e-3, vFogHeight ), uFogCurve ), uFogHeightMix );
+\t#ifndef FOG_MODE
 \t\t#define FOG_MODE uFogMode
 \t#endif
 \tvec3 fogBase = gl_FragColor.rgb;

@@ -98,6 +98,10 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, blende
     fog.color.set(state.fog.color);
     fog.near = state.fog.near;
     fog.far = state.fog.far;
+    fogBlend.uFogBottom.value = state.fog.height.bottom;
+    fogBlend.uFogTop.value = state.fog.height.top;
+    fogBlend.uFogCurve.value = state.fog.height.curve;
+    fogBlend.uFogHeightMix.value = state.fog.height.mix;
     scene.fog = state.fog.enabled ? fog : null;
   };
 
@@ -170,6 +174,10 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, blende
   fogFolder.addColor(state.fog, 'color').name('fog color');
   fogFolder.add(state.fog, 'near', 0, 200, 0.5).name('starts at distance');
   fogFolder.add(state.fog, 'far', 0, 250, 0.5).name('full fog at distance');
+  fogFolder.add(state.fog.height, 'mix', 0, 1, 0.01).name('height falloff amount');
+  fogFolder.add(state.fog.height, 'bottom', -10, 20, 0.1).name('full fog below height');
+  fogFolder.add(state.fog.height, 'top', -10, 40, 0.1).name('no fog above height');
+  fogFolder.add(state.fog.height, 'curve', 0.1, 6, 0.05).name('height curve');
 
   const sparkles = lookPanel.addFolder('Sparkles');
   for (const [name, p] of Object.entries(state.sparkles)) {
