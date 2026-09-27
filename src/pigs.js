@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import {instantiate} from './assets.js';
 import {createLabel} from './labels.js';
 import {bump, grow, slide, tween} from './tweens.js';
-import {tapRing} from './fx/ring.js';
 import {ANIM, FX, LABEL, PIGS} from './tokens.js';
 
 let scene, columns, templates, pigHeight, labelLift;
@@ -63,7 +62,6 @@ export function takePig(object){
   if(!column || column.busy)return null;
   column.busy=true;
   bump(object,ANIM.tapBump);
-  tapRing(scene,object.position,pigHeight);
   object.children[0].position.z=0;
   tween(ANIM.tapBump.duration,null,()=>advance(column));
   return object.userData.pig;
