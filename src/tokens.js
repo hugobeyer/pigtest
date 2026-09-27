@@ -46,7 +46,7 @@ export const sheenAxis=({axisAzimuth,axisElevation},out)=>{
   const a=axisAzimuth*Math.PI/180, e=axisElevation*Math.PI/180;
   return out.set(Math.cos(a)*Math.cos(e),Math.sin(a)*Math.cos(e),Math.sin(e));
 };
-export const GROUND={name:'Ground_Plane',offset:[0,0],scenery:.6,characters:0,detailTile:6,detailCenter:0,detailEdge:1,heightBlend:0,heightWidth:.15,breakTile:23,breakAmount:0,...look.ground};
+export const GROUND={name:'Ground_Plane',offset:[0,0],scenery:.6,characters:0,detailTile:6,heightContrast:4,heightWidth:.1,breakTile:23,breakAmount:1.5,...look.ground};
 export const FOG={enabled:true,mode:'soft light',color:'#cfe3b4',near:60,far:110,...look.fog};
 FOG.depthBias??=.5;
 FOG.height={bottom:0,top:6,bias:.4,mix:1,...look.fog?.height};

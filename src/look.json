@@ -48,8 +48,6 @@
     "scenery": 0,
     "characters": 0,
     "detailTile": 10.9,
-    "detailCenter": 1.05,
-    "detailEdge": 2.03,
     "radius": [
       6.1,
       13.4

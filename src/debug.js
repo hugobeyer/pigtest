@@ -32,9 +32,7 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, center
     scenery: GROUND.scenery,
     characters: GROUND.characters,
     detailTile: GROUND.detailTile,
-    detailCenter: GROUND.detailCenter,
-    detailEdge: GROUND.detailEdge,
-    heightBlend: GROUND.heightBlend,
+    heightContrast: GROUND.heightContrast,
     heightWidth: GROUND.heightWidth,
     breakTile: GROUND.breakTile,
     breakAmount: GROUND.breakAmount,
@@ -83,9 +81,7 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, center
     vignette.uInner.value = g.inner;
     vignette.uOuter.value = g.outer;
     vignette.uDetailTile.value = g.detailTile;
-    vignette.uDetailCenter.value = g.detailCenter;
-    vignette.uDetailEdge.value = g.detailEdge;
-    vignette.uHeightBlend.value = g.heightBlend;
+    vignette.uHeightContrast.value = g.heightContrast;
     vignette.uHeightWidth.value = g.heightWidth;
     vignette.uBreakTile.value = g.breakTile;
     vignette.uBreakAmount.value = g.breakAmount;
@@ -167,12 +163,10 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, center
   ground.add(g, 'inner', 0, 2, 0.01);
   ground.add(g, 'outer', 0, 3, 0.01);
   ground.add(g, 'detailTile', 0.5, 40, 0.1).name('texture tile size');
-  ground.add(g, 'detailCenter', 0, 3, 0.01).name('texture at center');
-  ground.add(g, 'detailEdge', 0, 3, 0.01).name('texture at edges');
-  ground.add(g, 'heightBlend', 0, 1, 0.01).name('height blend (texture luma)');
-  ground.add(g, 'heightWidth', 0.01, 1, 0.01).name('height blend softness');
-  ground.add(g, 'breakAmount', 0, 1, 0.01).name('edge break-up amount');
-  ground.add(g, 'breakTile', 1, 80, 0.5).name('edge break-up scale');
+  ground.add(g, 'heightContrast', 0, 10, 0.1).name('texture luma contrast');
+  ground.add(g, 'heightWidth', 0.01, 1, 0.01).name('texture reveal softness');
+  ground.add(g, 'breakAmount', 0, 1, 0.01).name('break-up strength');
+  ground.add(g, 'breakTile', 1, 80, 0.5).name('break-up scale');
   ground.addColor(g, 'middle').name('center color');
   ground.addColor(g, 'edge').name('edge color');
   ground.addColor(e, 'shadowColor').name('shadow color');
