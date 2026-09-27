@@ -38,6 +38,8 @@ const sections = [
       ['FX.recoil.distance', 0, 0.6, 0.01, 'recoil push'],
       ['FX.recoil.kick', 0, 1, 0.01, 'recoil tilt'],
       ['FX.recoil.decay', 1, 40, 0.5, 'recoil recover'],
+      ['FX.heat.max', 0, 1, 0.01, 'heat redness'],
+      ['FX.heat.emissive', 0, 1, 0.01, 'heat glow'],
       ['FX.numberPunch.amount', 0, 1, 0.01, 'ammo number punch']
     ]
   ],

@@ -4,6 +4,7 @@ import { createLabel, disposeLabel } from './labels.js';
 import { validTarget } from './grid.js';
 import { fireShot } from './shots.js';
 import { rampColor } from './fx/ramp.js';
+import { ownMaterial } from './shading.js';
 import { bump, vanish } from './tweens.js';
 import { emit } from './fx/particles.js';
 import { popup } from './fx/popups.js';
@@ -20,6 +21,9 @@ let scene,
   lastWord = null;
 export const runs = [];
 export const runStats = { shots: 0, bestCombo: 0 };
+const heatColor = new THREE.Color(),
+  tint = new THREE.Color(),
+  glow = new THREE.Color();
 const mouthLocal = new THREE.Vector3(...SHOT.mouth);
 
 export function initRunners(targetScene, templates, bulletTemplates, runnerPath, camera) {
@@ -39,13 +43,20 @@ function spawn(template) {
   const runner = new THREE.Group(),
     pop = instantiate(template);
   runner.add(pop);
+  const materials = [];
+  pop.traverse(o => {
+    if (!o.isMesh || Array.isArray(o.material)) return;
+    o.material = ownMaterial(o.material);
+    o.userData.ownsMaterial = true;
+    materials.push(o.material);
+  });
   const label = createLabel(runner);
   label.position.z = labelLift;
   runner.position.copy(path.entry);
   runner.rotation.z = path.nodes[0].travelFace;
   scene.add(runner);
   bump(pop, ANIM.enterBump);
-  return { runner, pop, label };
+  return { runner, pop, label, materials };
 }
 
 export function launchRunner({ template, ammo, isLight }) {
@@ -55,6 +66,7 @@ export function launchRunner({ template, ammo, isLight }) {
     ...parts,
     bullet: isLight ? bullets.light : bullets.dark,
     ammo,
+    maxAmmo: ammo,
     isLight,
     nodeIndex: 0,
     phase: 'move',
@@ -87,12 +99,25 @@ function fire(run) {
   run.recoil = 1;
   bump(run.label, FX.numberPunch);
   run.hits = (run.hits ?? 0) + 1;
+  heat(run);
   runStats.shots++;
   runStats.bestCombo = Math.max(runStats.bestCombo, run.hits);
   if (runStats.shots % FX.combo.every === 0) {
     const words = FX.combo.words.filter(word => word !== lastWord);
     lastWord = words[Math.floor(Math.random() * words.length)];
     popup(lastWord, run.runner.position);
+  }
+}
+
+function heat(run) {
+  const { color, max, emissive } = FX.heat,
+    k = Math.min(run.hits / run.maxAmmo, 1) * max;
+  heatColor.set(color);
+  tint.setRGB(1, 1, 1).lerp(heatColor, k);
+  glow.copy(heatColor).multiplyScalar(emissive * k);
+  for (const material of run.materials) {
+    material.color.copy(material.userData.baseColor).multiply(tint);
+    if (material.emissive) material.emissive.copy(material.userData.baseEmissive).add(glow);
   }
 }
 
@@ -133,6 +158,7 @@ function advance(run) {
       done: () => {
         scene.remove(run.runner);
         disposeLabel(run.label);
+        run.materials.forEach(material => material.dispose());
       }
     });
     return true;

@@ -155,6 +155,16 @@ function toon(source, character) {
   return cache.get(source);
 }
 
+export function ownMaterial(source) {
+  const material = source.clone();
+  material.defines = { ...source.defines };
+  material.onBeforeCompile = source.onBeforeCompile;
+  material.customProgramCacheKey = source.customProgramCacheKey;
+  material.userData.baseColor = source.color.clone();
+  material.userData.baseEmissive = source.emissive?.clone();
+  return material;
+}
+
 export function shadeGameplay(root) {
   root.traverse(o => {
     if (!o.isMesh || o.material.isMeshBasicMaterial || o.material.isShadowMaterial) return;
