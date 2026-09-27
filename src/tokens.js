@@ -43,7 +43,8 @@ export const SHADING={terminator:0,softness:.6,darkColor:'#9a9ab4',...look.shadi
 export const ENVIRONMENT={terminator:-.1,softness:.7,darkColor:'#8aa08a',detail:2,...look.environment};
 export const GROUND={name:'Ground_Plane',offset:[0,0],scenery:.6,characters:0,detailTile:6,detailCenter:0,detailEdge:1,...look.ground};
 export const FOG={enabled:true,mode:'soft light',color:'#cfe3b4',near:60,far:110,...look.fog};
-FOG.height={bottom:0,top:6,curve:1.5,mix:1,...look.fog?.height};
+FOG.depthBias??=.5;
+FOG.height={bottom:0,top:6,bias:.4,mix:1,...look.fog?.height};
 export const RENDER={background:look.background,maxPixelRatio:2,anisotropy:8,tone:{mapping:'none',exposure:1,...look.tone}};
 export const LIGHTS={
   hemisphere:look.hemisphere,

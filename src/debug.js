@@ -100,7 +100,8 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, blende
     fog.far = state.fog.far;
     fogBlend.uFogBottom.value = state.fog.height.bottom;
     fogBlend.uFogTop.value = state.fog.height.top;
-    fogBlend.uFogCurve.value = state.fog.height.curve;
+    fogBlend.uFogDepthBias.value = state.fog.depthBias;
+    fogBlend.uFogHeightBias.value = state.fog.height.bias;
     fogBlend.uFogHeightMix.value = state.fog.height.mix;
     scene.fog = state.fog.enabled ? fog : null;
   };
@@ -177,7 +178,8 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, blende
   fogFolder.add(state.fog.height, 'mix', 0, 1, 0.01).name('height falloff amount');
   fogFolder.add(state.fog.height, 'bottom', -10, 20, 0.1).name('full fog below height');
   fogFolder.add(state.fog.height, 'top', -10, 40, 0.1).name('no fog above height');
-  fogFolder.add(state.fog.height, 'curve', 0.1, 6, 0.05).name('height curve');
+  fogFolder.add(state.fog, 'depthBias', 0.01, 0.99, 0.01).name('depth curve bias');
+  fogFolder.add(state.fog.height, 'bias', 0.01, 0.99, 0.01).name('height curve bias');
 
   const sparkles = lookPanel.addFolder('Sparkles');
   for (const [name, p] of Object.entries(state.sparkles)) {
