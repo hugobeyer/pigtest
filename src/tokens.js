@@ -46,9 +46,13 @@ export const FOG={enabled:true,mode:'soft light',color:'#cfe3b4',near:60,far:110
 FOG.depthBias??=.5;
 FOG.height={bottom:0,top:6,bias:.4,mix:1,...look.fog?.height};
 export const RENDER={background:look.background,maxPixelRatio:2,anisotropy:8,tone:{mapping:'none',exposure:1,...look.tone}};
+export function sunPosition({azimuth,elevation,distance,target},out){
+  const a=azimuth*Math.PI/180, e=elevation*Math.PI/180;
+  return out.set(target[0]+Math.cos(a)*Math.cos(e)*distance,target[1]+Math.sin(a)*Math.cos(e)*distance,target[2]+Math.sin(e)*distance);
+}
 export const LIGHTS={
   hemisphere:look.hemisphere,
-  key:{color:0xffffff,intensity:2.65,position:[10,-14,18],target:[0,1.5,0],shadowMapSize:2048,shadowCamera:{left:-18,right:18,top:22,bottom:-22,near:.5,far:70},...look.shadow}
+  key:{color:'#ffffff',intensity:3.5,azimuth:15.2,elevation:72.1,distance:25.8,target:[0,1.5,0],shadowMapSize:2048,shadowCamera:{left:-18,right:18,top:22,bottom:-22,near:.5,far:70},...look.key,...look.shadow}
 };
 export const FX={
   particles:{max:160,gravity:-22,spin:9},

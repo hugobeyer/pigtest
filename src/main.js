@@ -2,7 +2,7 @@ import './style.css';
 import * as THREE from 'three';
 import { loadAssets } from './assets.js';
 import { hover, initGameplay, tap, tapTargets, updateGameplay } from './gameplay.js';
-import { FOG, FRAME, LIGHTS, RENDER } from './tokens.js';
+import { FOG, FRAME, LIGHTS, RENDER, sunPosition } from './tokens.js';
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(RENDER.background);
@@ -50,7 +50,7 @@ const { hemisphere, key: keyLight } = LIGHTS;
 const ambient = new THREE.HemisphereLight(hemisphere.sky, hemisphere.ground, hemisphere.intensity);
 scene.add(ambient);
 const key = new THREE.DirectionalLight(keyLight.color, keyLight.intensity);
-key.position.set(...keyLight.position);
+sunPosition(keyLight, key.position);
 key.target.position.set(...keyLight.target);
 key.castShadow = true;
 key.shadow.mapSize.set(keyLight.shadowMapSize, keyLight.shadowMapSize);
@@ -101,16 +101,6 @@ addEventListener('visibilitychange', () => {
 
 loadAssets(new URL('../assets/primitive_scene.glb', import.meta.url).href).then(
   assets => {
-    if (assets.world) {
-      ambient.color.copy(assets.world.color);
-      ambient.intensity = assets.world.intensity;
-    }
-    if (assets.key) {
-      key.color.copy(assets.key.color);
-      key.intensity = assets.key.intensity;
-      const distance = key.position.distanceTo(key.target.position);
-      key.position.copy(key.target.position).addScaledVector(assets.key.direction, -distance);
-    }
     initGameplay(scene, assets);
     scene.add(assets.root);
     camera = assets.camera;
@@ -128,7 +118,6 @@ loadAssets(new URL('../assets/primitive_scene.glb', import.meta.url).href).then(
           fog,
           ambient,
           key,
-          blender: { world: !!assets.world },
           center: assets.gridCenter.getWorldPosition(new THREE.Vector3())
         })
       );

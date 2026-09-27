@@ -7,11 +7,11 @@ import { showIntro } from './intro.js';
 import { showWin } from './win.js';
 import { destroyAll } from './grid.js';
 import { tunePanel } from './tune.js';
-import { ENVIRONMENT, FOG, GROUND, LIGHTS, RENDER, SHADING, SPARKLES } from './tokens.js';
+import { ENVIRONMENT, FOG, GROUND, LIGHTS, RENDER, SHADING, SPARKLES, sunPosition } from './tokens.js';
 import { uniforms as vignette } from './ground.js';
 import { sheenColor, uniforms as shade } from './shading.js';
 
-export function debug({ scene, renderer, toneMappings, fog, ambient, key, blender, center }) {
+export function debug({ scene, renderer, toneMappings, fog, ambient, key, center }) {
   const state = structuredClone(look);
   const curve = ({ terminator, softness, darkColor }) => ({ terminator, softness, darkColor });
   state.shading = { ...curve(SHADING), ...state.shading };
@@ -35,12 +35,8 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, blende
   state.tone = { ...RENDER.tone };
   const on = { sss: true, rim: true, outline: true, sheen: true, vignette: true };
   const { shading: s, environment: e, ground: g, hemisphere: h } = state;
-  const live = {
-    sun: '#' + key.color.getHexString(),
-    sunIntensity: key.intensity,
-    sky: '#' + ambient.color.getHexString(),
-    skyIntensity: ambient.intensity
-  };
+  const { color, intensity, azimuth, elevation } = LIGHTS.key;
+  state.key = { color, intensity, azimuth, elevation, ...state.key };
   const apply = () => {
     shade.uTerminator.value = s.terminator;
     shade.uSoftness.value = s.softness;
@@ -75,15 +71,11 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, blende
     vignette.uMiddle.value.set(g.middle);
     vignette.uEdge.value.set(on.vignette ? g.edge : g.middle);
     ambient.groundColor.set(h.ground);
-    if (blender.world) {
-      ambient.color.set(live.sky);
-      ambient.intensity = live.skyIntensity;
-    } else {
-      ambient.color.set(h.sky);
-      ambient.intensity = h.intensity;
-    }
-    key.color.set(live.sun);
-    key.intensity = live.sunIntensity;
+    ambient.color.set(h.sky);
+    ambient.intensity = h.intensity;
+    key.color.set(state.key.color);
+    key.intensity = state.key.intensity;
+    sunPosition({ ...LIGHTS.key, ...state.key }, key.position);
     const { shadowMapSize, ...shadow } = state.shadow;
     Object.assign(key.shadow, shadow);
     if (key.shadow.mapSize.x !== shadowMapSize) {
@@ -156,11 +148,13 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, blende
   ground.add(e, 'shadowOpacity', 0, 1, 0.01).name('shadow opacity');
 
   const light = lookPanel.addFolder('Light');
+  light.addColor(state.key, 'color').name('sun color');
+  light.add(state.key, 'intensity', 0, 10, 0.01).name('sun intensity');
+  light.add(state.key, 'azimuth', -180, 180, 0.5).name('sun azimuth');
+  light.add(state.key, 'elevation', 5, 90, 0.5).name('sun angle');
+  light.addColor(h, 'sky').name('ambient sky');
+  light.add(h, 'intensity', 0, 6, 0.01).name('ambient intensity');
   light.addColor(h, 'ground').name('ambient bounce');
-  if (!blender.world) {
-    light.addColor(h, 'sky').name('ambient sky');
-    light.add(h, 'intensity', 0, 6, 0.01).name('ambient intensity');
-  }
   light.add(state.shadow, 'shadowMapSize', [512, 1024, 2048, 4096]).name('shadow map size');
   light.add(state.shadow, 'radius', 0, 12, 0.1).name('shadow blur');
   light.add(state.shadow, 'normalBias', 0, 0.2, 0.001).name('shadow normal bias');
@@ -202,14 +196,6 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, blende
   }
   sparkles.close();
 
-  const fromBlender = lookPanel.addFolder('From Blender (live only, set in Blender)');
-  fromBlender.addColor(live, 'sun').name('sun color');
-  fromBlender.add(live, 'sunIntensity', 0, 8, 0.01).name('sun strength');
-  if (blender.world) {
-    fromBlender.addColor(live, 'sky').name('world color');
-    fromBlender.add(live, 'skyIntensity', 0, 8, 0.01).name('world strength');
-  }
-  fromBlender.close();
 
   lookPanel.add({ save: () => fetch('/__look', { method: 'POST', body: JSON.stringify(state) }) }, 'save').name('Save to look.json');
   lookPanel.add({ copy: () => navigator.clipboard.writeText(JSON.stringify(state, null, 2)) }, 'copy').name('Copy JSON');
