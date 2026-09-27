@@ -3,33 +3,36 @@ import look from './look.json';
 import {catcher} from './environment.js';
 import {FOG_MODES, uniforms as fogBlend} from './fog.js';
 import {sparkle} from './fx/sparkles.js';
-import {ENVIRONMENT, FOG, GROUND, LIGHTS, SHADING, SPARKLES} from './tokens.js';
+import {showIntro} from './intro.js';
+import {showWin} from './win.js';
+import {ENVIRONMENT, FOG, GROUND, LIGHTS, RENDER, SHADING, SPARKLES} from './tokens.js';
 import {uniforms as vignette} from './ground.js';
 import {sheenColor, uniforms as shade} from './shading.js';
 
-export function debug({scene,fog,ambient,key,blender,center}){
+export function debug({scene,renderer,toneMappings,fog,ambient,key,blender,center}){
   const state=structuredClone(look);
   const curve=({terminator,softness,darkColor})=>({terminator,softness,darkColor});
   state.shading={...curve(SHADING),...state.shading};
-  state.environment={...curve(ENVIRONMENT),...state.environment};
+  state.environment={...curve(ENVIRONMENT),detail:ENVIRONMENT.detail,...state.environment};
   for(const group of [state.shading,state.environment]){delete group.wrap; delete group.power;}
-  state.ground={offset:[...GROUND.offset],scenery:GROUND.scenery,characters:GROUND.characters,...state.ground};
+  state.ground={offset:[...GROUND.offset],scenery:GROUND.scenery,characters:GROUND.characters,detailTile:GROUND.detailTile,detailCenter:GROUND.detailCenter,detailEdge:GROUND.detailEdge,...state.ground};
   state.fog=structuredClone(FOG);
   state.shadow={shadowMapSize:LIGHTS.key.shadowMapSize,...state.shadow};
   state.sparkles=SPARKLES;
+  state.tone={...RENDER.tone};
   const on={sss:true,rim:true,outline:true,sheen:true,vignette:true};
   const {shading:s,environment:e,ground:g,hemisphere:h}=state;
   const live={sun:'#'+key.color.getHexString(),sunIntensity:key.intensity,sky:'#'+ambient.color.getHexString(),skyIntensity:ambient.intensity};
   const apply=()=>{
     shade.uTerminator.value=s.terminator; shade.uSoftness.value=s.softness; shade.uDarkColor.value.set(s.darkColor);
-    shade.uSceneryTerminator.value=e.terminator; shade.uScenerySoftness.value=e.softness; shade.uSceneryDarkColor.value.set(e.darkColor);
+    shade.uSceneryTerminator.value=e.terminator; shade.uScenerySoftness.value=e.softness; shade.uSceneryDarkColor.value.set(e.darkColor); shade.uSceneryDetail.value=e.detail;
     shade.uSssStrength.value=on.sss ? s.sss.strength : 0; shade.uSssWidth.value=s.sss.width;
     shade.uRimColor.value.set(s.rim.color); shade.uRimStrength.value=on.rim ? s.rim.strength : 0; shade.uRimPower.value=s.rim.power;
     shade.uOutlineColor.value.set(s.outline.color); shade.uOutlineFrom.value=s.outline.from; shade.uOutlineStrength.value=on.outline ? s.outline.strength : 0;
     shade.uSheenStrength.value=on.sheen ? e.sheen.strength : 0; shade.uSheenPower.value=e.sheen.power; sheenColor(e.sheen,shade.uSheenColor.value); shade.uSheenAlbedo.value=e.sheen.albedo;
     catcher.color.set(e.shadowColor); catcher.opacity=e.shadowOpacity;
     vignette.uSceneryVignette.value=on.vignette ? g.scenery : 0; vignette.uCharacterVignette.value=on.vignette ? g.characters : 0;
-    vignette.uOffset.value.fromArray(g.offset); vignette.uRadius.value.fromArray(g.radius); vignette.uInner.value=g.inner; vignette.uOuter.value=g.outer;
+    vignette.uOffset.value.fromArray(g.offset); vignette.uRadius.value.fromArray(g.radius); vignette.uInner.value=g.inner; vignette.uOuter.value=g.outer; vignette.uDetailTile.value=g.detailTile; vignette.uDetailCenter.value=g.detailCenter; vignette.uDetailEdge.value=g.detailEdge;
     vignette.uMiddle.value.set(g.middle); vignette.uEdge.value.set(on.vignette ? g.edge : g.middle);
     ambient.groundColor.set(h.ground);
     if(blender.world){ambient.color.set(live.sky); ambient.intensity=live.skyIntensity;}
@@ -39,10 +42,11 @@ export function debug({scene,fog,ambient,key,blender,center}){
     Object.assign(key.shadow,shadow);
     if(key.shadow.mapSize.x!==shadowMapSize){key.shadow.map?.dispose(); key.shadow.map=null; key.shadow.mapSize.set(shadowMapSize,shadowMapSize);}
     scene.background.set(state.background);
+    renderer.toneMapping=toneMappings[state.tone.mapping]; renderer.toneMappingExposure=state.tone.exposure;
     fogBlend.uFogMode.value=FOG_MODES.indexOf(state.fog.mode); fog.color.set(state.fog.color); fog.near=state.fog.near; fog.far=state.fog.far; scene.fog=state.fog.enabled ? fog : null;
   };
 
-  const gui=new GUI({title:'Look  (G to hide)',width:420});
+  const gui=new GUI({title:'Look  (G to toggle)',width:420});
   gui.domElement.style.setProperty('--name-width','48%');
   const character=gui.addFolder('Pigs, blocks, bullets');
   character.add(s,'terminator',-1,1,.01).name('shadow starts (lower = more lit)');
@@ -64,6 +68,7 @@ export function debug({scene,fog,ambient,key,blender,center}){
   scenery.add(e,'lit').name('lit (save, then reloads)');
   scenery.add(e,'terminator',-1,1,.01).name('shadow starts (lower = more lit)');
   scenery.add(e,'softness',.01,1,.01).name('edge softness');
+  scenery.add(e,'detail',0,6,.05).name('normal map detail');
   scenery.addColor(e,'darkColor').name('dark side color');
   scenery.add(on,'sheen').name('sheen on');
   scenery.add(e.sheen,'strength',0,1,.01).name('sheen strength');
@@ -76,12 +81,14 @@ export function debug({scene,fog,ambient,key,blender,center}){
   ground.add(on,'vignette').name('vignette on');
   ground.add(g,'scenery',0,1,.01).name('scenery follows vignette');
   ground.add(g,'characters',0,1,.01).name('pigs/blocks follow vignette');
-  ground.add(g.offset,0,-20,20,.1).name('center offset across');
   ground.add(g.offset,1,-20,20,.1).name('center offset up/down');
   ground.add(g.radius,0,1,40,.1).name('radius across');
   ground.add(g.radius,1,1,40,.1).name('radius up/down');
   ground.add(g,'inner',0,2,.01);
   ground.add(g,'outer',0,3,.01);
+  ground.add(g,'detailTile',.5,40,.1).name('texture tile size');
+  ground.add(g,'detailCenter',0,3,.01).name('texture at center');
+  ground.add(g,'detailEdge',0,3,.01).name('texture at edges');
   ground.addColor(g,'middle').name('center color');
   ground.addColor(g,'edge').name('edge color');
   ground.addColor(e,'shadowColor').name('shadow color');
@@ -94,6 +101,8 @@ export function debug({scene,fog,ambient,key,blender,center}){
   light.add(state.shadow,'radius',0,12,.1).name('shadow blur');
   light.add(state.shadow,'normalBias',0,.2,.001).name('shadow normal bias');
   light.add(state.shadow,'bias',-.005,.005,.00005).name('shadow bias');
+  light.add(state.tone,'mapping',Object.keys(toneMappings)).name('tone mapping');
+  light.add(state.tone,'exposure',.2,3,.01);
   light.addColor(state,'background');
 
   const fogFolder=gui.addFolder('Fog (farther = foggier, top of screen)');
@@ -107,8 +116,9 @@ export function debug({scene,fog,ambient,key,blender,center}){
   for(const [name,p] of Object.entries(state.sparkles)){
     const preset=sparkles.addFolder(name).close();
     preset.add({test:()=>sparkle(center,name)},'test').name('▶ test at grid center');
-    preset.add(p,'frames').name('sprites, random pick (e.g. 6,7)');
-    preset.add(p,'count',1,120,1);
+    preset.add(p,'frames').name('sprites 0-23, random pick (e.g. 6,7)');
+    preset.add(p,'count',1,120,1).name('count min');
+    preset.add(p,'maxCount',1,120,1).name('count max');
     preset.add(p,'ring').name('even ring');
     preset.add(p,'align').name('point along motion');
     preset.add(p,'speed',0,30,.1).name('spread speed');
@@ -117,6 +127,7 @@ export function debug({scene,fog,ambient,key,blender,center}){
     preset.add(p,'drag',0,10,.1);
     preset.add(p,'life',.1,4,.01).name('life (s)');
     preset.add(p,'size',.05,4,.01);
+    preset.add(p,'sizeJitter',0,.95,.01).name('size randomness');
     preset.add(p,'spin',0,20,.1);
     preset.add(p,'tilt',0,1,.01).name('random tilt');
   }
@@ -128,11 +139,14 @@ export function debug({scene,fog,ambient,key,blender,center}){
   if(blender.world){fromBlender.addColor(live,'sky').name('world color'); fromBlender.add(live,'skyIntensity',0,8,.01).name('world strength');}
   fromBlender.close();
 
+  gui.add({win:()=>showWin({blocks:676,time:42,pigs:12,shots:240,bestCombo:20})},'win').name('▶ preview win screen');
+  gui.add({intro:showIntro},'intro').name('▶ show intro');
   gui.add({save:()=>fetch('/__look',{method:'POST',body:JSON.stringify(state)})},'save').name('Save to look.json');
   gui.add({copy:()=>navigator.clipboard.writeText(JSON.stringify(state,null,2))},'copy').name('Copy JSON');
   gui.onChange(apply);
 
-  let shown=true;
+  let shown=false;
+  gui.hide();
   addEventListener('keydown',event=>{
     if(event.key!=='g' && event.key!=='G')return;
     shown=!shown;

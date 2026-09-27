@@ -1,11 +1,11 @@
 {
   "shading": {
     "terminator": 0.14,
-    "softness": 0.41,
-    "darkColor": "#76979e",
+    "softness": 0.47,
+    "darkColor": "#33616c",
     "sss": {
-      "strength": 1,
-      "width": 1
+      "strength": 0.14,
+      "width": 0.4
     },
     "rim": {
       "color": "#bdd5b8",
@@ -19,16 +19,17 @@
     }
   },
   "environment": {
-    "terminator": 0.22,
-    "softness": 0.67,
-    "darkColor": "#7eaea0",
+    "terminator": -0.5,
+    "softness": 0.51,
+    "darkColor": "#caccc2",
+    "detail": 3.7,
     "lit": true,
     "sheen": {
-      "strength": 0.15,
-      "power": 1,
-      "hue": 36,
-      "saturation": 0.51,
-      "albedo": 1
+      "strength": 0.21,
+      "power": 6.1,
+      "hue": 31,
+      "saturation": 0.63,
+      "albedo": 0.77
     },
     "shadowOpacity": 0.8,
     "shadowColor": "#082a3a"
@@ -38,35 +39,38 @@
       0,
       4.8
     ],
-    "scenery": 1,
-    "characters": 0.61,
+    "scenery": 0.39,
+    "characters": 0.18,
+    "detailTile": 23.8,
+    "detailCenter": 0.62,
+    "detailEdge": 2.03,
     "radius": [
-      5.1,
-      14.7
+      6.1,
+      13.4
     ],
-    "inner": 0.7,
-    "outer": 2.12,
-    "middle": "#84c832",
-    "edge": "#547366"
+    "inner": 0.63,
+    "outer": 1.65,
+    "middle": "#92dd36",
+    "edge": "#4d783b"
   },
   "hemisphere": {
     "sky": "#fff6e6",
-    "ground": "#a5988d",
+    "ground": "#597578",
     "intensity": 2.2
   },
   "shadow": {
     "shadowMapSize": 2048,
-    "bias": -0.0003,
-    "normalBias": 0.047,
-    "radius": 1.1
+    "bias": -0.0028,
+    "normalBias": 0.034,
+    "radius": 1.9
   },
   "background": "#51544f",
   "fog": {
-    "enabled": false,
-    "mode": "multiply",
+    "enabled": true,
+    "mode": "normal",
     "color": "#4300a8",
-    "near": 38.5,
-    "far": 218
+    "near": 50,
+    "far": 125
   },
   "sparkles": {
     "levelClear": {
@@ -81,7 +85,9 @@
       "size": 1.1,
       "spin": 4,
       "tilt": 1,
-      "ring": false
+      "ring": false,
+      "maxCount": 60,
+      "sizeJitter": 0.3
     },
     "tap": {
       "align": false,
@@ -95,20 +101,40 @@
       "size": 0.45,
       "spin": 3,
       "tilt": 1,
-      "ring": true
+      "ring": true,
+      "maxCount": 8,
+      "sizeJitter": 0.3
     },
-    "block": {
+    "blockLight": {
       "align": false,
-      "frames": "7",
-      "count": 2,
-      "speed": 2.5,
-      "up": 5,
-      "gravity": -18,
-      "drag": 1,
-      "life": 0.45,
+      "frames": "12,13,14,15,16,17",
+      "count": 3,
+      "maxCount": 6,
+      "speed": 4,
+      "up": 7,
+      "gravity": -25,
+      "drag": 0.5,
+      "life": 0.6,
       "size": 0.4,
-      "spin": 0,
-      "tilt": 0.15,
+      "sizeJitter": 0.6,
+      "spin": 1.5,
+      "tilt": 0.1,
+      "ring": false
+    },
+    "blockDark": {
+      "align": false,
+      "frames": "18,19,20,21,22,23",
+      "count": 3,
+      "maxCount": 6,
+      "speed": 4,
+      "up": 7,
+      "gravity": -25,
+      "drag": 0.5,
+      "life": 0.6,
+      "size": 0.4,
+      "sizeJitter": 0.6,
+      "spin": 1.5,
+      "tilt": 0.1,
       "ring": false
     },
     "combo": {
@@ -123,7 +149,9 @@
       "size": 0.91,
       "spin": 2.2,
       "tilt": 0.44,
-      "ring": false
+      "ring": false,
+      "maxCount": 9,
+      "sizeJitter": 0.3
     },
     "pop": {
       "align": true,
@@ -137,7 +165,13 @@
       "size": 1.1,
       "spin": 0,
       "tilt": 0.08,
-      "ring": true
+      "ring": true,
+      "maxCount": 8,
+      "sizeJitter": 0.3
     }
+  },
+  "tone": {
+    "mapping": "neutral",
+    "exposure": 1
   }
 }

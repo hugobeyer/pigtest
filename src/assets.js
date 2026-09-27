@@ -3,7 +3,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {prepareEnvironment} from './environment.js';
 import {vignette} from './ground.js';
 import {shadeGameplay} from './shading.js';
-import {GROUND} from './tokens.js';
+import {GROUND, RENDER} from './tokens.js';
 
 export const PIG_COLUMNS=4;
 const WATTS_TO_LUX=683;
@@ -40,7 +40,10 @@ export async function loadAssets(url){
   root.updateMatrixWorld(true);
   const lights=[];
   root.traverse(object=>{
-    if(object.isMesh){object.castShadow=allows(object,'cast_shadow'); object.receiveShadow=allows(object,'receive_shadow');}
+    if(object.isMesh){
+      object.castShadow=allows(object,'cast_shadow'); object.receiveShadow=allows(object,'receive_shadow');
+      for(const material of [object.material].flat())for(const key of ['map','normalMap','roughnessMap'])if(material[key])material[key].anisotropy=RENDER.anisotropy;
+    }
     if(object.isLight)lights.push(object);
   });
   const sun=lights.find(light=>light.isDirectionalLight);

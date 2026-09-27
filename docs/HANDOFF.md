@@ -58,7 +58,8 @@ Other Blender facts:
 | `fx/popups.js` | Combo word images with pop/wobble/shine/float animation |
 | `fx/sparkles.js` | Sparkle-sheet particles (level clear, tap, block hit, combo, runner done) |
 | `sfx.js` | Sound effects: random take per event from `assets/sfx/<event>_<n>.mp3` (ElevenLabs, trimmed/normalized from `source_files/sfx`), pitch jitter, volumes in `SFX` (`tokens.js`). Also loops `assets/music/farm_fun_groove.mp3` (mono 64 kbps from `source_files/tune`), starting with a fade-in on the first tap |
-| `win.js` | Win screen (LEVEL CLEAR image + stats from font sheet) |
+| `win.js` | Win screen: hanging sign ("LEVEL CLEAR!") + wood frame with stats, brown-tinted font sheet text |
+| `intro.js` | Start banner ("TAP THE PIGS!"), dismissed on first tap |
 | `debug.js` | Live **Look panel** (dev only) |
 | `tokens.js` | Gameplay tuning (speeds, ammo, animations, combo words…) |
 | `look.json` | All look values; written by the Look panel's Save button |
@@ -86,10 +87,10 @@ Other Blender facts:
 
 ## 5. UI art
 
-- **Word art** (`assets/words/*.webp`, ~56 KB each): nice, sweet, cool, wow, yes, combo, great, awesome, level_clear. Wood-sign style made with ChatGPT; transparent, trimmed, 1024 wide.
+- **Word art** (`assets/words/*.webp`, ~56 KB each): nice, sweet, cool, wow, yes, combo, great, awesome (plus level_clear, no longer used by the win screen but still bundled by the `words/*.webp` glob). Wood-sign style made with ChatGPT; transparent, trimmed, 1024 wide.
   - Combo words pop up every 30 hits at 34% screen width (`FX.combo` in `tokens.js`).
   - Animation curves are in `style.css` (`word-life`, `word-sweep`).
-- **Font sheet** (`assets/fonts/digits.webp` + `.json`, 87 KB): 0–9, `/`, A–Z, `!`.
+- **Font sheet** (`assets/fonts/digits.webp` + `.json`, 90 KB): 0–9, `/`, A–Z, `!`, `?`.
   - Baked from Lilita One (OFL license in `tools/fonts/`) with rounded corners, white fill, a 3D grey-blue edge and a drop shadow.
   - Used by all in-game numbers and the win screen.
   - Re-bake: edit the settings at the top of `tools/bake_digits.py`, then run `python3 tools/bake_digits.py` (needs `pip install pillow`).
@@ -102,12 +103,12 @@ Other Blender facts:
   | small sparkle | plus | small plus |
   | 3-drop burst | 2-drop burst | swoosh |
 
-  Used by `fx/sparkles.js`: one instanced billboard draw call. All values live in `tokens.js` only: presets in `SPARKLES` (levelClear, tap, block, combo, pop; one sheet cell each), shared settings (max, jitter, fade, per-cell `frameScale`) in `FX.sparkles`. Defaults are there; the Look panel's **Sparkles** folder (with test buttons) saves overrides to `look.json`, which win over `tokens.js`. `frames` is a string of sheet cells, 0–8, left to right and top to bottom.
+  Used by `fx/sparkles.js`: one instanced billboard draw call. All values live in `tokens.js` only: presets in `SPARKLES` (levelClear, tap, block, combo, pop, blockLight, blockDark), shared settings (max, jitter, fade, per-cell `frameScale`) in `FX.sparkles`. Defaults are there; the Look panel's **Sparkles** folder (with test buttons) saves overrides to `look.json`, which win over `tokens.js`. The sheet is a 6×4 atlas built by `tools/build_fx_atlas.py` from `source_files/fx` (original 3×3 sparkles as cells 0–8, block shards as 12–17 white and 18–23 dark). `frames` lists cells, comma separated, left to right and top to bottom.
 
 ## 6. Next steps
 
 1. ~~**Particle emitter using `sparkles.webp`**~~: done. Tune the presets by eye. The sheet has no dot or puff frame, so "dots" and "puff" use small sparkles and pluses.
-2. **Restyle the win card**: still the dark box. It should match the wood/cream look.
+2. ~~**Restyle the win card**~~: done. Win = hanging sign (title) + wood frame (stats), start = plank banner (`intro.js`). Art cut from `source_files/ui/panels.webp` into `assets/ui/`; text insets live in `style.css`, strings/sizes in `WIN`/`INTRO` (`tokens.js`).
 3. **Swap remaining Houdini art in Blender**:
    - rail mesh as `Rail_Main` or any name
    - grid blocks: Ctrl+L mesh swap onto `Grid_Block_*`

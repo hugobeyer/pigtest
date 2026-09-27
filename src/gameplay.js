@@ -11,6 +11,7 @@ import {initShake, shake, updateShake} from './fx/shake.js';
 import {initRing} from './fx/ring.js';
 import {initSparkles, sparkle, updateSparkles} from './fx/sparkles.js';
 import {showWin} from './win.js';
+import {showIntro} from './intro.js';
 import {play} from './sfx.js';
 import {createLabel} from './labels.js';
 import {FX, LABEL, PIGS, WIN} from './tokens.js';
@@ -32,6 +33,7 @@ export function initGameplay(scene,assets){
   createPigs(scene,assets.columns,pigTemplates);
   capacityLabel=createLabel(scene);
   capacityLabel.position.copy(assets.anchors.RailStart.getWorldPosition(new THREE.Vector3())).add(new THREE.Vector3(...LABEL.capacityOffset));
+  showIntro();
 }
 
 export function tap(object){

@@ -5,7 +5,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 ROOT=Path(__file__).resolve().parent.parent
 FONT=ROOT/'tools'/'fonts'/'LilitaOne-Regular.ttf'
 OUT=ROOT/'assets'/'fonts'
-GLYPHS='0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ!'
+GLYPHS='0123456789/ABCDEFGHIJKLMNOPQRSTUVWXYZ!?'
 HEIGHT=128
 SCALE=4
 SIZE=96

@@ -15,7 +15,7 @@ function isCharacter(object){
 const converted={character:new Map(),scenery:new Map()};
 export const uniforms={
   uTerminator:{value:SHADING.terminator},uSoftness:{value:SHADING.softness},uDarkColor:{value:new THREE.Color(SHADING.darkColor)},
-  uSceneryTerminator:{value:ENVIRONMENT.terminator},uScenerySoftness:{value:ENVIRONMENT.softness},uSceneryDarkColor:{value:new THREE.Color(ENVIRONMENT.darkColor)},
+  uSceneryTerminator:{value:ENVIRONMENT.terminator},uScenerySoftness:{value:ENVIRONMENT.softness},uSceneryDarkColor:{value:new THREE.Color(ENVIRONMENT.darkColor)},uSceneryDetail:{value:ENVIRONMENT.detail},
   uSssStrength:{value:SHADING.sss.strength},uSssWidth:{value:SHADING.sss.width},
   uRimColor:{value:new THREE.Color(SHADING.rim.color)},uRimStrength:{value:SHADING.rim.strength},uRimPower:{value:SHADING.rim.power},
   uOutlineColor:{value:new THREE.Color(SHADING.outline.color)},uOutlineFrom:{value:SHADING.outline.from},uOutlineStrength:{value:SHADING.outline.strength},
@@ -36,10 +36,11 @@ vVignette = ( modelMatrix * vec4( transformed, 1.0 ) ).xy;
 #define FOG_MODE 0.0
 #endif
 varying vec2 vVignette;
+vec3 baseNormal;
 uniform vec2 uCenter, uOffset, uRadius;
 uniform float uInner, uOuter, uSceneryVignette, uCharacterVignette;
 uniform vec3 uMiddle, uEdge;
-uniform float uTerminator, uSoftness, uSceneryTerminator, uScenerySoftness, uSssStrength, uSssWidth, uSheenStrength, uSheenPower, uSheenAlbedo, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
+uniform float uTerminator, uSoftness, uSceneryTerminator, uScenerySoftness, uSceneryDetail, uSssStrength, uSssWidth, uSheenStrength, uSheenPower, uSheenAlbedo, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
 uniform vec3 uDarkColor, uSceneryDarkColor, uRimColor, uOutlineColor, uSheenColor;
 `+shader.fragmentShader
     .replace('#include <lights_physical_pars_fragment>',THREE.ShaderChunk.lights_physical_pars_fragment.replace(specular,`\t#ifdef GOOSHY_CHARACTER
@@ -57,6 +58,7 @@ ${specular}
 \t\tfloat lit = smoothstep( uSceneryTerminator - uScenerySoftness, uSceneryTerminator + uScenerySoftness, nl );
 \t\tvec3 dark = uSceneryDarkColor;
 \t\tfloat band = 0.0;
+\t\tlit *= clamp( 1.0 + uSceneryDetail * ( nl - dot( baseNormal, directLight.direction ) ), 0.0, 2.0 );
 \t#endif
 \t#if NUM_DIR_LIGHTS > 0
 \t\tvec3 lightColor = directionalLights[ 0 ].color;
@@ -73,6 +75,7 @@ ${specular}
 \t#ifdef GOOSHY_CHARACTER
 \t\treflectedLight.directDiffuse += directLight.color * BRDF_Lambert( material.diffuseContribution ) * sky * uSssStrength * band;
 \t#endif`))
+    .replace('#include <normal_fragment_begin>','#include <normal_fragment_begin>\nbaseNormal = normal;')
     .replace('#include <opaque_fragment>',`#ifdef GOOSHY_CHARACTER
 float facing = 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) );
 #if NUM_DIR_LIGHTS > 0

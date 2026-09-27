@@ -8,7 +8,7 @@ let material;
 export function initRing(){
   const texture=new THREE.TextureLoader().load(new URL('../../assets/fx/tap_ring.png',import.meta.url).href);
   texture.colorSpace=THREE.SRGBColorSpace;
-  material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false});
+  material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,toneMapped:false});
 }
 
 export function tapRing(scene,position,height){

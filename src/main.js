@@ -13,6 +13,9 @@ const renderer=new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,RENDER.maxPixelRatio));
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFShadowMap;
+const toneMappings={none:THREE.NoToneMapping,neutral:THREE.NeutralToneMapping,agx:THREE.AgXToneMapping,aces:THREE.ACESFilmicToneMapping,reinhard:THREE.ReinhardToneMapping,cineon:THREE.CineonToneMapping};
+renderer.toneMapping=toneMappings[RENDER.tone.mapping];
+renderer.toneMappingExposure=RENDER.tone.exposure;
 document.querySelector('#app').appendChild(renderer.domElement);
 
 let camera;
@@ -83,5 +86,5 @@ loadAssets(new URL('../assets/primitive_scene.glb',import.meta.url).href).then(a
   enableInput();
   last=performance.now();
   renderer.setAnimationLoop(frame);
-  if(import.meta.env.DEV)import('./debug.js').then(({debug})=>debug({scene,fog,ambient,key,blender:{world:!!assets.world},center:assets.gridCenter.getWorldPosition(new THREE.Vector3())}));
+  if(import.meta.env.DEV)import('./debug.js').then(({debug})=>debug({scene,renderer,toneMappings,fog,ambient,key,blender:{world:!!assets.world},center:assets.gridCenter.getWorldPosition(new THREE.Vector3())}));
 },error=>console.error('Blender GLB failed to load.',error));

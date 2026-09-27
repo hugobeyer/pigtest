@@ -77,10 +77,10 @@ export function takePig(object){
 }
 
 function exclaim(object){
-  const {mark,size,lift,duration,popIn,fadeOut,wobble,wobbles}=FX.idleHint;
-  const sprite=createLabel(object,size,.5);
+  const {marks,size,lift,duration,popIn,fadeOut,wobble,wobbles}=FX.idleHint;
+  const sprite=createLabel(object,size,.6);
   sprite.position.z=labelLift+lift;
-  sprite.userData.set(mark);
+  sprite.userData.set(marks[Math.floor(Math.random()*marks.length)]);
   const scale=sprite.scale.clone();
   tween(duration,k=>{
     sprite.scale.copy(scale).multiplyScalar(backOut(Math.min(k/popIn,1)));

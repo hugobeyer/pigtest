@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import sheetUrl from '../../assets/fx/sparkles.webp';
 import {FX, SPARKLES} from '../tokens.js';
 
-const MAX=FX.sparkles.max;
+const MAX=FX.sparkles.max, {columns,rows}=FX.sparkles;
 const particles=Array.from({length:MAX},()=>({position:new THREE.Vector3(),velocity:new THREE.Vector3(),age:0,life:1,size:0,angle:0,spin:0,frame:0,gravity:0,drag:0,align:false}));
 let geometry, offsets, data, velocities, active=0;
 
@@ -17,7 +17,8 @@ void main(){
   vec4 view=modelViewMatrix*vec4(aOffset,1.);
   view.xy+=mat2(c,s,-s,c)*position.xy*aData.x;
   gl_Position=projectionMatrix*view;
-  vUv=(uv+vec2(mod(aData.z,3.),2.-floor(aData.z/3.)))/3.;
+  float row=floor((aData.z+.5)/${columns}.);
+  vUv=(uv+vec2(aData.z-row*${columns}.,${rows-1}.-row))/vec2(${columns}.,${rows}.);
   vAlpha=aData.w;
 }`;
 
@@ -48,14 +49,14 @@ export function initSparkles(scene){
 }
 
 export function sparkle(position,name){
-  const {frames,count,speed,up,gravity,drag,life,size,spin,tilt,ring,align}=SPARKLES[name], {sizeScale,countScale,lifeJitter,sizeJitter,speedJitter,upJitter,frameScale}=FX.sparkles, total=Math.round(count*countScale), cells=String(frames).match(/[0-8]/g);
+  const {frames,count,maxCount,sizeJitter,speed,up,gravity,drag,life,size,spin,tilt,ring,align}=SPARKLES[name], {sizeScale,countScale,lifeJitter,speedJitter,upJitter,frameScale}=FX.sparkles, total=Math.round((count+Math.floor(Math.random()*(Math.max(maxCount,count)-count+1)))*countScale), cells=String(frames).match(/\d+/g);
   for(let i=0;i<total && active<MAX;i++){
     const p=particles[active++];
     const angle=ring ? i/total*Math.PI*2 : Math.random()*Math.PI*2, force=speed*(ring ? 1 : 1-Math.random()*speedJitter);
     p.position.copy(position);
     p.velocity.set(Math.cos(angle)*force,Math.sin(angle)*force,up*(1-Math.random()*upJitter));
     p.frame=+cells[Math.floor(Math.random()*cells.length)];
-    p.age=0; p.life=life*(1-Math.random()*lifeJitter); p.size=size*sizeScale*frameScale[p.frame]*(1-Math.random()*sizeJitter);
+    p.age=0; p.life=life*(1-Math.random()*lifeJitter); p.size=size*sizeScale*(frameScale[p.frame]??1)*(1-Math.random()*sizeJitter);
     p.angle=(Math.random()*2-1)*tilt*Math.PI; p.spin=(Math.random()*2-1)*spin;
     p.gravity=gravity; p.drag=drag; p.align=align;
   }

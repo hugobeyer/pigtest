@@ -28,7 +28,7 @@ export function updateShots(dt){
     s.trail.position.lerpVectors(s.from,s.to,k-length/s.distance);
     s.trail.scale.y=length;
     if(k>=1){
-      sparkle(s.to,'block');
+      sparkle(s.to,s.cell.isLight ? 'blockLight' : 'blockDark');
       play('hit');
       destroyCell(s.cell);
       s.scene.remove(s.mesh,s.trail);
