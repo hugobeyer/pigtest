@@ -41,6 +41,11 @@ export const ANIM={
 export const LABEL={height:.8,lift:.35,capacityOffset:[0,-1.06,.28],backOpacity:.45,canvas:[256,128],tracking:-4};
 export const SHADING={terminator:0,softness:.6,darkColor:'#9a9ab4',...look.shading};
 export const ENVIRONMENT={terminator:-.1,softness:.7,darkColor:'#8aa08a',detail:2,...look.environment};
+ENVIRONMENT.sheen={aniso:0,bend:0,axisAzimuth:0,axisElevation:90,mask:0,maskPower:2,...ENVIRONMENT.sheen};
+export const sheenAxis=({axisAzimuth,axisElevation},out)=>{
+  const a=axisAzimuth*Math.PI/180, e=axisElevation*Math.PI/180;
+  return out.set(Math.cos(a)*Math.cos(e),Math.sin(a)*Math.cos(e),Math.sin(e));
+};
 export const GROUND={name:'Ground_Plane',offset:[0,0],scenery:.6,characters:0,detailTile:6,detailCenter:0,detailEdge:1,...look.ground};
 export const FOG={enabled:true,mode:'soft light',color:'#cfe3b4',near:60,far:110,...look.fog};
 FOG.depthBias??=.5;

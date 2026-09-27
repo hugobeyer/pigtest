@@ -7,7 +7,7 @@ import { showIntro } from './intro.js';
 import { showWin } from './win.js';
 import { destroyAll } from './grid.js';
 import { tunePanel } from './tune.js';
-import { ENVIRONMENT, FOG, GROUND, LIGHTS, RENDER, SHADING, SPARKLES, sunPosition } from './tokens.js';
+import { ENVIRONMENT, FOG, GROUND, LIGHTS, RENDER, SHADING, SPARKLES, sheenAxis, sunPosition } from './tokens.js';
 import { uniforms as vignette } from './ground.js';
 import { sheenColor, uniforms as shade } from './shading.js';
 
@@ -34,6 +34,7 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, center
   state.sparkles = SPARKLES;
   state.tone = { ...RENDER.tone };
   const on = { sss: true, rim: true, outline: true, sheen: true, vignette: true };
+  state.environment.sheen = { ...ENVIRONMENT.sheen, ...state.environment.sheen };
   const { shading: s, environment: e, ground: g, hemisphere: h } = state;
   const { color, intensity, azimuth, elevation } = LIGHTS.key;
   state.key = { color, intensity, azimuth, elevation, ...state.key };
@@ -57,6 +58,11 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, center
     shade.uSheenPower.value = e.sheen.power;
     sheenColor(e.sheen, shade.uSheenColor.value);
     shade.uSheenAlbedo.value = e.sheen.albedo;
+    shade.uSheenAniso.value = e.sheen.aniso;
+    shade.uSheenBend.value = e.sheen.bend;
+    sheenAxis(e.sheen, shade.uSheenAxis.value);
+    shade.uSheenMask.value = e.sheen.mask;
+    shade.uSheenMaskPower.value = e.sheen.maskPower;
     catcher.color.set(e.shadowColor);
     catcher.opacity = e.shadowOpacity;
     vignette.uSceneryVignette.value = on.vignette ? g.scenery : 0;
@@ -129,6 +135,12 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, center
   scenery.add(e.sheen, 'hue', 0, 360, 1).name('sheen hue');
   scenery.add(e.sheen, 'saturation', 0, 1, 0.01).name('sheen saturation');
   scenery.add(e.sheen, 'albedo', 0, 1, 0.01).name('sheen object color');
+  scenery.add(e.sheen, 'aniso', 0, 1, 0.01).name('sheen along axis (aniso)');
+  scenery.add(e.sheen, 'bend', -1, 1, 0.01).name('sheen tangent bend');
+  scenery.add(e.sheen, 'axisAzimuth', -180, 180, 1).name('sheen axis azimuth');
+  scenery.add(e.sheen, 'axisElevation', -90, 90, 1).name('sheen axis angle');
+  scenery.add(e.sheen, 'mask', 0, 1, 0.01).name('sheen axis fresnel mask');
+  scenery.add(e.sheen, 'maskPower', 0.2, 8, 0.05).name('sheen mask power');
 
   const ground = lookPanel.addFolder('Ground');
   ground.add(on, 'vignette').name('vignette on');

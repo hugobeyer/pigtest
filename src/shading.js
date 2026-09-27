@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { blendFog } from './fog.js';
 import { uniforms as vignette } from './ground.js';
-import { ENVIRONMENT, SHADING } from './tokens.js';
+import { ENVIRONMENT, SHADING, sheenAxis } from './tokens.js';
 
 export const sheenColor = ({ hue, saturation }, color = new THREE.Color()) => color.setHSL(hue / 360, 1, 1 - saturation / 2);
 
@@ -32,7 +32,12 @@ export const uniforms = {
   uSheenStrength: { value: ENVIRONMENT.sheen.strength },
   uSheenPower: { value: ENVIRONMENT.sheen.power },
   uSheenColor: { value: sheenColor(ENVIRONMENT.sheen) },
-  uSheenAlbedo: { value: ENVIRONMENT.sheen.albedo }
+  uSheenAlbedo: { value: ENVIRONMENT.sheen.albedo },
+  uSheenAniso: { value: ENVIRONMENT.sheen.aniso },
+  uSheenBend: { value: ENVIRONMENT.sheen.bend },
+  uSheenAxis: { value: sheenAxis(ENVIRONMENT.sheen, new THREE.Vector3()) },
+  uSheenMask: { value: ENVIRONMENT.sheen.mask },
+  uSheenMaskPower: { value: ENVIRONMENT.sheen.maskPower }
 };
 const diffuse = '\treflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );';
 const specular = '\treflectedLight.directSpecular += irradiance * specularBRDF * material.multiScatteringCompensation;';
@@ -70,8 +75,8 @@ vec3 baseNormal;
 uniform vec2 uCenter, uOffset, uRadius;
 uniform float uInner, uOuter, uSceneryVignette, uCharacterVignette;
 uniform vec3 uMiddle, uEdge;
-uniform float uTerminator, uSoftness, uSceneryTerminator, uScenerySoftness, uSceneryDetail, uSssStrength, uSssWidth, uSheenStrength, uSheenPower, uSheenAlbedo, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
-uniform vec3 uDarkColor, uSceneryDarkColor, uRimColor, uOutlineColor, uSheenColor;
+uniform float uTerminator, uSoftness, uSceneryTerminator, uScenerySoftness, uSceneryDetail, uSssStrength, uSssWidth, uSheenStrength, uSheenPower, uSheenAlbedo, uSheenAniso, uSheenBend, uSheenMask, uSheenMaskPower, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
+uniform vec3 uDarkColor, uSceneryDarkColor, uRimColor, uOutlineColor, uSheenColor, uSheenAxis;
 #ifdef HEAT
 uniform vec3 uHeatTint, uHeatGlow;
 uniform float uHeatPower, uHeatCore;
@@ -87,7 +92,13 @@ uniform float uHeatPower, uHeatCore;
 ${specular}
 \t#else
 \t\tvec3 hue = material.diffuseContribution / max( max3( material.diffuseContribution ), 1e-3 );
-\t\tfloat sheen = pow( saturate( dot( geometryNormal, normalize( directLight.direction + geometryViewDir ) ) ), uSheenPower ) * dotNL;
+\t\tvec3 sheenH = normalize( directLight.direction + geometryViewDir );
+\t\tvec3 sheenAxis = normalize( ( viewMatrix * vec4( uSheenAxis, 0.0 ) ).xyz );
+\t\tvec3 sheenT = normalize( sheenAxis - geometryNormal * dot( geometryNormal, sheenAxis ) + geometryNormal * uSheenBend + vec3( 1e-5 ) );
+\t\tfloat sheenTH = dot( sheenT, sheenH );
+\t\tfloat sheenLobe = mix( saturate( dot( geometryNormal, sheenH ) ), sqrt( saturate( 1.0 - sheenTH * sheenTH ) ), uSheenAniso );
+\t\tfloat sheenMask = mix( 1.0, pow( saturate( 1.0 - abs( dot( geometryNormal, sheenAxis ) ) ), uSheenMaskPower ), uSheenMask );
+\t\tfloat sheen = pow( sheenLobe, uSheenPower ) * dotNL * sheenMask;
 \t\treflectedLight.directSpecular += directLight.color * uSheenColor * mix( vec3( 1.0 ), hue, uSheenAlbedo ) * uSheenStrength * sheen;
 \t#endif`
           )
