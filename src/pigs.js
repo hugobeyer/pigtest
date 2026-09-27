@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {instantiate} from './assets.js';
-import {createLabel} from './labels.js';
+import {createLabel, disposeLabel} from './labels.js';
 import {backOut, bump, grow, slide, tween} from './tweens.js';
 import {tapRing} from './fx/ring.js';
 import {sparkle} from './fx/sparkles.js';
@@ -25,6 +25,7 @@ function spawn(pig,position){
 
 function remove(object){
   scene.remove(object);
+  disposeLabel(object.userData.label);
   tapTargets.splice(tapTargets.indexOf(object),1);
 }
 
@@ -86,11 +87,7 @@ function exclaim(object){
     sprite.scale.copy(scale).multiplyScalar(backOut(Math.min(k/popIn,1)));
     sprite.material.rotation=Math.sin(k*Math.PI*2*wobbles)*wobble*(1-k);
     sprite.material.opacity=Math.min((1-k)/fadeOut,1);
-  },()=>{
-    object.remove(sprite);
-    sprite.material.map.dispose();
-    sprite.material.dispose();
-  });
+  },()=>disposeLabel(sprite));
 }
 
 export function updatePigs(time,canTap){

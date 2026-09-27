@@ -3,9 +3,8 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {prepareEnvironment} from './environment.js';
 import {vignette} from './ground.js';
 import {shadeGameplay} from './shading.js';
-import {GROUND, RENDER} from './tokens.js';
+import {GROUND, PIGS, RENDER} from './tokens.js';
 
-export const PIG_COLUMNS=4;
 const WATTS_TO_LUX=683;
 
 function allows(object,key){
@@ -71,6 +70,6 @@ export async function loadAssets(url){
     blocks:{light,dark},
     gridCenter:requireObject(root,'GridCenter'),
     anchors:{RailStart:requireObject(root,'RailStart'),RailEnd:requireObject(root,'RailEnd')},
-    columns:Array.from({length:PIG_COLUMNS},(_,i)=>requireObject(root,`PigColumn_${i}`))
+    columns:Array.from({length:PIGS.columns},(_,i)=>requireObject(root,`PigColumn_${i}`))
   };
 }

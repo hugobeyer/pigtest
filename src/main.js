@@ -67,6 +67,12 @@ function frame(now){
   renderer.render(scene,camera);
 }
 
+addEventListener('visibilitychange',()=>{
+  if(!camera)return;
+  last=performance.now();
+  renderer.setAnimationLoop(document.hidden ? null : frame);
+});
+
 loadAssets(new URL('../assets/primitive_scene.glb',import.meta.url).href).then(assets=>{
   if(assets.world){
     ambient.color.copy(assets.world.color);

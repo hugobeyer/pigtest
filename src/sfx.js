@@ -10,6 +10,7 @@ master.gain.value=SFX.volume;
 master.connect(context.destination);
 musicGain.connect(master);
 addEventListener('pointerdown',()=>{unlocked=true; context.resume(); startMusic();},true);
+addEventListener('visibilitychange',()=>document.hidden ? context.suspend() : unlocked && context.resume());
 const load=url=>fetch(url).then(response=>response.arrayBuffer()).then(data=>context.decodeAudioData(data));
 
 for(const [path,url] of Object.entries(files)){

@@ -18,7 +18,7 @@ export function popup(name,position){
   sparkle(point,'combo');
   play('combo');
   point.project(camera);
-  const rect=document.querySelector('canvas').getBoundingClientRect();
+  const rect=document.querySelector('#app canvas').getBoundingClientRect();
   const word=document.createElement('div');
   word.className='word popup';
   word.style.cssText=`left:${rect.left+(point.x*.5+.5)*rect.width}px;top:${rect.top+(.5-point.y*.5)*rect.height}px;width:${width*rect.width}px;--word:url(${wordImage(name)});--life:${duration}s;--sweep:${sweep}s;--side:${Math.random()<.5 ? -1 : 1}`;

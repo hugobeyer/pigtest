@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {instantiate} from './assets.js';
-import {createLabel} from './labels.js';
+import {createLabel, disposeLabel} from './labels.js';
 import {validTarget} from './grid.js';
 import {fireShot} from './shots.js';
 import {bump, vanish} from './tweens.js';
@@ -104,7 +104,7 @@ function advance(run){
         play('pop');
         play('fly');
       },
-      done:()=>scene.remove(run.runner)
+      done:()=>{scene.remove(run.runner); disposeLabel(run.label);}
     });
     return true;
   }

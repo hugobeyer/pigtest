@@ -31,7 +31,7 @@
       "saturation": 0.63,
       "albedo": 0.77
     },
-    "shadowOpacity": 0.8,
+    "shadowOpacity": 0.52,
     "shadowColor": "#082a3a"
   },
   "ground": {
@@ -39,10 +39,10 @@
       0,
       4.8
     ],
-    "scenery": 0.39,
-    "characters": 0.18,
-    "detailTile": 23.8,
-    "detailCenter": 0.62,
+    "scenery": 0,
+    "characters": 0,
+    "detailTile": 10.9,
+    "detailCenter": 1.05,
     "detailEdge": 2.03,
     "radius": [
       6.1,

@@ -38,6 +38,12 @@ export function writeText(canvas,text,height,tint){
   paint(ctx,text,0,height);
 }
 
+export function disposeLabel(sprite){
+  sprite.removeFromParent();
+  sprite.material.map.dispose();
+  sprite.material.dispose();
+}
+
 export function createLabel(parent,height=LABEL.height,aspect=LABEL.canvas[0]/LABEL.canvas[1]){
   const canvas=document.createElement('canvas');
   const h=LABEL.canvas[1], w=h*aspect;

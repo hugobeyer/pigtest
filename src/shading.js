@@ -32,7 +32,7 @@ vVignette = ( modelMatrix * instanceMatrix * vec4( transformed, 1.0 ) ).xy;
 #else
 vVignette = ( modelMatrix * vec4( transformed, 1.0 ) ).xy;
 #endif`);
-  shader.fragmentShader=`#ifdef GOOSHY_CHARACTER
+  shader.fragmentShader=`#ifdef TOON_CHARACTER
 #define FOG_MODE 0.0
 #endif
 varying vec2 vVignette;
@@ -43,14 +43,14 @@ uniform vec3 uMiddle, uEdge;
 uniform float uTerminator, uSoftness, uSceneryTerminator, uScenerySoftness, uSceneryDetail, uSssStrength, uSssWidth, uSheenStrength, uSheenPower, uSheenAlbedo, uRimStrength, uRimPower, uOutlineFrom, uOutlineStrength;
 uniform vec3 uDarkColor, uSceneryDarkColor, uRimColor, uOutlineColor, uSheenColor;
 `+shader.fragmentShader
-    .replace('#include <lights_physical_pars_fragment>',THREE.ShaderChunk.lights_physical_pars_fragment.replace(specular,`\t#ifdef GOOSHY_CHARACTER
+    .replace('#include <lights_physical_pars_fragment>',THREE.ShaderChunk.lights_physical_pars_fragment.replace(specular,`\t#ifdef TOON_CHARACTER
 ${specular}
 \t#else
 \t\tvec3 hue = material.diffuseContribution / max( max3( material.diffuseContribution ), 1e-3 );
 \t\tfloat sheen = pow( saturate( dot( geometryNormal, normalize( directLight.direction + geometryViewDir ) ) ), uSheenPower ) * dotNL;
 \t\treflectedLight.directSpecular += directLight.color * uSheenColor * mix( vec3( 1.0 ), hue, uSheenAlbedo ) * uSheenStrength * sheen;
 \t#endif`).replace(diffuse,`\tfloat nl = dot( geometryNormal, directLight.direction );
-\t#ifdef GOOSHY_CHARACTER
+\t#ifdef TOON_CHARACTER
 \t\tfloat lit = smoothstep( uTerminator - uSoftness, uTerminator + uSoftness, nl );
 \t\tvec3 dark = uDarkColor;
 \t\tfloat band = 1.0 - smoothstep( 0.0, uSssWidth, abs( nl - uTerminator ) );
@@ -72,11 +72,11 @@ ${specular}
 \t\tvec3 sky = vec3( 1.0 );
 \t#endif
 \treflectedLight.directDiffuse += lightColor * mix( dark, vec3( 1.0 ), lit * unshadowed ) * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - F );
-\t#ifdef GOOSHY_CHARACTER
+\t#ifdef TOON_CHARACTER
 \t\treflectedLight.directDiffuse += directLight.color * BRDF_Lambert( material.diffuseContribution ) * sky * uSssStrength * band;
 \t#endif`))
     .replace('#include <normal_fragment_begin>','#include <normal_fragment_begin>\nbaseNormal = normal;')
-    .replace('#include <opaque_fragment>',`#ifdef GOOSHY_CHARACTER
+    .replace('#include <opaque_fragment>',`#ifdef TOON_CHARACTER
 float facing = 1.0 - saturate( dot( normal, normalize( vViewPosition ) ) );
 #if NUM_DIR_LIGHTS > 0
 outgoingLight += uRimColor * uRimStrength * saturate( 0.5 - 0.5 * dot( normal, directionalLights[ 0 ].direction ) ) * pow( facing, uRimPower );
@@ -84,7 +84,7 @@ outgoingLight += uRimColor * uRimStrength * saturate( 0.5 - 0.5 * dot( normal, d
 outgoingLight = mix( outgoingLight, uOutlineColor, uOutlineStrength * sin( saturate( ( facing - uOutlineFrom ) / ( 1.0 - uOutlineFrom ) ) * PI ) );
 #endif
 float vignetted = smoothstep( min( uInner, uOuter ), max( uInner, uOuter ) + 1e-3, length( ( vVignette - uCenter - uOffset ) / uRadius ) );
-#ifdef GOOSHY_CHARACTER
+#ifdef TOON_CHARACTER
 vignetted *= uCharacterVignette;
 #else
 vignetted *= uSceneryVignette;
@@ -94,14 +94,14 @@ outgoingLight *= mix( vec3( 1.0 ), clamp( uEdge / max( uMiddle, vec3( 0.05 ) ), 
   blendFog(shader);
 }
 
-function gooshy(source,character){
+function toon(source,character){
   const cache=character ? converted.character : converted.scenery;
   if(!cache.has(source)){
     const material=source.clone();
     material.shadowSide=THREE.DoubleSide;
-    if(character)material.defines={...material.defines,GOOSHY_CHARACTER:''};
+    if(character)material.defines={...material.defines,TOON_CHARACTER:''};
     material.onBeforeCompile=patch;
-    material.customProgramCacheKey=()=>character ? 'gooshy-character' : 'gooshy-scenery';
+    material.customProgramCacheKey=()=>character ? 'toon-character' : 'toon-scenery';
     cache.set(source,material);
   }
   return cache.get(source);
@@ -111,6 +111,6 @@ export function shadeGameplay(root){
   root.traverse(o=>{
     if(!o.isMesh || o.material.isMeshBasicMaterial || o.material.isShadowMaterial)return;
     const character=isCharacter(o);
-    o.material=Array.isArray(o.material) ? o.material.map(m=>gooshy(m,character)) : gooshy(o.material,character);
+    o.material=Array.isArray(o.material) ? o.material.map(m=>toon(m,character)) : toon(o.material,character);
   });
 }
