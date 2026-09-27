@@ -1,60 +1,63 @@
 import * as THREE from 'three';
-import {FX} from '../tokens.js';
+import { FX } from '../tokens.js';
 
-const pools={};
-const dummy=new THREE.Object3D();
+const pools = {};
+const dummy = new THREE.Object3D();
 
-export function initParticles(scene,blocks){
-  for(const key of ['light','dark']){
-    let template=null;
-    blocks[key].traverse(o=>{if(!template && o.isMesh)template=o;});
-    const mesh=new THREE.InstancedMesh(template.geometry,template.material,FX.particles.max);
-    mesh.frustumCulled=false;
-    const items=Array.from({length:FX.particles.max},(_,i)=>{
-      mesh.setMatrixAt(i,new THREE.Matrix4().makeScale(0,0,0));
-      return {age:0,life:0,size:0,position:new THREE.Vector3(),velocity:new THREE.Vector3(),spin:new THREE.Vector3()};
+export function initParticles(scene, blocks) {
+  for (const key of ['light', 'dark']) {
+    let template = null;
+    blocks[key].traverse(o => {
+      if (!template && o.isMesh) template = o;
+    });
+    const mesh = new THREE.InstancedMesh(template.geometry, template.material, FX.particles.max);
+    mesh.frustumCulled = false;
+    const items = Array.from({ length: FX.particles.max }, (_, i) => {
+      mesh.setMatrixAt(i, new THREE.Matrix4().makeScale(0, 0, 0));
+      return { age: 0, life: 0, size: 0, position: new THREE.Vector3(), velocity: new THREE.Vector3(), spin: new THREE.Vector3() };
     });
     scene.add(mesh);
-    pools[key]={mesh,items,next:0,active:0};
+    pools[key] = { mesh, items, next: 0, active: 0 };
   }
 }
 
-export function emit(position,isLight,{count,speed,up,life,size}){
-  const pool=pools[isLight ? 'light' : 'dark'];
-  for(let i=0;i<count;i++){
-    const p=pool.items[pool.next];
-    pool.next=(pool.next+1)%pool.items.length;
-    const angle=Math.random()*Math.PI*2, force=speed*(.4+Math.random()*.6);
+export function emit(position, isLight, { count, speed, up, life, size }) {
+  const pool = pools[isLight ? 'light' : 'dark'];
+  for (let i = 0; i < count; i++) {
+    const p = pool.items[pool.next];
+    pool.next = (pool.next + 1) % pool.items.length;
+    const angle = Math.random() * Math.PI * 2,
+      force = speed * (0.4 + Math.random() * 0.6);
     p.position.copy(position);
-    p.velocity.set(Math.cos(angle)*force,Math.sin(angle)*force,up*(.5+Math.random()*.5));
-    p.spin.set(Math.random(),Math.random(),Math.random()).multiplyScalar(FX.particles.spin);
-    p.age=0;
-    p.life=life*(.7+Math.random()*.3);
-    p.size=size;
+    p.velocity.set(Math.cos(angle) * force, Math.sin(angle) * force, up * (0.5 + Math.random() * 0.5));
+    p.spin.set(Math.random(), Math.random(), Math.random()).multiplyScalar(FX.particles.spin);
+    p.age = 0;
+    p.life = life * (0.7 + Math.random() * 0.3);
+    p.size = size;
   }
-  pool.active=pool.items.length;
+  pool.active = pool.items.length;
 }
 
-export function updateParticles(dt){
-  for(const pool of Object.values(pools)){
-    if(!pool.active)continue;
-    const {mesh,items}=pool;
-    let active=0;
-    items.forEach((p,i)=>{
-      if(p.life<=0)return;
+export function updateParticles(dt) {
+  for (const pool of Object.values(pools)) {
+    if (!pool.active) continue;
+    const { mesh, items } = pool;
+    let active = 0;
+    items.forEach((p, i) => {
+      if (p.life <= 0) return;
       active++;
-      p.age+=dt;
-      const k=Math.min(p.age/p.life,1);
-      p.velocity.z+=FX.particles.gravity*dt;
-      p.position.addScaledVector(p.velocity,dt);
+      p.age += dt;
+      const k = Math.min(p.age / p.life, 1);
+      p.velocity.z += FX.particles.gravity * dt;
+      p.position.addScaledVector(p.velocity, dt);
       dummy.position.copy(p.position);
-      dummy.rotation.set(p.spin.x*p.age,p.spin.y*p.age,p.spin.z*p.age);
-      dummy.scale.setScalar(p.size*(1-k));
+      dummy.rotation.set(p.spin.x * p.age, p.spin.y * p.age, p.spin.z * p.age);
+      dummy.scale.setScalar(p.size * (1 - k));
       dummy.updateMatrix();
-      mesh.setMatrixAt(i,dummy.matrix);
-      if(k>=1)p.life=0;
+      mesh.setMatrixAt(i, dummy.matrix);
+      if (k >= 1) p.life = 0;
     });
-    mesh.instanceMatrix.needsUpdate=true;
-    pool.active=active;
+    mesh.instanceMatrix.needsUpdate = true;
+    pool.active = active;
   }
 }

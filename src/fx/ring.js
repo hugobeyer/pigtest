@@ -1,28 +1,32 @@
 import * as THREE from 'three';
-import {tween} from '../tweens.js';
-import {FX} from '../tokens.js';
+import { tween } from '../tweens.js';
+import { FX } from '../tokens.js';
 
-const geometry=new THREE.PlaneGeometry(1,1);
+const geometry = new THREE.PlaneGeometry(1, 1);
 let material;
 
-export function initRing(){
-  const texture=new THREE.TextureLoader().load(new URL('../../assets/fx/tap_ring.png',import.meta.url).href);
-  texture.colorSpace=THREE.SRGBColorSpace;
-  material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,toneMapped:false});
+export function initRing() {
+  const texture = new THREE.TextureLoader().load(new URL('../../assets/fx/tap_ring.png', import.meta.url).href);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, toneMapped: false });
 }
 
-export function tapRing(scene,position,height){
-  const {size,from,to,duration,lift}=FX.tapRing;
-  const ring=new THREE.Mesh(geometry,material.clone());
-  ring.userData.ownsMaterial=true;
+export function tapRing(scene, position, height) {
+  const { size, from, to, duration, lift } = FX.tapRing;
+  const ring = new THREE.Mesh(geometry, material.clone());
+  ring.userData.ownsMaterial = true;
   ring.position.copy(position);
-  ring.position.z+=height+lift;
+  ring.position.z += height + lift;
   scene.add(ring);
-  tween(duration,k=>{
-    ring.scale.setScalar(size*(from+(to-from)*k*(2-k)));
-    ring.material.opacity=1-k;
-  },()=>{
-    scene.remove(ring);
-    ring.material.dispose();
-  });
+  tween(
+    duration,
+    k => {
+      ring.scale.setScalar(size * (from + (to - from) * k * (2 - k)));
+      ring.material.opacity = 1 - k;
+    },
+    () => {
+      scene.remove(ring);
+      ring.material.dispose();
+    }
+  );
 }
