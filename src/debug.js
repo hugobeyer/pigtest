@@ -29,6 +29,8 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, center
     detailEdge: GROUND.detailEdge,
     heightBlend: GROUND.heightBlend,
     heightWidth: GROUND.heightWidth,
+    breakTile: GROUND.breakTile,
+    breakAmount: GROUND.breakAmount,
     ...state.ground
   };
   state.fog = structuredClone(FOG);
@@ -78,6 +80,8 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, center
     vignette.uDetailEdge.value = g.detailEdge;
     vignette.uHeightBlend.value = g.heightBlend;
     vignette.uHeightWidth.value = g.heightWidth;
+    vignette.uBreakTile.value = g.breakTile;
+    vignette.uBreakAmount.value = g.breakAmount;
     vignette.uMiddle.value.set(g.middle);
     vignette.uEdge.value.set(on.vignette ? g.edge : g.middle);
     ambient.groundColor.set(h.ground);
@@ -160,6 +164,8 @@ export function debug({ scene, renderer, toneMappings, fog, ambient, key, center
   ground.add(g, 'detailEdge', 0, 3, 0.01).name('texture at edges');
   ground.add(g, 'heightBlend', 0, 1, 0.01).name('height blend (texture luma)');
   ground.add(g, 'heightWidth', 0.01, 1, 0.01).name('height blend softness');
+  ground.add(g, 'breakAmount', 0, 1, 0.01).name('edge break-up amount');
+  ground.add(g, 'breakTile', 1, 80, 0.5).name('edge break-up scale');
   ground.addColor(g, 'middle').name('center color');
   ground.addColor(g, 'edge').name('edge color');
   ground.addColor(e, 'shadowColor').name('shadow color');

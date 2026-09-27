@@ -23,7 +23,9 @@ export const uniforms = {
   uDetailCenter: { value: GROUND.detailCenter },
   uDetailEdge: { value: GROUND.detailEdge },
   uHeightBlend: { value: GROUND.heightBlend },
-  uHeightWidth: { value: GROUND.heightWidth }
+  uHeightWidth: { value: GROUND.heightWidth },
+  uBreakTile: { value: GROUND.breakTile },
+  uBreakAmount: { value: GROUND.breakAmount }
 };
 
 export function vignette(ground, center) {
@@ -44,13 +46,15 @@ export function vignette(ground, center) {
       shader.fragmentShader =
         `varying vec2 vGround;
 uniform vec2 uCenter, uOffset, uRadius;
-uniform float uInner, uOuter, uDetailTile, uDetailCenter, uDetailEdge, uHeightBlend, uHeightWidth;
+uniform float uInner, uOuter, uDetailTile, uDetailCenter, uDetailEdge, uHeightBlend, uHeightWidth, uBreakTile, uBreakAmount;
 uniform vec3 uMiddle, uEdge;
 uniform sampler2D uDetail;
 ` +
         shader.fragmentShader.replace(
           '#include <opaque_fragment>',
-          `float ramp = smoothstep( min( uInner, uOuter ), max( uInner, uOuter ) + 1e-3, length( ( vGround - uCenter - uOffset ) / uRadius ) );
+          `vec2 breakUv = mat2( 0.8, -0.6, 0.6, 0.8 ) * vGround / uBreakTile;
+float breakLuma = dot( texture2D( uDetail, breakUv ).rgb, vec3( 0.2126, 0.7152, 0.0722 ) ) / max( dot( textureLod( uDetail, vec2( 0.5 ), 16.0 ).rgb, vec3( 0.2126, 0.7152, 0.0722 ) ), 1e-3 );
+float ramp = smoothstep( min( uInner, uOuter ), max( uInner, uOuter ) + 1e-3, length( ( vGround - uCenter - uOffset ) / uRadius ) + ( breakLuma - 1.0 ) * uBreakAmount );
 vec3 detailRaw = texture2D( uDetail, vGround / uDetailTile ).rgb;
 float height = dot( detailRaw, vec3( 0.2126, 0.7152, 0.0722 ) ) / max( dot( textureLod( uDetail, vec2( 0.5 ), 16.0 ).rgb, vec3( 0.2126, 0.7152, 0.0722 ) ) * 2.0, 1e-3 );
 float w = max( uHeightWidth, 1e-3 );
