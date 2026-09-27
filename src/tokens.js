@@ -74,6 +74,7 @@ export const FX={
   burn:{color:'#ffd23a',tint:.5,emissive:1.4,cool:.6},
   recoil:{distance:.18,kick:.35,decay:14},
   hover:{sound:.3},
+  score:{perBlock:10,size:40,duration:.9},
   idleHint:{after:4,every:2.5,jitter:.4,marks:'!?',size:1.9,lift:.75,duration:1.1,popIn:.2,fadeOut:.25,wobble:.25,wobbles:3,huh:{rise:.12,hold:.7,recover:1.2,jump:.3,stretch:.15}},
   sparkles:{columns:6,rows:4,max:600,sizeScale:1.4,countScale:1.6,lifeJitter:.3,sizeJitter:.3,speedJitter:.6,upJitter:.5,growIn:.12,shrinkPower:3,fadeOut:.25,frameScale:[1.6,1.6,1,1,1,1,1,1,1]},
   shake:{amplitude:.05,duration:.15},

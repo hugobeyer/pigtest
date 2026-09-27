@@ -16,10 +16,12 @@ import { showWin } from './win.js';
 import { showIntro } from './intro.js';
 import { showMenu } from './menu.js';
 import { play } from './sfx.js';
+import { addPoints, resetScore } from './score.js';
 import { createLabel } from './labels.js';
 import { ADVENTURE, FX, INTRO, LABEL, PIGS, WIN } from './tokens.js';
 
 let scene,
+  counted = 0,
   assets,
   stage = null,
   level = null,
@@ -90,7 +92,8 @@ function start(index) {
   const base = assets.gridCenter.userData,
     layout = level ? layoutFor(base, level) : base;
   const grid = createGrid(stage, assets.gridCenter, assets.blocks, layout);
-  totalBlocks = remainingCells();
+  totalBlocks = counted = remainingCells();
+  resetScore();
   setupAdventure(level, layout);
   const rail = { right: center.x + (base.columns - 1) * 0.5 * base.step, top: center.y + (base.rows - 1) * 0.5 * base.step };
   initRunners(stage, assets.pigs, assets.bullets, createPath(grid, assets.anchors, rail), assets.camera);
@@ -163,7 +166,10 @@ export function updateGameplay(dt) {
   if (!stage) return;
   updatePigs(time, !won && !lost && runs.length < PIGS.railCapacity);
   if (level) updateAdventure(time);
-  if (!won && !lost && remainingCells() === 0) {
+  const left = remainingCells();
+  addPoints(counted - left);
+  counted = left;
+  if (!won && !lost && left === 0) {
     won = true;
     celebrate();
   }
