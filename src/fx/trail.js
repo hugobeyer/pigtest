@@ -1,22 +1,22 @@
 import * as THREE from 'three';
-import {materialOf} from '../assets.js';
 import {FX} from '../tokens.js';
 
-const materials=new Map(), eye=new THREE.Vector3(), tangent=new THREE.Vector3(), side=new THREE.Vector3(), view=new THREE.Vector3();
+const eye=new THREE.Vector3(), tangent=new THREE.Vector3(), side=new THREE.Vector3(), view=new THREE.Vector3();
 
 export const initTrails=camera=>camera.getWorldPosition(eye);
 
-export function createTrail(template,from){
+let material;
+
+export function createTrail(from,color){
   const {segments}=FX.trail, count=segments+1, colors=new Float32Array(count*8), index=[];
-  for(let i=0;i<count;i++){const a=1-i/segments; colors.set([1,1,1,a,1,1,1,a],i*8);}
+  for(let i=0;i<count;i++){const a=1-i/segments; colors.set([color.r,color.g,color.b,a,color.r,color.g,color.b,a],i*8);}
   for(let i=0;i<segments;i++)index.push(i*2,i*2+2,i*2+1, i*2+1,i*2+2,i*2+3);
   const geometry=new THREE.BufferGeometry();
   geometry.setAttribute('position',new THREE.BufferAttribute(new Float32Array(count*6),3).setUsage(THREE.DynamicDrawUsage));
   geometry.setAttribute('color',new THREE.BufferAttribute(colors,4));
   geometry.setIndex(index);
-  const source=materialOf(template);
-  if(!materials.has(source))materials.set(source,new THREE.MeshBasicMaterial({color:source.color,vertexColors:true,transparent:true,opacity:FX.trail.opacity,depthWrite:false,side:THREE.DoubleSide}));
-  const trail=new THREE.Mesh(geometry,materials.get(source));
+  material??=new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:FX.trail.opacity,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
+  const trail=new THREE.Mesh(geometry,material);
   trail.frustumCulled=false;
   trail.userData.ownsGeometry=true;
   trail.userData.points=Array.from({length:count},()=>from.clone());

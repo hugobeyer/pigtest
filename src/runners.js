@@ -3,6 +3,7 @@ import {instantiate} from './assets.js';
 import {createLabel, disposeLabel} from './labels.js';
 import {validTarget} from './grid.js';
 import {fireShot} from './shots.js';
+import {rampColor} from './fx/ramp.js';
 import {bump, vanish} from './tweens.js';
 import {emit} from './fx/particles.js';
 import {popup} from './fx/popups.js';
@@ -57,7 +58,7 @@ function fire(run){
   const cell=run.targetCell;
   run.targetCell=null;
   if(!cell || !cell.alive)return;
-  fireShot(scene,run.runner.localToWorld(mouthLocal.clone()),cell,run.bullet);
+  fireShot(scene,run.runner.localToWorld(mouthLocal.clone()),cell,run.bullet,rampColor(run.hits??0),run.hits??0);
   play('shot');
   run.label.userData.set(String(--run.ammo));
   bump(run.pop,ANIM.shotBump);

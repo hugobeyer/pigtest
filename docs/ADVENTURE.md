@@ -12,13 +12,9 @@ Tap the front pig of a column. It runs the rail and shoots the **front** block o
 
 ## What Adventure adds
 
-### 1. Chunky boards (level size)
-- The board keeps the same footprint, so the rail art still fits. Smaller levels use **bigger blocks**:
-  - 13×13 blocks at 2× scale
-  - 18×18 at 1.44×
-  - 26×26 at 1×
-- Lanes come from the grid as they do now, so the rail path adapts automatically.
-- Big early blocks read better and hit harder.
+### 1. Board size
+- Blocks keep their normal size. Smaller levels are **smaller boards** centred in the same spot.
+- Runners still use the full rail. Lanes exist only where there are blocks, and the rail beyond the board is a no-shoot gap.
 
 ### 2. Out of pigs = fail (stakes)
 - Each level has a **finite pig queue** and ammo per pig.

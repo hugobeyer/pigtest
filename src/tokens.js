@@ -15,7 +15,7 @@ export const WIN={
 
 export const INTRO={text:'Tap the pigs!',level:'Level',top:'24%',size:.5};
 export const MENU={title:'Pig pop!',classic:'Classic',adventure:'Adventure',back:'Menu',size:.5};
-export const ADVENTURE={heightFollow:.3,levels:[
+export const ADVENTURE={levels:[
   {size:12,pattern:'checker',checker:2,queues:['DLD','LDL','DLD','LDL'],ammo:20},
   {size:16,pattern:'stripes',checker:2,queues:['DLDL','LDLD','DLDL','LDLD'],ammo:20},
   {size:16,pattern:'checker',checker:4,queues:['DLDL','LDLD','DLDL','LDLD'],ammo:20},
@@ -46,7 +46,10 @@ export const FX={
   tapRing:{size:1.6,from:.6,to:1.4,duration:.35,lift:.05},
   death:{count:10,speed:4.5,up:8,life:.6,size:.6},
   confetti:{count:50,speed:10,up:16,life:1.4,size:.7},
-  blockPop:{amount:.22,peak:.22,duration:.2,rise:.9},
+  blockPop:{amount:.22,time:.06},
+  ghost:{max:160,scale:1.5,tall:3.5,tallMax:10,tallAt:20,rise:.2,life:.35,snap:6,glow:5,power:1.8,core:.35},
+  blockFlash:{color:'#b86bff',strength:1.4},
+  ramp:{colors:['#440154','#3b528b','#21918c','#5ec962','#fde725'],step:.12},
   numberPunch:{amount:.4,duration:.12},
   counterPunch:{amount:.35,duration:.16},
   idleBob:{height:.14,speed:5},

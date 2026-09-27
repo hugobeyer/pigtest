@@ -7,14 +7,14 @@ import {FX, SHOT} from './tokens.js';
 
 const shots=[], fading=[];
 
-export function fireShot(scene,from,cell,bulletTemplate){
+export function fireShot(scene,from,cell,bulletTemplate,color,hits){
   const mesh=instantiate(bulletTemplate);
   const to=cell.position.clone();
   to.z=SHOT.targetZ;
   mesh.position.copy(from);
-  const trail=createTrail(bulletTemplate,from);
+  const trail=createTrail(from,color);
   scene.add(mesh,trail);
-  shots.push({scene,mesh,trail,from,to,t:0,duration:Math.max(SHOT.minDuration,from.distanceTo(to)/SHOT.speed),cell});
+  shots.push({scene,mesh,trail,from,to,t:0,duration:Math.max(SHOT.minDuration,from.distanceTo(to)/SHOT.speed),cell,color,hits});
 }
 
 export const activeShots=()=>shots.length;
@@ -34,7 +34,7 @@ export function updateShots(dt){
     if(k>=1){
       sparkle(s.to,s.cell.isLight ? 'blockLight' : 'blockDark');
       play('hit');
-      destroyCell(s.cell);
+      destroyCell(s.cell,s.color,s.hits);
       s.scene.remove(s.mesh);
       fading.push({scene:s.scene,trail:s.trail,head:s.to,t:0});
       shots.splice(i,1);

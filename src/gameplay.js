@@ -51,16 +51,15 @@ function teardown(){
   scene.remove(stage);
   stage.traverse(o=>{
     if(o.isInstancedMesh)o.dispose();
-    else if(o.isSprite){o.material.map.dispose(); o.material.dispose();}
-    else if(o.userData.ownsGeometry)o.geometry.dispose();
-    else if(o.userData.ownsMaterial)o.material.dispose();
+    if(o.isSprite){o.material.map.dispose(); o.material.dispose();}
+    if(o.userData.ownsGeometry)o.geometry.dispose();
+    if(o.userData.ownsMaterial)o.material.dispose();
   });
   stage=null;
 }
 
 function layoutFor(base,{size,pattern,checker}){
-  const step=base.step*base.columns/size, scale=step/base.step;
-  return {rows:size,columns:size,step,checker,pattern,scale,height:1+(scale-1)*ADVENTURE.heightFollow};
+  return {rows:size,columns:size,step:base.step,checker,pattern};
 }
 
 function start(index){
@@ -72,7 +71,8 @@ function start(index){
   const base=assets.gridCenter.userData, layout=level ? layoutFor(base,level) : base;
   const grid=createGrid(stage,assets.gridCenter,assets.blocks,layout);
   totalBlocks=remainingCells();
-  initRunners(stage,assets.pigs,assets.bullets,createPath(grid,assets.anchors,(layout.step-base.step)/2),assets.camera);
+  const rail={right:center.x+(base.columns-1)*.5*base.step,top:center.y+(base.rows-1)*.5*base.step};
+  initRunners(stage,assets.pigs,assets.bullets,createPath(grid,assets.anchors,rail),assets.camera);
   createPigs(stage,assets.columns,assets.pigs,time,level?.queues,level?.ammo);
   won=lost=false;
   pigsUsed=0;

@@ -18,12 +18,6 @@ function requireObject(root,name){
   return object;
 }
 
-export function materialOf(object){
-  let material=null;
-  object.traverse(o=>{if(!material && o.isMesh)material=o.material;});
-  return material;
-}
-
 export function instantiate(template){
   const wrapper=new THREE.Group(), body=template.clone();
   template.matrixWorld.decompose(body.position,body.quaternion,body.scale);

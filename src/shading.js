@@ -26,7 +26,15 @@ const specular='\treflectedLight.directSpecular += irradiance * specularBRDF * m
 
 function patch(shader){
   Object.assign(shader.uniforms,uniforms,vignette);
-  shader.vertexShader='varying vec2 vVignette;\n'+shader.vertexShader.replace('#include <project_vertex>',`#include <project_vertex>
+  shader.vertexShader=`varying vec2 vVignette;
+#ifdef BLOCK_FLASH
+attribute vec3 aFlash;
+varying vec3 vFlash;
+#endif
+`+shader.vertexShader.replace('#include <project_vertex>',`#include <project_vertex>
+#ifdef BLOCK_FLASH
+vFlash = aFlash;
+#endif
 #ifdef USE_INSTANCING
 vVignette = ( modelMatrix * instanceMatrix * vec4( transformed, 1.0 ) ).xy;
 #else
@@ -36,6 +44,9 @@ vVignette = ( modelMatrix * vec4( transformed, 1.0 ) ).xy;
 #define FOG_MODE 0.0
 #endif
 varying vec2 vVignette;
+#ifdef BLOCK_FLASH
+varying vec3 vFlash;
+#endif
 vec3 baseNormal;
 uniform vec2 uCenter, uOffset, uRadius;
 uniform float uInner, uOuter, uSceneryVignette, uCharacterVignette;
@@ -90,6 +101,9 @@ vignetted *= uCharacterVignette;
 vignetted *= uSceneryVignette;
 #endif
 outgoingLight *= mix( vec3( 1.0 ), clamp( uEdge / max( uMiddle, vec3( 0.05 ) ), 0.0, 1.5 ), vignetted );
+#ifdef BLOCK_FLASH
+outgoingLight += vFlash;
+#endif
 #include <opaque_fragment>`);
   blendFog(shader);
 }
