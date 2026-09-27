@@ -15,6 +15,7 @@ canvas{display:block}
 #intro{position:fixed;left:50%;z-index:4;width:min(80vw,440px);aspect-ratio:700/234;background:url(../assets/ui/banner.webp) center/100% 100% no-repeat;pointer-events:none;transform:translate(-50%,-50%);animation:intro-in .6s cubic-bezier(.2,1.6,.4,1) both,intro-float 2.4s ease-in-out .6s infinite}
 #intro .fit,.plank .fit{left:14.3%;right:12.9%;top:12.8%;bottom:9.4%}
 #menu{position:fixed;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;gap:2vh;background:#171826b3}
+#menu .logo{position:absolute;left:50%;top:36%;z-index:1;width:118%;aspect-ratio:900/312;background:url(../assets/ui/logo.webp) center/100% 100% no-repeat;pointer-events:none;animation:logo-in .7s cubic-bezier(.2,1.7,.4,1) calc(var(--bump-in)*.6) both,logo-bob 2.2s ease-in-out calc(var(--bump-in)*.6 + .7s) infinite}
 #menu .sign+.plank{margin-top:auto}
 #menu .plank:last-child{margin-bottom:auto}
 .plank{position:relative;flex:none;width:min(76vw,400px,110vh);aspect-ratio:700/234;background:url(../assets/ui/banner.webp) center/100% 100% no-repeat;cursor:pointer;animation:win-in .5s cubic-bezier(.2,1.7,.4,1) both}
@@ -32,7 +33,9 @@ canvas{display:block}
 @keyframes win-swing{0%,100%{transform:rotate(0)}25%{transform:rotate(var(--swing-angle))}75%{transform:rotate(calc(var(--swing-angle)*-1))}}
 @keyframes win-row{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes win-pulse{50%{transform:scale(1.06)}}
+@keyframes logo-in{0%{transform:translateX(-50%) scale(.2) rotate(-10deg);opacity:0}60%{transform:translateX(-50%) scale(1.15,.9) rotate(3deg);opacity:1}80%{transform:translateX(-50%) scale(.95,1.06) rotate(-1deg)}100%{transform:translateX(-50%)}}
+@keyframes logo-bob{0%,100%{transform:translateX(-50%) rotate(-2deg) scale(1)}50%{transform:translateX(-50%) translateY(-5%) rotate(2deg) scale(1.04,.97)}}
 @keyframes intro-in{from{transform:translate(-50%,-50%) scale(.3) rotate(-6deg);opacity:0}to{transform:translate(-50%,-50%);opacity:1}}
 @keyframes intro-float{50%{transform:translate(-50%,-56%) rotate(1.5deg)}}
 @keyframes intro-out{to{transform:translate(-50%,-120%) scale(.6) rotate(8deg);opacity:0}}
-@media (prefers-reduced-motion:reduce){#win .sign,#win .card,#win li,#win .bottom,#intro,.plank,.word::after{animation:none;opacity:1}#intro.out{display:none}}
+@media (prefers-reduced-motion:reduce){#win .sign,#win .card,#win li,#win .bottom,#intro,.plank,#menu .logo,.word::after{animation:none;opacity:1}#intro.out{display:none}}
