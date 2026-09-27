@@ -1,7 +1,7 @@
 import './style.css';
 import * as THREE from 'three';
 import { loadAssets } from './assets.js';
-import { initGameplay, tap, tapTargets, updateGameplay } from './gameplay.js';
+import { hover, initGameplay, tap, tapTargets, updateGameplay } from './gameplay.js';
 import { FOG, FRAME, LIGHTS, RENDER } from './tokens.js';
 
 const scene = new THREE.Scene();
@@ -64,17 +64,25 @@ scene.add(key, key.target);
 const ray = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
+function pick(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+  ray.setFromCamera(pointer, camera);
+  return ray.intersectObjects(tapTargets, true).map(hit => {
+    let o = hit.object;
+    while (o && !tapTargets.includes(o)) o = o.parent;
+    return o;
+  });
+}
+
 function enableInput() {
   renderer.domElement.addEventListener('pointerdown', e => {
-    const rect = renderer.domElement.getBoundingClientRect();
-    pointer.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
-    ray.setFromCamera(pointer, camera);
-    for (const hit of ray.intersectObjects(tapTargets, true)) {
-      let o = hit.object;
-      while (o && !tapTargets.includes(o)) o = o.parent;
-      if (o && tap(o)) break;
-    }
+    for (const o of pick(e)) if (o && tap(o)) break;
   });
+  renderer.domElement.addEventListener('pointermove', e => {
+    if (e.pointerType === 'mouse') hover(pick(e).find(Boolean) ?? null);
+  });
+  renderer.domElement.addEventListener('pointerleave', () => hover(null));
 }
 
 let last = performance.now();

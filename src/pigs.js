@@ -17,6 +17,13 @@ let scene,
   waitStart = 0,
   nextHint = 0;
 export const tapTargets = [];
+let hovered = null;
+
+export function hover(object) {
+  if (object === hovered) return;
+  hovered = object;
+  if (object && Math.random() < FX.hover.sound) play('huh');
+}
 const hitMaterial = new THREE.MeshBasicMaterial();
 let hitGeometry;
 
@@ -57,16 +64,17 @@ function refresh(column) {
 export function createPigs(targetScene, columnObjects, pigTemplates, time, queues, ammo = PIGS.ammo) {
   scene = targetScene;
   tapTargets.length = 0;
+  hovered = null;
   now = waitStart = time;
   nextHint = 0;
   templates = pigTemplates;
   const box = new THREE.Box3().setFromObject(templates.dark, true);
   pigHeight = box.max.z - box.min.z;
   labelLift = pigHeight + LABEL.lift;
-  const size = box.getSize(new THREE.Vector3()).multiply(new THREE.Vector3(PIGS.hitScale, PIGS.hitScale, 1)),
+  const size = box.getSize(new THREE.Vector3()).multiply(new THREE.Vector3(PIGS.hitScale, PIGS.hitScale, PIGS.hitHeight)),
     center = box.getCenter(new THREE.Vector3()).sub(templates.dark.getWorldPosition(new THREE.Vector3()));
   hitGeometry?.dispose();
-  hitGeometry = new THREE.BoxGeometry(size.x, size.y, size.z).translate(center.x, center.y, center.z);
+  hitGeometry = new THREE.BoxGeometry(size.x, size.y, size.z).translate(center.x, center.y, center.z - (pigHeight - size.z) * 0.5);
   columns = columnObjects.map((columnObject, i) => {
     const { row_step: rowStep } = columnObject.userData,
       queue = queues?.[i] ?? columnObject.userData.queue;
@@ -153,6 +161,11 @@ export function updatePigs(time, canTap) {
       const data = object.userData;
       let flow = 1,
         pose = 0;
+      if (object === hovered && !column.busy) {
+        const { rise } = FX.idleHint.huh;
+        if (data.huh === undefined) data.huh = time;
+        else if (time - data.huh > rise) data.huh = time - rise;
+      }
       if (data.huh !== undefined) {
         const { rise, hold, recover, jump, stretch } = FX.idleHint.huh,
           e = time - data.huh,

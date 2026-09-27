@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createGrid, remainingCells, updateGrid } from './grid.js';
 import { setupAdventure, updateAdventure } from './adventure.js';
 import { createPath } from './path.js';
-import { createPigs, pigsLeft, refuse, takePig, tapTargets, updatePigs } from './pigs.js';
+import { createPigs, hover, pigsLeft, refuse, takePig, tapTargets, updatePigs } from './pigs.js';
 import { initRunners, launchRunner, runStats, runs, updateRunners } from './runners.js';
 import { activeShots, clearShots, updateShots } from './shots.js';
 import { bump, clearTweens, tween, updateTweens } from './tweens.js';
@@ -33,7 +33,7 @@ let scene,
   time = 0,
   startTime = 0,
   pigsUsed = 0;
-export { tapTargets };
+export { hover, tapTargets };
 
 export function initGameplay(targetScene, loaded) {
   scene = targetScene;

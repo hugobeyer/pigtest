@@ -4,7 +4,7 @@ import feel from './feel.json';
 export const MOTION={speed:10.7,aimTime:.028,runnerLift:.395};
 export const SHOT={speed:12,minDuration:.045,targetZ:.6048,mouth:[0,.92,.67]};
 export const PATH={sideOffset:1.38,verticalOffset:2.38,cornerRadius:1.10,laneGap:.42,endOffset:.15,arcSteps:12};
-export const PIGS={ammo:20,hitScale:1.6,rowGap:1.35,columns:4,visibleRows:3,railCapacity:5};
+export const PIGS={ammo:20,hitScale:1.6,hitHeight:.6,rowGap:1.35,columns:4,visibleRows:3,railCapacity:5};
 export const FRAME={maxDelta:.033};
 export const WIN={
   delay:1.1,title:'Level clear!',heading:'Great job!',hint:'Tap to play again',next:'Tap for next level',done:'Tap for menu',ink:'#7a3f12',
@@ -67,6 +67,7 @@ export const FX={
   heat:{color:'#ff4a2e',max:.7,emissive:.25,power:2,core:.15},
   burn:{color:'#ffd23a',tint:.5,emissive:1.4,cool:.6},
   recoil:{distance:.18,kick:.35,decay:14},
+  hover:{sound:.3},
   idleHint:{after:4,every:2.5,jitter:.4,marks:'!?',size:1.9,lift:.75,duration:1.1,popIn:.2,fadeOut:.25,wobble:.25,wobbles:3,huh:{rise:.12,hold:.7,recover:1.2,jump:.3,stretch:.15}},
   sparkles:{columns:6,rows:4,max:600,sizeScale:1.4,countScale:1.6,lifeJitter:.3,sizeJitter:.3,speedJitter:.6,upJitter:.5,growIn:.12,shrinkPower:3,fadeOut:.25,frameScale:[1.6,1.6,1,1,1,1,1,1,1]},
   shake:{amplitude:.05,duration:.15},

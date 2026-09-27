@@ -24,6 +24,8 @@ const sections = [
       ['ANIM.queueGrow.duration', 0.02, 0.6, 0.01, 'new pig grow time'],
       ['PIGS.rowGap', 0.5, 2, 0.01, 'row spacing (restart)'],
       ['PIGS.hitScale', 1, 3, 0.05, 'tap area width (restart)'],
+      ['PIGS.hitHeight', 0.2, 1, 0.01, 'tap area height (restart)'],
+      ['FX.hover.sound', 0, 1, 0.01, 'hover huh sound chance'],
       ['ANIM.refuse.angle', 0, 1, 0.01, 'refuse shake']
     ]
   ],
