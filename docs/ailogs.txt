@@ -151,8 +151,10 @@ Audit for gameplay variations, short bullets only. Only reuse current systems, g
 (prompt)
 Nah. Adventure just few short levels to broaden it. Classic stays big main one. Adventure, smaller boards first then increase, maybe chain reaction but prob dont need runtime ui for it, gold/rainbow blocks, maybe line wipe later. Dont make separate game system. Levels just data into same grid/runner systems.
 
-
+-------------
 # STAGE 14 — Intro + win UI + fx
+
+(prompt)
 ok APPROVED. Need intro menu, 2 picks, classic/default and adventure. Fast, playable ad. When game starts maybe wooden banner TAP THE PIGS! or LEVEL 1. Overlay UI, dont shift camera framing.
 
 (prompt)
@@ -162,12 +164,16 @@ gpt wooden assets are in. Win screen level clear, blocks, time, pigs used, shots
 ok, go ahead with both, report changed.
 
 # STAGE 15 — Performance pass
+
+(prompt)
 Perf cleanup, check shader iterations, this is not unreal game. Audit drawcalls, tris, shader loops, transparency, texture sizes, DPR, object count, allocations/frame, update loops, particle max. Report first, dont rewrite yet.
 
 (prompt)
 This is supposed to be a playable ad. reuse fx, pools, maybe sprites too, cap particles/ratio, dont create garbage every tick, dont rebuild geo/mat on effects, the ramp is doing atm. Check if we can avoid vec3 allocations on ticks. Check whether THREE post is worth anything. Chrome downscale isnt reason for post, vignette/grade better in material/background if possible.
 
 # STAGE 16 — Architecture audit + cleanup
+
+(prompt)
 Check code base, audit primitive_version and styled_fof_version. Compare architecture too, tell me where styled drifted unnecessarily from primitive gameplay core.
 
 (prompt)
@@ -183,12 +189,16 @@ fix clearShots(), drop the count of segs and allow lenght on rUI
 flare and bumping and ghosts are not showing ramp. Report and list alternatives.
 
 (prompt)
-remove it, no need. Dont replace.
+as of 3, no need. Check GC first specially on shots. list and report
 
+(prompt)
+approved, only items 2-5, dont do 1st. And do final profiling for me. Create table on an .md for me with results
+
+------------
 # STAGE 17 — Delivery
 
 (prompt)
-git/zip each branch with what actually needed, js/html/css, glb, sfx, png/ui, json config, shaders, package/build files. Exclude node_modules, caches, temp blender/houdini, debug exports, duplicate source assets, unrelated stuff. Report zip total, glb size, textures total, audio, js/build. Whats reasonable GLB sizing for playable ad? Biggest files first so I know what to do
+git/zip each branch with what actually is needed, js/html/css, glb, sfx, png/ui, json config, shaders, package/build files. Exclude node_modules, caches, temp blender/houdini, debug exports, duplicate source assets, unrelated stuff. Report zip total, glb size, textures total, audio, js/build. Whats reasonable GLB sizing for playable ad? Biggest files first so I know what to do
 
 (prompt)
 No, no need, only what could be npm built, clean.
