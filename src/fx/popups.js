@@ -21,7 +21,15 @@ export function popup(name, position) {
   const rect = document.querySelector('#app canvas').getBoundingClientRect();
   const word = document.createElement('div');
   word.className = 'word popup';
-  word.style.cssText = `left:${rect.left + (point.x * 0.5 + 0.5) * rect.width}px;top:${rect.top + (0.5 - point.y * 0.5) * rect.height}px;width:${width * rect.width}px;--word:url(${wordImage(name)});--life:${duration}s;--sweep:${sweep}s;--side:${Math.random() < 0.5 ? -1 : 1}`;
+  word.style.cssText = `
+    left: ${rect.left + (point.x * 0.5 + 0.5) * rect.width}px;
+    top: ${rect.top + (0.5 - point.y * 0.5) * rect.height}px;
+    width: ${width * rect.width}px;
+    --word: url(${wordImage(name)});
+    --life: ${duration}s;
+    --sweep: ${sweep}s;
+    --side: ${Math.random() < 0.5 ? -1 : 1};
+  `;
   word.addEventListener('animationend', event => {
     if (event.animationName === 'word-life') word.remove();
   });

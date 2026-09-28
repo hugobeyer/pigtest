@@ -1,0 +1,194 @@
+# STAGE 01 — Gameplay audit + scene measurements
+
+(prompt)
+Gotta recreate this in three.js. Audit gameplay from ref/video (imgs), check checker grid count and why, especially the double checker, athere are similar games out there so find what actual mechanic likely is. 
+
+(prompt)
+Need board size, block count, pigs, ammo pipe, rail cap, queue logic, blocking, shooting, win/fail conditions (video doesnt show), timing/pacing. This is supposed to be proto copying video, no art, no real mesh art, only prims. We have slots bottom which im still not sure what intended for, plus rail curve. Before three js do me SVG topdown with real measurements so I can brainstorm spacing and scene, 9:16 viewport, grid bounds, rail, pig queues, safe region, block size, rail width, corner radius, start/end, rough world scale. Create rail as actual curve/path data too so later I can reproduce in blender/houdini.
+
+(prompt)
+I wont go crazy with art yet, please create gameplay primitives ONLY with temp dir light and ambient. then I will do the styled version after on a new version. Keep portrait/mobile, dont overengineer. Add THREE.Object3D / Box3 debug bounds for pigs, blocks, grid, queue and shots, toggleable. Need to see exactly what runtime thinks bounds are. Report with bullets and specifics you find.
+
+(prompt)
+yeah! prims first. Checker board center, pigs bottom, rail around it, gap between pigs and slots/rail depending scale. Svg needs to match blender/houdini close enough, camera top/bottom crop like video img, 9:16. Check browser resize too, clipping, contain/cover, ortho camera resize, etc
+
+
+
+--------------------------
+# STAGE 02 — Primitive architecture + grid
+
+(prompt)
+Boxes/spheres etc fine. Keep primitive constructors central tho, dont bury mesh construction inside gameplay because glb replaces this later.
+
+(prompt)
+make board data driven, ill change sizes. Each block row,col,color,alive,exposed maybe, world pos, instance/ref. Need nearest block depending side pig is on. Keep grid state separate mesh state.
+
+(prompt)
+it should NOT search whole row for matching color, only nearest exposed. If nearest opposite color pig cannot shoot and keeps moving. So grid query more like nearestFromLeft/right/top/bottom, not findMatchingColor. dont test, short report ill review
+
+# STAGE 03 — Rail/path system
+
+(prompt)
+rail now. bottom-left, right, up right side, left across top, down left, finish. Straight mostly, rounded 90 corners. dont use giant bezier because row/column shooting gets annoying. No shooting corners, need arc U range / segment ranges and mute shooting there. Path probably distance based or normalized U, each section has direction,length,start/end and shootable bool.
+
+(prompt)
+Sure, sweep profiles are fine. Go ahead. make it simple!
+
+(prompt)
+Make path data reusable, rail rendering and runner movement should both consume same path definition. I dont want visual rail and gameplay rail drifting apart later. Need start U, finish U, total length, segment index and direction available from path query.
+
+(prompt)
+[*.js](src/*.js) please fix my formatting. dont vertical too much. Fix indents more than anything.
+
+# 4 — Pig queues + runner logic
+
+(prompt)
+pigs from 4 columns bottom, looking video again we have it wrong atm. front only clickable. when clicked pop/move to first rail U then runner starts, queue behind moves forward. white shoots white, black shoots black, ammo numbers too. queue state separate runner state.
+
+(prompt)
+runner behavior, move by path U/distance not manual XY. On straight, check nearest block inward, rotate pig in 90d steps based rail side, always face grid. valid target, trace/check line, shoot small sphere from front side pig bounds, reserve target maybe because two pigs could hit same target. wrong color keeps moving. After first shot orientation should stay sane, no flipping every frame. ammo 0 or rail end U, kill/remove runner.
+
+(prompt)
+actual bullets, dont just delete square. No physics. Use projectile pool/token already in js, source runner, color, target id, start/end, progress, speed/duration, active. Target dies on projectile arrival. Dont create new THREE.Mesh per shot.
+
+----------------
+# 5 — Tokens + primitive feedback
+
+(prompt)
+Ok good, update tokens file with other values we need. List what already exists, ill add some too. layout, gameplay, animation timing, fx counts, camera, debug, visual stuff. DO NOT do magic Ns.
+
+(prompt)
+feedback basic now, ammo text, rail capacity 5/5, shot scale punch, small particles, maybe little camera shake, win state. still primitive. Prefer gameplay events and fx listens, dont put particle logic inside grid/runner state.
+
+----------------
+# 6 — Balance + winning/fail conditions
+
+(prompt)
+Winning condition isnt good if just aliveBlocks == 0. Need count relationship right, from video looks maybe 20*pigs=blocks or available ammo somehow, verify. Find other possibilities too, exact solvable ammo, small surplus, queue exhaustion, rail full, impossible exposed colors, no progress timeout. Also calculate estimated gameplay time from rail length, runner speed, shot cadence, projectile duration, block count.
+
+(prompt)
+Need balancing report now. Give me total blocks, total available ammo, ammo surplus %, average shots per pig, rail occupancy assumptions, estimated shortest clear, normal clear time, stall/fail cases, whether random queue generation can make impossible board. Keep gameplay deterministic enough for playable ad, I dont want bad RNG making unwinnable level.
+
+----------------
+# 7 — Move scene ownership to Blender/GLB
+
+(prompt)
+layout going blender/houdini now, I dont want js rebuilding every position. Use GLB source of truth. Also check if USD makes any sense here for browser Three.js vs glb.
+
+(prompt)
+GLB naming maybe Pig_Light, Pig_Dark, Bullet_Light, Bullet_Dark, Grid_Block_Light, Grid_Block_Dark, GridCenter, RailStart, RailEnd, PigColumn_0, PigColumn_1, PigColumn_2, PigColumn_3, CameraTarget. GridCenter custom props rows, cols, stepX/Y, checker size maybe depth. Pig columns can store queue info, im doing empties. Loader validate missing names once and report, dont silently fail.
+
+(prompt)
+audit js. Dont keep duplicate primitive construction if glb supplies asset. js owns gameplay state, queue, grid state, runner, targeting, shots, anim, fx, input, ui state. blender owns meshes, transforms, anchors, layout, camera initial transform, scene composition. render object != logical state.
+
+(prompt)
+No, lock this, commit to a new branch, checkout to main after. primitive/reference branch, no art changes here
+
+-------------
+# 8 — Styled version base
+
+(prompt)
+duplicate same gameplay exactly. Styled version now, should feel more playable ad, check Fish of Fortune type style, ill get some UI from gpt separately. stylized 3d, kinda faking 2d/illustrated but still 3d. same mechanics, dont improve gameplay while styling.
+
+(prompt)
+lighting is tooo generic threejs atm, no. rim not everywhere dude, use axis/view fresnel mostly active pigs and maybe important blockers. Props maybe dull half-lambert style. Use frag bending fresnel with tangent vectors and aniso? Need lightweight. Find reusable slider/runtime tweak component maybe lilgui etc. 
+
+No expensive post dude! ground falloff + stretched radial vignette, ramp colors.
+
+(prompt)
+Ok, if tonemap already is, than lets add, why not, what types? keep simple, not many parms. exp/gamma only perhaps?
+
+---------------
+# 9 — Runtime tuning + config split
+
+(prompt)
+give live dev panel. Need tweak shader/material values live. Canonical values tokens/config, but panel can export/save json ideally. camera, ground, pigs, blocks, env, fx, motion, gameplay feel. Dont let GUI itself become source of truth.
+
+(prompt)
+Maybe split visual/game feel values, look.json and feel.json. look has colors,rim,halflambert,ground,vignette,materials. feel has runner speed,shot speed,queue damp,squash,idle,shake,hint timing,combo timing. tokens loads defaults/fallback.
+
+(prompt)
+constants still on js somewhere, check again. Search magic numbers outside config. git stats/diff too because I had issue here, find/report only.
+
+-----------
+# 10 — Pig feel + hinting
+
+(prompt)
+tap feedback boring, on tap squash/pop, small ground ring, rim flash, sparkles, sound. waiting pigs small idle but phase offset, dont sync. Queue stepping damped not snap. click bounds should stay reliable tho.
+
+(prompt)
+if waits for bit, play huh on random min/max cycle. Pick one valid front pig, ! or ?, jump/wobble + huh. dont spam, constants for min/max wait, any input resets timer.
+
+-------------
+# 11 — Audio pipeline
+Ok sfx are in. ffmpeg trim silence, normalize, rename clean. Elevenlabs names roughly match gpt list, map them to runtime names. Make manifest instead of hardcoding paths everywhere.
+
+(prompt)
+add audio based on list, tap, shot, hit, pig pop/fly, idle huh, combo, level clear, rail full/wrong action. few variants where useful. one bg loop low volume. audio starts after first user interaction because browser autoplay. one audio manager + manifest, dont Audio() everywhere.
+
+(prompt)
+rail full currently ignores me. Need feedback, sound + refusal wiggle/scale whatever. Same invalid actions. No modal. Input can return reason maybe rail_full, not_front_pig, unavailable, then feedback handles response without duplicating gameplay checks.
+
+---------------
+# 12 — Block hit FX + projectiles
+blocks disappearing meh. Hit should flash, scale punch, actual block off, maybe stretched glowing ghost for short time, couple sparkles. not sure on ghost yet, toggle it. Need perf counts in tokens, particles minmax, max impacts, lifetime, scale, flash duration etc. pngs in now. Use gpt image/font assets rather than browser text where possible, if python makes blurred/shadow variants dont overwrite originals.
+
+(prompt)
+bullets too invisible. Trail + slow visual travel a bit. Need gameplay impact timing to still match projectile arrival, dont visually lag after block already gone. Pool trail stuff if possible.
+
+(prompt)
+also shift projectile/trail color through ramp, maybe viridis-ish or custom. based on chain/combo index. Do not alter white/black target logic, render color only.
+
+(prompt)
+These assets better, use these instead font. Dont repeat same combo word immediately. Preload textures/materials, reuse.
+
+--------------------
+# 13 — Gameplay variations
+
+(prompt)
+Audit for gameplay variations, short bullets only. Only reuse current systems, grid, queues, ammo, runners, targeting, block types. No whole new game, lets use new menus
+
+(prompt)
+Nah. Adventure just few short levels to broaden it. Classic stays big main one. Adventure, smaller boards first then increase, maybe chain reaction but prob dont need runtime ui for it, gold/rainbow blocks, maybe line wipe later. Dont make separate game system. Levels just data into same grid/runner systems.
+
+
+# STAGE 14 — Intro + win UI + fx
+ok APPROVED. Need intro menu, 2 picks, classic/default and adventure. Fast, playable ad. When game starts maybe wooden banner TAP THE PIGS! or LEVEL 1. Overlay UI, dont shift camera framing.
+
+(prompt)
+gpt wooden assets are in. Win screen level clear, blocks, time, pigs used, shots, best combo. count quickly, panel slight bounce/swing, tap continues/restarts. Keep each behavior separate so can toggle pieces independently.
+
+(prompt)
+ok, go ahead with both, report changed.
+
+# STAGE 15 — Performance pass
+Perf cleanup, check shader iterations, this is not unreal game. Audit drawcalls, tris, shader loops, transparency, texture sizes, DPR, object count, allocations/frame, update loops, particle max. Report first, dont rewrite yet.
+
+(prompt)
+This is supposed to be a playable ad. reuse fx, pools, maybe sprites too, cap particles/ratio, dont create garbage every tick, dont rebuild geo/mat on effects, the ramp is doing atm. Check if we can avoid vec3 allocations on ticks. Check whether THREE post is worth anything. Chrome downscale isnt reason for post, vignette/grade better in material/background if possible.
+
+# STAGE 16 — Architecture audit + cleanup
+Check code base, audit primitive_version and styled_fof_version. Compare architecture too, tell me where styled drifted unnecessarily from primitive gameplay core.
+
+(prompt)
+Check dupes and ghosts, unused imports, dead assets, old primitive constructors, unused configs, stale debug paths, duplicate materials/shaders, repeated GLB lookups, duplicate listeners. Report. Also formatting/folder org.
+
+(prompt)
+createTrail() is touching buffer, check the costs and counts and see if too much on the loops, ticks and update
+
+(prompt)
+fix clearShots(), drop the count of segs and allow lenght on rUI
+
+(prompt)
+flare and bumping and ghosts are not showing ramp. Report and list alternatives.
+
+(prompt)
+remove it, no need. Dont replace.
+
+# STAGE 17 — Delivery
+
+(prompt)
+git/zip each branch with what actually needed, js/html/css, glb, sfx, png/ui, json config, shaders, package/build files. Exclude node_modules, caches, temp blender/houdini, debug exports, duplicate source assets, unrelated stuff. Report zip total, glb size, textures total, audio, js/build. Whats reasonable GLB sizing for playable ad? Biggest files first so I know what to do
+
+(prompt)
+No, no need, only what could be npm built, clean.
