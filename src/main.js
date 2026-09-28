@@ -16,7 +16,7 @@ document.querySelector('#app').appendChild(renderer.domElement);
 let camera;
 
 function resize(){
-  const aspect=camera.aspect;
+  const aspect=9/16;
   let h=innerHeight, w=h*aspect;
   if(w>innerWidth){w=innerWidth; h=w/aspect;}
   renderer.setSize(w,h,false);

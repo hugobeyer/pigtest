@@ -1,7 +1,11 @@
 import * as THREE from 'three';
-import { PATH } from './tokens.js';
+import { PATH, PIGS } from './tokens.js';
 
 export const PIG_COLUMNS=4;
+
+const PIG_BOX={x:1.5,y:1.5,z:1};
+const PIG_SLOT={x:1.65,y:1.65,z:.25};
+const boxGeometry=new THREE.BoxGeometry(1,1,1);
 
 const COLORS={
   pigLight:0xf2f1e9,
@@ -12,6 +16,7 @@ const COLORS={
   blockLight:0xe8e5dc,
   blockDark:0x44475a,
   rail:0x33384a,
+  slot:0x41455f,
   backdrop:0x505471
 };
 
@@ -26,16 +31,16 @@ function makeMesh(geometry, material, position) {
 function makePig(color) {
   const group = new THREE.Group();
   const body = new THREE.MeshStandardMaterial({ color, roughness: 0.82 });
-  group.add(makeMesh(new THREE.BoxGeometry(0.86, 0.7, 0.64), body, [0, 0, 0.42]));
+  const mesh=makeMesh(boxGeometry,body,[0,0,PIG_BOX.z*.5+.012]);
+  mesh.scale.set(PIG_BOX.x,PIG_BOX.y,PIG_BOX.z);
+  group.add(mesh);
   return group;
 }
 
 function makeBlock(color) {
-  return makeMesh(
-    new THREE.BoxGeometry(0.3, 0.3, 0.84),
-    new THREE.MeshStandardMaterial({ color, roughness: 0.9 }),
-    [0, 0, 0.432]
-  );
+  const geometry = new THREE.BoxGeometry(0.3, 0.3, 0.84);
+  geometry.translate(0, 0, 0.432);
+  return makeMesh(geometry, new THREE.MeshStandardMaterial({ color, roughness: 0.9 }), [0, 0, 0]);
 }
 
 function makeAnchor(root, name, x, y, z = 0) {
@@ -46,27 +51,38 @@ function makeAnchor(root, name, x, y, z = 0) {
   return object;
 }
 
-function makeRail(root, left, right, bottom, top, radius) {
-  const points = [];
+function makeRail(root, left, right, bottom, top, radius, startX, endY) {
+  const points = [new THREE.Vector3(startX, bottom, 0.2), new THREE.Vector3(right - radius, bottom, 0.2)];
   const corners = [
     [right - radius, bottom + radius, -Math.PI / 2],
     [right - radius, top - radius, 0],
-    [left + radius, top - radius, Math.PI / 2],
-    [left + radius, bottom + radius, Math.PI]
+    [left + radius, top - radius, Math.PI / 2]
   ];
   for (const [x, y, start] of corners) {
-    for (let i = 0; i <= 8; i++) {
-      const angle = start + (Math.PI / 2) * (i / 8);
-      points.push(new THREE.Vector3(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, -0.22));
+    for (let i = 1; i <= 12; i++) {
+      const angle = start + (Math.PI / 2) * (i / 12);
+      points.push(new THREE.Vector3(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, 0.2));
     }
+    if (x === right - radius && y === bottom + radius) points.push(new THREE.Vector3(right, top - radius, 0.2));
+    if (x === right - radius && y === top - radius) points.push(new THREE.Vector3(left + radius, top, 0.2));
   }
-  const curve = new THREE.CatmullRomCurve3(points, true, 'centripetal');
-  const rail = new THREE.Mesh(
-    new THREE.TubeGeometry(curve, 192, 0.12, 8, true),
-    new THREE.MeshStandardMaterial({ color: COLORS.rail, roughness: 0.85 })
-  );
+  points.push(new THREE.Vector3(left, endY, 0.2));
+  const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal');
+  const profile = new THREE.Shape();
+  profile.moveTo(-0.17, -0.54);
+  profile.lineTo(0.17, -0.54);
+  profile.lineTo(0.17, 0.54);
+  profile.lineTo(-0.17, 0.54);
+  profile.closePath();
+  const geometry = new THREE.ExtrudeGeometry(profile, { steps: 320, bevelEnabled: false, extrudePath: curve });
+  geometry.computeBoundingBox();
+  const height = geometry.boundingBox.max.z - geometry.boundingBox.min.z;
+  geometry.translate(0, 0, -geometry.boundingBox.min.z);
+  geometry.scale(1, 1, 0.38 / height);
+  const rail = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: COLORS.rail, roughness: 0.23, metalness: 0.15 }));
+  rail.position.z = 0.012;
   rail.name = 'Primitive_Rail';
-  rail.receiveShadow = true;
+  rail.castShadow = rail.receiveShadow = true;
   root.add(rail);
 }
 
@@ -102,25 +118,29 @@ export async function loadAssets() {
 
   const gridLeft = -((columns - 1) * step) / 2;
   const gridRight = -gridLeft;
-  const gridBottom = 0.25 - ((rows - 1) * step) / 2;
-  const gridTop = 0.25 + ((rows - 1) * step) / 2;
+  const gridBottom = gridCenter.position.y - ((rows - 1) * step) / 2;
+  const gridTop = gridCenter.position.y + ((rows - 1) * step) / 2;
   const left = gridLeft - PATH.sideOffset;
   const right = gridRight + PATH.sideOffset;
-  const bottom = -2.73;
+  const bottom = gridBottom - PATH.verticalOffset;
   const top = gridTop + PATH.verticalOffset;
-  makeRail(root, left, right, bottom, top, PATH.cornerRadius);
+  const startX = gridLeft - 0.1;
+  const endY = gridBottom - 0.1;
+  makeRail(root, left, right, bottom, top, PATH.cornerRadius, startX, endY);
 
   const floor = makeMesh(
-    new THREE.PlaneGeometry(13, 19),
+    new THREE.PlaneGeometry(200, 200),
     new THREE.MeshStandardMaterial({ color: COLORS.backdrop, roughness: 1 }),
-    [0, -0.2, -1.2]
+    [0, 0, 0]
   );
   floor.name = 'Primitive_Backdrop';
+  floor.castShadow = false;
   root.add(floor);
 
-  const camera = new THREE.PerspectiveCamera(47, 9 / 16, 0.1, 100);
-  camera.position.set(0, 0, 21);
-  camera.lookAt(0, 0, 0);
+  const halfHeight = 23.4 / 2;
+  const camera = new THREE.OrthographicCamera(-halfHeight * 9 / 16, halfHeight * 9 / 16, halfHeight, -halfHeight, 0.1, 100);
+  camera.position.set(0, -10.017, 14.591);
+  camera.lookAt(0, 0.4, 0);
 
   const pigLight = makePig(COLORS.pigLight);
   const pigDark = makePig(COLORS.pigDark);
@@ -142,10 +162,22 @@ export async function loadAssets() {
     Object.assign(column.userData, { queue: queues[i], row_step: 1.62 });
     return column;
   });
-  const railStart = makeAnchor(root, 'Rail_Start', 0, bottom);
+  const slotMaterial = new THREE.MeshStandardMaterial({ color: COLORS.slot, roughness: 0.8 });
+  const slots = new THREE.InstancedMesh(boxGeometry,slotMaterial,PIGS.railCapacity);
+  slots.name = 'Slots';
+  slots.castShadow=slots.receiveShadow=true;
+  const slotY = (bottom + queueY) / 2;
+  const slotStep = (gridRight - gridLeft) / (PIGS.railCapacity - 1);
+  const matrix=new THREE.Matrix4().makeScale(PIG_SLOT.x,PIG_SLOT.y,PIG_SLOT.z);
+  for (let i = 0; i < PIGS.railCapacity; i++) {
+    matrix.setPosition(gridLeft+i*slotStep,slotY,0);
+    slots.setMatrixAt(i,matrix);
+  }
+  slots.computeBoundingSphere();
+  root.add(slots);
   const anchors = {
-    RailStart: makeAnchor(root, 'RailStart', -4.125, bottom),
-    RailEnd: makeAnchor(root, 'RailEnd', left, -0.45)
+    RailStart: makeAnchor(root, 'RailStart', startX, bottom),
+    RailEnd: makeAnchor(root, 'RailEnd', left, endY)
   };
 
   root.updateMatrixWorld(true);
@@ -155,7 +187,6 @@ export async function loadAssets() {
     bullets: { light: bulletLight, dark: bulletDark },
     blocks,
     gridCenter,
-    railStart,
     anchors,
     columns: columnsObjects
   };

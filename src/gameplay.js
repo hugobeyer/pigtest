@@ -23,9 +23,9 @@ export function initGameplay(scene,assets){
   totalBlocks=remainingCells();
   initRunners(scene,pigTemplates,assets.bullets,createPath(grid,assets.anchors));
   createPigs(scene,assets.columns,pigTemplates);
-  const box=new THREE.Box3().setFromObject(assets.railStart);
+  const railStart=assets.anchors.RailStart.getWorldPosition(new THREE.Vector3());
   capacityLabel=createLabel(scene);
-  capacityLabel.position.set(box.getCenter(new THREE.Vector3()).x,box.min.y-LABEL.capacityGap,box.max.z);
+  capacityLabel.position.set(railStart.x,railStart.y-LABEL.capacityGap,railStart.z+.38);
 }
 
 export function tap(object){
