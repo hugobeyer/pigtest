@@ -61,13 +61,16 @@ function frame(now){
   renderer.render(scene,camera);
 }
 
-loadAssets(new URL('../assets/primitive_scene.glb',import.meta.url).href).then(assets=>{
-  initGameplay(scene,assets);
-  scene.add(assets.root);
-  camera=assets.camera;
-  resize();
-  addEventListener('resize',resize);
-  enableInput();
-  last=performance.now();
-  renderer.setAnimationLoop(frame);
-},error=>console.error('Blender GLB failed to load.',error));
+loadAssets().then(
+  assets => {
+    initGameplay(scene, assets);
+    scene.add(assets.root);
+    camera = assets.camera;
+    resize();
+    addEventListener('resize', resize);
+    enableInput();
+    last = performance.now();
+    renderer.setAnimationLoop(frame);
+  },
+  error => console.error('Primitive scene failed to initialize.', error)
+);
